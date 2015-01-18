@@ -1,0 +1,11 @@
+{
+    "name": "redcrackle/redtest-core",
+    "description": "Core libray of Red Test framework, an integration testing framework for Drupal based on PHPUnit",
+    "require": {
+        "guzzle/guzzle": "dev-master"
+    },
+    "minimum-stability": "dev",
+    "require-dev": {
+        "phpunit/phpunit": "4.*"
+    },
+}
