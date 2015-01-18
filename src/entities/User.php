@@ -6,7 +6,7 @@
  * Time: 5:27 PM
  */
 
-namespace tests\phpunit_tests\core\entities;
+namespace RedTest\core\entities;
 
 use tests\phpunit_tests\core\forms as forms;
 

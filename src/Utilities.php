@@ -6,7 +6,7 @@
  * Time: 3:39 PM
  */
 
-namespace tests\phpunit_tests\core;
+namespace RedTest\core;
 
 
 class Utilities {

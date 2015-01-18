@@ -6,7 +6,7 @@
  * Time: 2:41 PM
  */
 
-namespace tests\phpunit_tests\core\forms;
+namespace RedTest\core\forms;
 
 
 final class UserLoginForm extends Form {

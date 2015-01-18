@@ -6,7 +6,7 @@
  * Time: 4:00 PM
  */
 
-namespace tests\phpunit_tests\core\entities;
+namespace RedTest\core\entities;
 
 use tests\phpunit_tests\core\Utilities as Utilities;
 

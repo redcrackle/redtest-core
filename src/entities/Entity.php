@@ -6,7 +6,7 @@
  * Time: 6:16 PM
  */
 
-namespace tests\phpunit_tests\core\entities;
+namespace RedTest\core\entities;
 
 use tests\phpunit_tests\core\Utilities as Utilities;
 use tests\phpunit_tests\custom\forms as CustomForms;

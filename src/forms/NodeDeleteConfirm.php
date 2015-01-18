@@ -6,7 +6,7 @@
  * Time: 7:54 PM
  */
 
-namespace tests\phpunit_tests\core\forms;
+namespace RedTest\core\forms;
 
 
 use tests\phpunit_tests\core\Utilities;

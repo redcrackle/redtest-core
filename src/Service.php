@@ -6,7 +6,7 @@
  * Time: 12:02 PM
  */
 
-namespace tests\phpunit_tests\core;
+namespace RedTest\core;
 
 
 class Service {

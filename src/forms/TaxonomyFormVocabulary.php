@@ -6,7 +6,7 @@
  * Time: 6:00 PM
  */
 
-namespace tests\phpunit_tests\core\forms;
+namespace RedTest\core\forms;
 
 
 class TaxonomyFormVocabulary extends Form {
