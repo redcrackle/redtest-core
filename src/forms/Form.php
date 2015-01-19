@@ -8,7 +8,7 @@
 
 namespace RedTest\core\forms;
 
-use tests\phpunit_tests\core\Utilities;
+use RedTest\core\Utilities;
 
 class Form {
 
@@ -22,7 +22,6 @@ class Form {
 
   protected function __construct($form_id) {
     $args = func_get_args();
-    //print_r($args);
     $this->form_id = $form_id;
     if (!empty($args)) {
       $this->form = call_user_func_array('drupal_get_form', $args);

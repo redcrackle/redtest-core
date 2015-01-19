@@ -9,7 +9,7 @@
 namespace RedTest\core\forms;
 
 
-final class UserLoginForm extends Form {
+class UserLoginForm extends Form {
 
   /**
    * Default constructor.

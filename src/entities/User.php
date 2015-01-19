@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use tests\phpunit_tests\core\forms as forms;
+use RedTest\core\forms as forms;
 
 
 class User extends Entity {

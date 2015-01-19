@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use tests\phpunit_tests\core\Utilities as Utilities;
+use RedTest\core\Utilities as Utilities;
 use tests\phpunit_tests\custom\forms as CustomForms;
 
 /**

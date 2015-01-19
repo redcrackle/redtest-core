@@ -8,9 +8,6 @@
 
 namespace RedTest\core\forms;
 
-
-use tests\phpunit_tests\core\Utilities;
-
 class NodeDeleteConfirm extends Form {
 
   private $node;

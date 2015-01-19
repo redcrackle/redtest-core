@@ -8,7 +8,7 @@
 
 namespace RedTest\core\forms;
 
-use tests\phpunit_tests\core\Utilities as Utilities;
+use RedTest\core\Utilities as Utilities;
 
 class TaxonomyFormTerm extends EntityForm {
 

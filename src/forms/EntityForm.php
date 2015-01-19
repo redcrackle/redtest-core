@@ -8,7 +8,7 @@
 
 namespace RedTest\core\forms;
 
-use tests\phpunit_tests\core\Utilities as Utilities;
+use RedTest\Utilities as Utilities;
 
 abstract class EntityForm extends Form {
 
