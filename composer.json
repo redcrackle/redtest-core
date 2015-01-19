@@ -1,6 +1,17 @@
 {
     "name": "redcrackle/redtest-core",
+    "type": "library",
     "description": "Core libray of Red Test framework, an integration testing framework for Drupal based on PHPUnit",
+    "keywords": ["phpunit", "drupal", "integration testing"],
+    "license": "GPLv3",
+    "authors": [
+        {
+            "name": "Neerav Mehta",
+            "email": "admin@redcrackle.com",
+            "homepage": "http://redcrackle.com",
+            "role": "Developer"
+        }
+    }
     "require": {
         "php": ">=5.3.0",
         "guzzle/guzzle": "dev-master"
