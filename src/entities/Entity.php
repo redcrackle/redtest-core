@@ -9,7 +9,7 @@
 namespace RedTest\core\entities;
 
 use RedTest\core\Utilities as Utilities;
-use tests\phpunit_tests\custom\forms as CustomForms;
+use RedTest\core\forms;
 
 /**
  * Class Entity
@@ -47,11 +47,21 @@ abstract class Entity {
   /**
    * Returns the entity id.
    *
+   * This is a copy of entity_id() function from entity.module. We are not
+   * using the entity_id() function since entity_id module may not have been
+   * installed.
+   *
    * @return int $id
    *   Entity id.
    */
   public function getId() {
-    return entity_id($this->entity_type, $this->entity);
+    if (method_exists($this->entity, 'identifier')) {
+      return $this->entity->identifier();
+    }
+    $info = entity_get_info($this->entity_type);
+    $key = isset($info['entity keys']['name']) ? $info['entity keys']['name'] : $info['entity keys']['id'];
+
+    return isset($this->entity->$key) ? $this->entity->$key : NULL;
   }
 
   /**
@@ -1441,8 +1451,9 @@ abstract class Entity {
       $entity_type = self::getEntityType();
       $original_class = get_called_class();
       $class = new \ReflectionClass($original_class);
-      $formClass = "tests\\phpunit_tests\\custom\\forms\\entities\\" . $entity_type . "\\" . $class->getShortName(
-        ) . 'Form';
+      $formClass = "forms\\entities\\" . Utilities::convertUnderscoreToTitleCase(
+          $entity_type
+        ) . "\\" . $class->getShortName() . 'Form';
 
       $classForm = new $formClass();
       list($success, $fields, $msg) = $classForm->fillDefaultValues($skip);

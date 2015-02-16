@@ -9,6 +9,7 @@
 namespace RedTest\core\entities;
 
 use RedTest\core\forms as forms;
+use RedTest\core\Utilities;
 
 
 class User extends Entity {
@@ -34,7 +35,8 @@ class User extends Entity {
    *   Password.
    *
    * @return mixed $user
-   *   User object if the user logged in successfully and an array of errors, otherwise.
+   *   User object if the user logged in successfully and an array of errors,
+   *   otherwise.
    */
   public static function login($username, $password) {
     $userLoginForm = new forms\UserLoginForm();
@@ -55,7 +57,7 @@ class User extends Entity {
 
   /**
    * Register a new user.
-
+   *
    * @param string $username
    *   Username.
    * @param string $email
@@ -64,7 +66,8 @@ class User extends Entity {
    *   Password.
    *
    * @return mixed $user
-   *   User object if the user logged in successfully and an array of errors, otherwise.
+   *   User object if the user logged in successfully and an array of errors,
+   *   otherwise.
    */
   public static function registerUser($username, $email, $password) {
     $userRegisterForm = new forms\UserRegisterForm();
@@ -79,20 +82,21 @@ class User extends Entity {
       )
     );
 
-    $uid = $userRegisterForm->submit();
-    if (is_array($uid)) {
-      return $uid;
+    $output = $userRegisterForm->submit();
+    if ($output) {
+      return $userRegisterForm->getEntityObject();
     }
-    else {
-      return new User($uid);
-    }
+
+    return FALSE;
   }
 
   /**
    * Delete the user.
    */
   public function delete() {
-    $userCancelConfirmForm = new forms\UserCancelConfirmForm($this->getEntity());
+    $userCancelConfirmForm = new forms\UserCancelConfirmForm(
+      $this->getEntity()
+    );
     $userCancelConfirmForm->submit();
   }
 
@@ -142,7 +146,29 @@ class User extends Entity {
     $user = user_load_by_name($username);
     $login_array = array('name' => $username);
     user_login_finalize($login_array);
-    //module_invoke_all('user_login', $user);
+
     return new User($user->uid);
+  }
+
+  public static function createDefault($num = 1, $skip = array()) {
+    global $entities;
+
+    $output = array();
+    for ($i = 0; $i < $num; $i++) {
+      $username = Utilities::getRandomString(5);
+      $email = $username . '@' . Utilities::getRandomString(5) . '.com';
+      $password = Utilities::getRandomString();
+      $object = User::registerUser($username, $email, $password);
+      if ($object) {
+        $output[] = $object;
+        $entities['user'][$object->getId()] = $object;
+      }
+    }
+
+    if (sizeof($output) == 1) {
+      return array(TRUE, $output[0], "");
+    }
+
+    return array(TRUE, $output, "");
   }
 }

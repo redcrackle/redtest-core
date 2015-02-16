@@ -8,8 +8,9 @@
 
 namespace RedTest\core\forms;
 
+use RedTest\core\entities\User;
 
-class UserRegisterForm extends Form {
+class UserRegisterForm extends EntityForm {
 
   /**
    * Default UserRegisterForm constructor. If you need to disable modules such as captcha, recaptcha, honeypot, mollom, etc., do it here.
@@ -38,14 +39,14 @@ class UserRegisterForm extends Form {
   public function submit() {
     $this->fillValues(array('op' => t('Create new account')));
     $output = parent::submit();
-    if (is_array($output)) {
-      // There was an error.
-      return $output;
-    }
-    else {
+    if ($output) {
+      // Get the user from form_state.
       $form_state = $this->getFormState();
-
-      return $form_state['uid'];
+      $uid = $form_state['uid'];
+      $userObject = new User($uid);
+      $this->setEntityObject($userObject);
     }
+
+    return $output;
   }
 } 
