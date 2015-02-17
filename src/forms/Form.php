@@ -184,6 +184,52 @@ class Form {
     );
   }
 
+  public function fillImageImage(
+    $field_name,
+    $image_paths,
+    $scheme = 'public'
+  ) {
+    $this->emptyField($field_name);
+
+    if (is_string($image_paths)) {
+      $image_paths = array($image_paths);
+    }
+
+    $stored_file_uris = array();
+    $index = 0;
+    foreach ($image_paths as $image_path) {
+      $filename = drupal_basename($image_path);
+      //$full_image_path = 'tests/assets/' . $image_path;
+      $file_temp = file_get_contents($image_path);
+      $file_temp = file_save_data(
+        $file_temp,
+        $scheme . '://' . $filename,
+        FILE_EXISTS_RENAME
+      );
+      // Set file status to temporary otherwise there is validation error.
+      $file_temp->status = 0;
+      file_save($file_temp);
+      $stored_file_uris[$index] = $file_temp->uri;
+
+      $image_info = image_get_info($file_temp->uri);
+      $this->form_state['values'][$field_name][LANGUAGE_NONE][$index] = array(
+        'alt' => '',
+        'fid' => $file_temp->fid,
+        'display' => 1,
+        'width' => $image_info['width'],
+        'height' => $image_info['height'],
+      );
+
+      $index++;
+    }
+
+    if (sizeof($stored_file_uris) == 1) {
+      return $stored_file_uris[0];
+    }
+
+    return $stored_file_uris;
+  }
+
   public function fillNumber($field_name, $values) {
     $this->emptyField($field_name);
 

@@ -223,6 +223,91 @@ abstract class EntityForm extends Form {
     return array(TRUE, array(), "");
   }
 
+  public function fillDefaultTextTextareaWithSummaryValues($field_name) {
+    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+
+    global $user;
+    $text_formats = array_keys(filter_formats($user));
+
+    $values = array();
+    for ($i = 0; $i < $num; $i++) {
+      $values[] = array(
+        'value' => Utilities::getRandomString(100),
+        'summary' => Utilities::getRandomString(20),
+        'format' => array_rand($text_formats),
+      );
+    }
+
+    $this->fillTextTextareaWithSummary($field_name, $values);
+
+    if (sizeof($values) == 1) {
+      $values = $values[0];
+    }
+
+    return array(TRUE, $values, "");
+  }
+
+  public function fillDefaultImageImageValues($field_name) {
+    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+
+    $uri_scheme = $field['settings']['uri_scheme'];
+    $file_extensions = explode(' ', $instance['settings']['file_extensions']);
+    $max_filesize = $instance['settings']['max_filesize'];
+    $max_resolution = $instance['settings']['max_resolution'];
+    $min_resolution = $instance['settings']['min_resolution'];
+    list($min_width, $min_height) = explode('x', $min_resolution);
+    list($max_width, $max_height) = explode('x', $max_resolution);
+
+    $files = file_scan_directory(
+      'tests/assets',
+      '/.*\.(' . implode('|', $file_extensions) . ')$/',
+      array('recurse' => TRUE)
+    );
+
+    $valid_files = array();
+    foreach ($files as $uri => $file) {
+      $image_info = image_get_info($uri);
+
+      if (!empty($max_filesize) && $image_info['file_size'] > $max_filesize) {
+        continue;
+      }
+
+      if (!empty($min_width) && $image_info['width'] < $min_width) {
+        continue;
+      }
+
+      if (!empty($max_width) && $image_info['width'] > $max_width) {
+        continue;
+      }
+
+      if (!empty($min_height) && $image_info['height'] < $min_height) {
+        continue;
+      }
+
+      if (!empty($max_height) && $image_info['height'] > $max_height) {
+        continue;
+      }
+
+      $valid_files[$uri] = $file;
+    }
+
+    if (empty($valid_files)) {
+      return array(
+        FALSE,
+        array(),
+        'Appropriate image could not be found for ' . $field_name
+      );
+    }
+
+    $stored_file_uris = $this->fillImageImage(
+      $field_name,
+      array_keys($valid_files),
+      $uri_scheme
+    );
+
+    return array(TRUE, $stored_file_uris, "");
+  }
+
   public function fillDefaultTextTextareaValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
 
