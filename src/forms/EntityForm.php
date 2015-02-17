@@ -8,7 +8,7 @@
 
 namespace RedTest\core\forms;
 
-use RedTest\Utilities as Utilities;
+use RedTest\core\Utilities as Utilities;
 
 abstract class EntityForm extends Form {
 

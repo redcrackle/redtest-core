@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\Utilities;
 use RedTest\core\forms;
 
 /**
@@ -1451,7 +1451,7 @@ abstract class Entity {
       $entity_type = self::getEntityType();
       $original_class = get_called_class();
       $class = new \ReflectionClass($original_class);
-      $formClass = "forms\\entities\\" . Utilities::convertUnderscoreToTitleCase(
+      $formClass = "RedTest\\forms\\entities\\" . Utilities::convertUnderscoreToTitleCase(
           $entity_type
         ) . "\\" . $class->getShortName() . 'Form';
 

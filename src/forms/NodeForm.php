@@ -22,11 +22,14 @@ class NodeForm extends EntityForm {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
-    $class_fullname = "tests\\phpunit_tests\\custom\\entities\\node\\" . substr(
+    $class_fullname = "RedTest\\entities\\Node\\" . Utilities::convertUnderscoreToTitleCase(
+        substr($class_shortname, 0, -4)
+      );
+    /*$class_fullname = "tests\\phpunit_tests\\custom\\entities\\node\\" . substr(
         $class_shortname,
         0,
         -4
-      );
+      );*/
 
     $type = Utilities::convertTitleCaseToUnderscore(
       substr($class_shortname, 0, -4)
