@@ -21,6 +21,9 @@
         "guzzle/guzzle": "dev-master",
         "phpunit/phpunit": "4.*"
     },
+    "suggest": {
+        "fzaninotto/faker": "Allows better fake text data to be used for testing"
+    },
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
