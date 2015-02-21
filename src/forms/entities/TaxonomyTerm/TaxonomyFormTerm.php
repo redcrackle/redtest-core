@@ -6,9 +6,10 @@
  * Time: 6:00 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\TaxonomyTerm;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Utilities;
 
 class TaxonomyFormTerm extends EntityForm {
 

@@ -6,8 +6,9 @@
  * Time: 2:41 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\User;
 
+use RedTest\core\forms\Form;
 
 class UserLoginForm extends Form {
 

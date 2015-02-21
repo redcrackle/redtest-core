@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\forms as forms;
+use RedTest\core\forms\entities\User as UserForms;
 use RedTest\core\Utilities;
 
 
@@ -39,7 +39,7 @@ class User extends Entity {
    *   otherwise.
    */
   public static function login($username, $password) {
-    $userLoginForm = new forms\UserLoginForm();
+    $userLoginForm = new UserForms\UserLoginForm();
     $userLoginForm->fillValues(
       array(
         'name' => $username,
@@ -70,7 +70,7 @@ class User extends Entity {
    *   otherwise.
    */
   public static function registerUser($username, $email, $password) {
-    $userRegisterForm = new forms\UserRegisterForm();
+    $userRegisterForm = new UserForms\UserRegisterForm();
     $userRegisterForm->fillValues(
       array(
         'name' => $username,
@@ -94,7 +94,7 @@ class User extends Entity {
    * Delete the user.
    */
   public function delete() {
-    $userCancelConfirmForm = new forms\UserCancelConfirmForm(
+    $userCancelConfirmForm = new UserForms\UserCancelConfirmForm(
       $this->getEntity()
     );
     $userCancelConfirmForm->submit();

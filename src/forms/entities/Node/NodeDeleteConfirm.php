@@ -6,7 +6,9 @@
  * Time: 7:54 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\Node;
+
+use RedTest\core\forms\Form;
 
 class NodeDeleteConfirm extends Form {
 

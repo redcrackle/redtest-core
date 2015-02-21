@@ -6,8 +6,9 @@
  * Time: 6:22 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\User;
 
+use RedTest\core\forms\Form;
 
 class UserCancelConfirmForm extends Form {
 

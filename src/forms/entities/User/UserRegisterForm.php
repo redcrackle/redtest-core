@@ -6,9 +6,10 @@
  * Time: 6:00 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\User;
 
 use RedTest\core\entities\User;
+use RedTest\core\forms\entities\EntityForm;
 
 class UserRegisterForm extends EntityForm {
 

@@ -6,16 +6,20 @@
  * Time: 4:58 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\Node;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Utilities;
 
 class NodeForm extends EntityForm {
 
   /**
-   * Default constructor of the node form.
+   * Default constructor of the node form. We want this to be protected so that
+   * no class other than child classes can call it directly. We expect the
+   * users to create a separate class for each content type and use its
+   * constructor.
    *
-   * @param int $nid
+   * @param null|int $nid
    *   Node id if an existing node form is to be loaded.
    */
   protected function __construct($nid = NULL) {
@@ -25,11 +29,6 @@ class NodeForm extends EntityForm {
     $class_fullname = "RedTest\\entities\\Node\\" . Utilities::convertUnderscoreToTitleCase(
         substr($class_shortname, 0, -4)
       );
-    /*$class_fullname = "tests\\phpunit_tests\\custom\\entities\\node\\" . substr(
-        $class_shortname,
-        0,
-        -4
-      );*/
 
     $type = Utilities::convertTitleCaseToUnderscore(
       substr($class_shortname, 0, -4)

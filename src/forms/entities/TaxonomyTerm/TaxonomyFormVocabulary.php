@@ -6,10 +6,12 @@
  * Time: 6:00 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities\TaxonomyTerm;
 
+use RedTest\core\forms\Form;
 
 class TaxonomyFormVocabulary extends Form {
+
   function __construct() {
 	parent::__construct('taxonomy_form_vocabulary');
   }

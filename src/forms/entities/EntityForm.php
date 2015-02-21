@@ -6,9 +6,10 @@
  * Time: 11:44 PM
  */
 
-namespace RedTest\core\forms;
+namespace RedTest\core\forms\entities;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\forms\Form;
+use RedTest\core\Utilities;
 
 abstract class EntityForm extends Form {
 
