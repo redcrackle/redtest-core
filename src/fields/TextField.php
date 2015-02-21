@@ -10,7 +10,7 @@ namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
 
-class TextField extends Field {
+class Text extends Field {
 
   public static function fillValues(
     $formObject,

@@ -10,6 +10,7 @@ namespace RedTest\core\forms\entities;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utilities;
+use RedTest\core\fields;
 
 abstract class EntityForm extends Form {
 
@@ -392,12 +393,19 @@ abstract class EntityForm extends Form {
           $is_property = TRUE;
         }
         else {
-          $function = 'fillDefault' . Utilities::convertUnderscoreToTitleCase(
-              $widget = $instance['widget']['type']
-            ) . 'Values';
-          $arguments = array_merge(array($field_name), $arguments);
+          $field_class = "fields\\" . Utilities::convertUnderscoreToTitleCase(
+            $instance['widget']['module']
+          );
+          $widget = $instance['widget']['type'];
+          $arguments = array_merge(
+            array($this, $field_name, $widget),
+            $arguments
+          );
 
-          return call_user_func_array(array($this, $function), $arguments);
+          return call_user_func_array(
+            array($field_class, 'fillDefaultValues'),
+            $arguments
+          );
         }
       }
 
