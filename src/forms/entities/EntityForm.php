@@ -428,13 +428,17 @@ abstract class EntityForm extends Form {
           $is_property = TRUE;
         }
         else {
-          // Get the field instance value here.
-          $function = 'fill' . Utilities::convertUnderscoreToTitleCase(
-              $instance['widget']['type']
+          $field_class = "RedTest\\core\\fields\\" . Utilities::convertUnderscoreToTitleCase(
+              $instance['widget']['module']
             );
-          call_user_func_array(
-            array($this, $function),
-            array_merge(array($field_name), $arguments)
+          $arguments = array_merge(
+            array($this, $field_name),
+            $arguments
+          );
+
+          return call_user_func_array(
+            array($field_class, 'fillValues'),
+            $arguments
           );
         }
       }
