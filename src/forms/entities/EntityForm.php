@@ -10,7 +10,6 @@ namespace RedTest\core\forms\entities;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utilities;
-use RedTest\core\fields;
 
 abstract class EntityForm extends Form {
 
@@ -393,12 +392,11 @@ abstract class EntityForm extends Form {
           $is_property = TRUE;
         }
         else {
-          $field_class = "fields\\" . Utilities::convertUnderscoreToTitleCase(
-            $instance['widget']['module']
-          );
-          $widget = $instance['widget']['type'];
+          $field_class = "RedTest\\core\\fields\\" . Utilities::convertUnderscoreToTitleCase(
+              $instance['widget']['module']
+            );
           $arguments = array_merge(
-            array($this, $field_name, $widget),
+            array($this, $field_name),
             $arguments
           );
 
@@ -539,7 +537,7 @@ abstract class EntityForm extends Form {
    *
    * @return array
    */
-  private function getFieldDetails($field_name) {
+  public function getFieldDetails($field_name) {
     $instance = NULL;
     $num = 0;
     $field = $this->getFieldInfo($field_name);

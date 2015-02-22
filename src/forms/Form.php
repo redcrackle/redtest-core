@@ -97,10 +97,10 @@ class Form {
     if ($errors = form_get_errors()) {
       $this->errors = $errors;
 
-      return FALSE;
+      return array(FALSE, $this->errors);
     }
 
-    return TRUE;
+    return array(TRUE, array());
   }
 
   /**
@@ -137,6 +137,10 @@ class Form {
 
   protected function getValues($field_name) {
     return !empty($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
+  }
+
+  public function setValues($field_name, $values) {
+    $this->form_state['values'][$field_name] = $values;
   }
 
   /**

@@ -69,20 +69,22 @@ class NodeForm extends EntityForm {
     $this->removeKey('submit_handlers');
     $this->removeKey('clicked_button');
     module_load_include('inc', 'node', 'node.pages');
-    $output = parent::submit($this->getEntityObject()->getEntity());
+    list($success, $errors) = parent::submit($this->getEntityObject()->getEntity());
 
-    if ($output) {
+    if ($success) {
       // Get the node from form_state.
       $form_state = $this->getFormState();
       $node = $form_state['node'];
       $type = $node->type;
       $classname = Utilities::convertUnderscoreToTitleCase($type);
-      $class_fullname = "tests\\phpunit_tests\\custom\\entities\\node\\" . $classname;
+      $class_fullname = "RedTest\\entities\\Node\\" . $classname;
       $nodeObject = new $class_fullname($node->nid);
       $this->setEntityObject($nodeObject);
+
+      return array(TRUE, $nodeObject, array());
     }
 
-    return $output;
+    return array(FALSE, NULL, $errors);
   }
 
   /**
@@ -103,7 +105,7 @@ class NodeForm extends EntityForm {
     }
 
     if (!in_array('title', $skip)) {
-      $fields['title'] = Utilities::getRandomString();
+      $fields['title'] = Utilities::getRandomText(25);
       $this->fillTitle($fields['title']);
     }
 

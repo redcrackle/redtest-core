@@ -9,36 +9,14 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Utilities;
 
 class Text extends Field {
-
-  public static function fillValues(
-    $formObject,
-    $field_name,
-    $widget,
-    $values
-  ) {
-    if ($widget == 'text_text_area_with_summary') {
-      self::fillTextAreaWithSummaryValues($formObject, $field_name, $values);
-    }
-    else {
-      self::fillTextTextarea($formObject, $field_name, $values);
-    }
-  }
-
-  public static function fillDefaultValues($formObject, $field_name, $widget, $num = 1) {
-    if ($widget == 'text_text_area_with_summary') {
-      return self::fillDefaultTextAreaWithSummaryValues($formObject, $field_name, $widget, $num);
-    }
-    else {
-      return self::fillDefaultTextTextAreaValues($formObject, $field_name, $widget, $num = 1);
-    }
-  }
 
   /**
    * Fill text area with summary widget.
    *
-   * @param object $formObject
+   * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
@@ -65,13 +43,13 @@ class Text extends Field {
    *     ),
    *   );
    * @param string $summary
-   *   Summary text. If $values doesn't specify summary explicitly, then this
-   *   parameter is used as a default.
+   *   Summary text. If $values parameter doesn't specify summary explicitly,
+   *   then this parameter is used as a default.
    * @param string $format
-   *   Text format. If $values doesn't specify text format explicitly, then
-   *   this parameter is used as a default.
+   *   Text format. If $values parameter doesn't specify text format
+   *   explicitly, then this parameter is used as a default.
    */
-  public static function fillTextAreaWithSummaryValues(
+  public static function fillTextTextAreaWithSummaryValues(
     Form $formObject,
     $field_name,
     $values
@@ -107,7 +85,11 @@ class Text extends Field {
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
   }
 
-  public static function fillTextTextarea(Form $formObject, $field_name, $values) {
+  public static function fillTextTextareaValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
     $formObject->emptyField($field_name);
 
     $defaults = array();
@@ -136,22 +118,42 @@ class Text extends Field {
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
   }
 
-  function fillDefaultTextAreaWithSummaryValues($formObject, $field_name, $widget, $num = 1) {
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      $values[] = Utilities::getRandomString(100);
+  public static function fillDefaultTextTextAreaWithSummaryValues(
+    $formObject,
+    $field_name
+  ) {
+
+    $num = 1;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
     }
 
-    self::fillValues($formObject, $field_name, $widget, $values);
+    global $user;
+    $filter_formats = array_keys(filter_formats($user));
 
-    if (sizeof($values) == 1) {
+    $values = array();
+    for ($i = 0; $i < $num; $i++) {
+      $values[$i]['value'] = Utilities::getRandomText(100);
+      $values[$i]['summary'] = Utilities::getRandomText(20);
+      $values[$i]['format'] = $filter_formats[array_rand($filter_formats)];
+    }
+
+    self::fillValues($formObject, $field_name, $values);
+
+    if (sizeof($values) == 1 && is_string($values[0])) {
       $values = $values[0];
     }
 
     return array(TRUE, $values, "");
   }
 
-  function fillDefaultTextTextAreaValues($formObject, $field_name, $widget, $num = 1) {
+  public static function fillDefaultTextTextAreaValues(
+    $formObject,
+    $field_name,
+    $widget,
+    $num = 1
+  ) {
 
   }
 } 

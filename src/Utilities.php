@@ -33,6 +33,21 @@ class Utilities {
     );
   }
 
+  public static function getRandomText($length = 100) {
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+      return $faker->text($length);
+    }
+
+    return substr(
+      str_shuffle(
+        " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      ),
+      0,
+      $length
+    );
+  }
+
   public static function getRandomDate(
     $date_format,
     $start_date = 0,
