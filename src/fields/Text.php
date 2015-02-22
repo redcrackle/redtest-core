@@ -83,6 +83,12 @@ class Text extends Field {
     }
 
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+
+    if (sizeof($input) == 1 && is_string($input[0])) {
+      $input = $input[0];
+    }
+
+    return array(TRUE, $input, "");
   }
 
   public static function fillTextTextareaValues(
@@ -116,6 +122,12 @@ class Text extends Field {
     }
 
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+
+    if (sizeof($input) == 1 && is_string($input[0])) {
+      $input = $input[0];
+    }
+
+    return array(TRUE, $input, "");
   }
 
   public static function fillDefaultTextTextAreaWithSummaryValues(
@@ -129,31 +141,39 @@ class Text extends Field {
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
     }
 
+    $values = self::generateTextAreaValues($num, TRUE);
+
+    return self::fillValues($formObject, $field_name, $values);
+  }
+
+  public static function fillDefaultTextTextAreaValues(
+    $formObject,
+    $field_name
+  ) {
+    $num = 1;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    }
+
+    $values = self::generateTextAreaValues($num, FALSE);
+
+    return self::fillValues($formObject, $field_name, $values);
+  }
+
+  private static function generateTextAreaValues($num = 1, $generate_summary = FALSE) {
     global $user;
     $filter_formats = array_keys(filter_formats($user));
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
       $values[$i]['value'] = Utilities::getRandomText(100);
-      $values[$i]['summary'] = Utilities::getRandomText(20);
       $values[$i]['format'] = $filter_formats[array_rand($filter_formats)];
+      if ($generate_summary) {
+        $values[$i]['summary'] = Utilities::getRandomText(25);
+      }
     }
 
-    self::fillValues($formObject, $field_name, $values);
-
-    if (sizeof($values) == 1 && is_string($values[0])) {
-      $values = $values[0];
-    }
-
-    return array(TRUE, $values, "");
-  }
-
-  public static function fillDefaultTextTextAreaValues(
-    $formObject,
-    $field_name,
-    $widget,
-    $num = 1
-  ) {
-
+    return $values;
   }
 } 

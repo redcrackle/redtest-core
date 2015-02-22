@@ -224,30 +224,6 @@ abstract class EntityForm extends Form {
     return array(TRUE, array(), "");
   }
 
-  public function fillDefaultTextTextareaWithSummaryValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    global $user;
-    $text_formats = array_keys(filter_formats($user));
-
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      $values[] = array(
-        'value' => Utilities::getRandomString(100),
-        'summary' => Utilities::getRandomString(20),
-        'format' => array_rand($text_formats),
-      );
-    }
-
-    $this->fillTextTextareaWithSummary($field_name, $values);
-
-    if (sizeof($values) == 1) {
-      $values = $values[0];
-    }
-
-    return array(TRUE, $values, "");
-  }
-
   public function fillDefaultImageImageValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
 
