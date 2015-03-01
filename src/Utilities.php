@@ -20,7 +20,22 @@ class Utilities {
   }
 
   public static function convertTitleCaseToUnderscore($input) {
-    return strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
+    $input = strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
+
+    // Insert _ before and after a numeric string unless it's at the start or end.
+    $output = '';
+    $is_numeric = FALSE;
+    for ($pos = 0; $pos < strlen($input); $pos++) {
+      if (is_numeric($input[$pos]) && !$is_numeric) {
+        $output .= '_';
+      }
+      elseif (!is_numeric($input[$pos]) && $is_numeric) {
+        $output .= '_';
+      }
+      $output .= $input[$pos];
+    }
+
+    return $output;
   }
 
   public static function getRandomString($length = 20) {

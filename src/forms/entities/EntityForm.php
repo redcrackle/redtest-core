@@ -10,6 +10,7 @@ namespace RedTest\core\forms\entities;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utilities;
+use RedTest\core\fields\Field;
 
 abstract class EntityForm extends Form {
 
@@ -356,72 +357,74 @@ abstract class EntityForm extends Form {
       ) == strlen($name) - 6
     ) {
       // Function name starts with "fillDefault" and ends with "Values".
-      $name = substr($name, 11, -6);
-      $field_name = Utilities::convertTitleCaseToUnderscore($name);
-      list($field, $instance, $num) = $this->getFieldDetails($field_name);
-      $is_property = FALSE;
-      if (is_null($field)) {
-        $is_property = TRUE;
-      }
-      else {
-        if (is_null($instance)) {
-          $is_property = TRUE;
-        }
-        else {
-          $field_class = "RedTest\\core\\fields\\" . Utilities::convertUnderscoreToTitleCase(
-              $instance['widget']['module']
-            );
-          $arguments = array_merge(
-            array($this, $field_name),
-            $arguments
-          );
+      $field_name = Utilities::convertTitleCaseToUnderscore(
+        substr($name, 11, -6)
+      );
 
-          return call_user_func_array(
-            array($field_class, 'fillDefaultValues'),
-            $arguments
-          );
-        }
-      }
-
-      if ($is_property) {
-        $function = "fillDefault" . Utilities::convertUnderscoreToTitleCase(
-            $field_name
-          ) . "Values";
-
-        return $this->$function();
-      }
+      return $this->fillDefaultFieldValues($field_name);
     }
     elseif (strpos($name, 'fill') === 0) {
       // Function name starts with "fill".
       $field_name = Utilities::convertTitleCaseToUnderscore(substr($name, 4));
-      list($field, $instance, $num) = $this->getFieldDetails($field_name);
-      $is_property = FALSE;
-      if (is_null($field)) {
+
+      return $this->fillFieldValues($field_name, $arguments);
+    }
+  }
+
+  public function fillFieldValues($field_name, $values) {
+    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+    $is_property = FALSE;
+    if (is_null($field)) {
+      $is_property = TRUE;
+    }
+    else {
+      if (is_null($instance)) {
         $is_property = TRUE;
       }
       else {
-        if (is_null($instance)) {
-          $is_property = TRUE;
-        }
-        else {
-          $field_class = "RedTest\\core\\fields\\" . Utilities::convertUnderscoreToTitleCase(
-              $instance['widget']['module']
-            );
-          $arguments = array_merge(
-            array($this, $field_name),
-            $arguments
-          );
+        $arguments = array_merge(
+          array($this, $field_name),
+          $values
+        );
 
-          return call_user_func_array(
-            array($field_class, 'fillValues'),
-            $arguments
-          );
-        }
+        return call_user_func_array(
+          array('Field', 'fillValues'),
+          $arguments
+        );
       }
+    }
 
-      if ($is_property) {
-        $this->fillValues(array($field_name => $arguments[0]));
+    if ($is_property) {
+      if (is_array($values)) {
+        $values = $values[0];
       }
+      $this->fillValues(array($field_name => $values));
+
+      return array(TRUE, $values, "");
+    }
+  }
+
+  public function fillDefaultFieldValues($field_name) {
+    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+    $is_property = FALSE;
+    if (is_null($field)) {
+      $is_property = TRUE;
+    }
+    else {
+      if (is_null($instance)) {
+        $is_property = TRUE;
+      }
+      else {
+        return Field::fillDefaultValues($this, $field_name);
+      }
+    }
+
+    if ($is_property) {
+      $function = "fillDefault" . Utilities::convertUnderscoreToTitleCase(
+          $field_name
+        ) . "Values";
+
+      return $this->$function();
     }
   }
 

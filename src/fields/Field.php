@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\entities\Entity;
+use RedTest\core\forms\Form;
 use RedTest\core\Utilities;
 
 class Field {
@@ -42,7 +43,6 @@ class Field {
     }
 
     return array($field, $instance, $num);
-
   }
 
 
@@ -69,36 +69,27 @@ class Field {
     }
   }
 
-  public static function fillDefaultValues($formObject, $field_name) {
-
+  public static function fillDefaultValues(Form $formObject, $field_name) {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utilities::convertUnderscoreToTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
+      $field = self::getFieldInfo($field_name);
+      $field_class = Utilities::convertUnderscoreToTitleCase($field['module']);
 
-      $field_class = get_called_class();
       return call_user_func_array(
-        array($field_class, $function),
+        array($field_class, 'fillDefaultValues'),
         array($formObject, $field_name)
       );
     }
   }
 
 
-  public static function fillValues($formObject, $field_name, $values) {
-
+  public static function fillValues(Form $formObject, $field_name, $values) {
     if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fill' . Utilities::convertUnderscoreToTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
+      $field = self::getFieldInfo($field_name);
+      $field_class = Utilities::convertUnderscoreToTitleCase($field['module']);
 
-      $field_class = get_called_class();
       return call_user_func_array(
-        array($field_class, $function),
+        array($field_class, 'fillValues'),
         array($formObject, $field_name, $values)
       );
     }

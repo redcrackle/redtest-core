@@ -91,6 +91,34 @@ class Text extends Field {
     return array(TRUE, $input, "");
   }
 
+  public static function fillDefaultValues(Form $formObject, $field_name) {
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $function = 'fillDefault' . Utilities::convertUnderscoreToTitleCase(
+          $instance['widget']['type']
+        ) . 'Values';
+
+      return self::$function($formObject, $field_name);
+    }
+  }
+
+  public static function fillFieldValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $function = 'fill' . Utilities::convertUnderscoreToTitleCase(
+          $instance['widget']['type']
+        ) . 'Values';
+
+      return self::$function($formObject, $field_name, $values);
+    }
+  }
+
   public static function fillTextTextareaValues(
     Form $formObject,
     $field_name,
@@ -161,7 +189,10 @@ class Text extends Field {
     return self::fillValues($formObject, $field_name, $values);
   }
 
-  private static function generateTextAreaValues($num = 1, $generate_summary = FALSE) {
+  private static function generateTextAreaValues(
+    $num = 1,
+    $generate_summary = FALSE
+  ) {
     global $user;
     $filter_formats = array_keys(filter_formats($user));
 
