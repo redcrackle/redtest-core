@@ -250,4 +250,21 @@ class Utils {
     self::deleteEntities('taxonomy_term', 19066);
     self::deleteEntities('user', 10);
   }
+
+  /**
+   * Returns the first value of the input array if there is only item in the array. If there are more items in the array, then return the full array.
+   *
+   * @param array $input
+   *   An array of values.
+   *
+   * @return mixed
+   *   First value of the input array or the full input array.
+   */
+  public static function normalize($input) {
+    if (sizeof($input) == 1) {
+      return array_shift($input);
+    }
+
+    return $input;
+  }
 }

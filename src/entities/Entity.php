@@ -1421,12 +1421,28 @@ abstract class Entity {
     return field_get_items($this->entity_type, $this->entity, $field_name);
   }
 
+  /**
+   * Create new entities with default field values.
+   *
+   * @param int $num
+   *   Number of entities to create.
+   * @param array $skip
+   *   An array of fields that need to be skipped while creating the entities.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether entity creation succeeded.
+   *   (2) $entities: An array of created entities. If there is only one entity
+   *   to be created, then it returns the entity itself and not the array.
+   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   */
   public static function createDefault($num = 1, $skip = array()) {
     global $entities;
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
 
+      // Get the form class based on the entity that needs to be created.
       $entity_type = self::getEntityType();
       $original_class = get_called_class();
       $class = new \ReflectionClass($original_class);
@@ -1434,12 +1450,16 @@ abstract class Entity {
           $entity_type
         ) . "\\" . $class->getShortName() . 'Form';
 
+      // Instantiate the form class.
       $classForm = new $formClass();
+
+      // Fill default values in the form.
       list($success, $fields, $msg) = $classForm->fillDefaultValues($skip);
       if (!$success) {
         return array(FALSE, $output, $msg);
       }
 
+      // Submit the form to create the entity.
       $success = $classForm->submit();
       if (!$success) {
         return array(
@@ -1449,17 +1469,15 @@ abstract class Entity {
         );
       }
 
+      // Store the created entity in the output array.
       $object = $classForm->getEntityObject();
       $output[] = $object;
 
+      // Store the created entity in $entities so that it can later be deleted.
       $entities[$entity_type][$object->getId()] = $object;
     }
 
-    if (sizeof($output) == 1) {
-      return array(TRUE, $output[0], "");
-    }
-
-    return array(TRUE, $output, "");
+    return array(TRUE, Utils::normalize($output), "");
   }
 
   public function checkMarkup(
@@ -1471,20 +1489,23 @@ abstract class Entity {
     $instances = $this->getFieldInstances();
 
     $checked_fields = array();
+    // Iterate over each field and check markup for those who are also present
+    // in $values array.
     foreach ($instances as $field_name => $instance) {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
-          $function = "check" . Utils::makeTitleCase(
-              $field_name
-            ) . "Markup";
+          $function = "check" . Utils::makeTitleCase($field_name) . "Markup";
           $this->$function($testClass, $values[$field_name], $view_mode);
         }
+        // Field has been checked so add it to $checked_fields array.
         $checked_fields[] = $field_name;
       }
     }
 
+    // Create an array of fields that have not been checked yet.
     $unchecked_fields = array_diff(array_keys($values), $checked_fields);
     $unchecked_fields = array_diff($unchecked_fields, $skip);
+
     // Unchecked fields could be properties.
     foreach ($unchecked_fields as $field_name) {
       $testClass->assertObjectHasAttribute(
@@ -1492,9 +1513,7 @@ abstract class Entity {
         $this->entity,
         "Field " . $field_name . " not found."
       );
-      $function = "get" . Utils::makeTitleCase(
-          $field_name
-        );
+      $function = "get" . Utils::makeTitleCase($field_name);
       $testClass->assertEquals(
         $values[$field_name],
         $this->$function(),
@@ -1517,18 +1536,23 @@ abstract class Entity {
     $instances = $this->getFieldInstances();
 
     $checked_fields = array();
+    // Iterate over each field and check values for those who are also present
+    // in $values array.
     foreach ($instances as $field_name => $instance) {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
           $function = "check" . Utils::makeTitleCase($field_name) . "Values";
           $this->$function($testClass, $values[$field_name]);
         }
+        // Field has been checked so add it to $checked_fields array.
         $checked_fields[] = $field_name;
       }
     }
 
+    // Create an array of fields that have not been checked yet.
     $unchecked_fields = array_diff(array_keys($values), $checked_fields);
     $unchecked_fields = array_diff($unchecked_fields, $skip);
+
     // Unchecked fields could be properties.
     foreach ($unchecked_fields as $field_name) {
       $testClass->assertObjectHasAttribute(
@@ -1609,28 +1633,16 @@ abstract class Entity {
   ) {
     foreach ($this->getFieldInstances() as $field_name => $instance) {
       if (!in_array($field_name, $viewSkip)) {
+        $function = "has" . Utils::makeTitleCase($field_name) . "ViewAccess";
         $testClass->assertTrue(
-          call_user_func(
-            array(
-              $this,
-              "has" . Utils::makeTitleCase(
-                $field_name
-              ) . "ViewAccess"
-            )
-          ),
+          call_user_func(array($this, $function)),
           "User does not have view access to " . $field_name
         );
       }
       if (!in_array($field_name, $editSkip)) {
+        $function = "has" . Utils::makeTitleCase($field_name) . "UpdateAccess";
         $testClass->assertTrue(
-          call_user_func(
-            array(
-              $this,
-              "has" . Utils::makeTitleCase(
-                $field_name
-              ) . "UpdateAccess"
-            )
-          ),
+          call_user_func(array($this, $function)),
           "User does not have edit access to " . $field_name
         );
       }
