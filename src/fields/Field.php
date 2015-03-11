@@ -10,14 +10,36 @@ namespace RedTest\core\fields;
 
 use RedTest\core\entities\Entity;
 use RedTest\core\forms\Form;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 class Field {
 
+  /**
+   * Returns information about a field.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array|null
+   *   An array of field information if the field exists. NULL if the field
+   *   does not exist.
+   */
   public static function getFieldInfo($field_name) {
     return field_info_field($field_name);
   }
 
+  /**
+   * Returns information about field instance.
+   *
+   * @param Entity $entityObject
+   *   Entity for which the field instance is to be returned.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array|null
+   *   An array of field instance information if the instance exists. NULL if
+   *   the field instance does not exist.
+   */
   public static function getFieldInstance(Entity $entityObject, $field_name) {
     list(, , $bundle) = entity_extract_ids(
       $entityObject->getEntityType(),
@@ -32,7 +54,24 @@ class Field {
     return $instance;
   }
 
-  public static function getFieldDetails($entityObject, $field_name) {
+  /**
+   * Returns information about the field, field instance and the number of
+   * values.
+   *
+   * @param Entity $entityObject
+   *   Entity for which the information is to be returned.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array of 3 values:
+   *   (1) $field: An array of field information if the field exists. NULL if
+   *   the field does not exist.
+   *   (2) $instance: An array of field instance information if the instance
+   *   exists. NULL if the field instance does not exist.
+   *   (3) $num: Number of values in the field.
+   */
+  public static function getFieldDetails(Entity $entityObject, $field_name) {
     $instance = NULL;
     $num = 0;
     $field = self::getFieldInfo($field_name);
@@ -47,13 +86,22 @@ class Field {
 
 
   /**
-   * @param $cardinality
+   * Returns the number of values to create based on field's cardinality. If
+   * cardinality is unlimited, then return 2 or 3 randomly. If cardinality is 1,
+   * then return 1. If cardinality is any other value, then return a random
+   * number between 2 and the maximum number allowed.
+   *
+   * @param int $cardinality
+   *   Field's cardinality.
    *
    * @return int
+   *   Number of field values to create.
+   *
    */
   private function getNumberOfItemsFromCardinality($cardinality) {
     if ($cardinality == -1) {
-      $num = Utilities::getRandomInt(2, 3);
+      // -1 denotes that cardinality is unlimited.
+      $num = Utils::getRandomInt(2, 3);
 
       return $num;
     }
@@ -63,17 +111,35 @@ class Field {
       return $num;
     }
     else {
-      $num = Utilities::getRandomInt(2, $cardinality);
+      $num = Utils::getRandomInt(2, $cardinality);
 
       return $num;
     }
   }
 
+  /**
+   * Fills in default values in the specified field. Internally it calls the
+   * class of the individual field type to fill the default values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
   public static function fillDefaultValues(Form $formObject, $field_name) {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       $field = self::getFieldInfo($field_name);
-      $field_class = Utilities::convertUnderscoreToTitleCase($field['module']);
+      $field_class = "RedTest\\core\\Fields\\" . Utils::makeTitleCase(
+          $field['module']
+        );
 
       return call_user_func_array(
         array($field_class, 'fillDefaultValues'),
@@ -83,10 +149,29 @@ class Field {
   }
 
 
+  /**
+   * Fills values in the specified field. Internally it calls the class of the
+   * individual field type to fill the values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param string|array $values
+   *   Values to be filled.
+   *
+   * @return mixed
+   *   An array with 2 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
   public static function fillValues(Form $formObject, $field_name, $values) {
     if (method_exists($formObject, 'getEntityObject')) {
       $field = self::getFieldInfo($field_name);
-      $field_class = Utilities::convertUnderscoreToTitleCase($field['module']);
+      $field_class = "RedTest\\core\\Fields\\" . Utils::makeTitleCase(
+          $field['module']
+        );
 
       return call_user_func_array(
         array($field_class, 'fillValues'),

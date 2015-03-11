@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\Utils as Utilities;
 
 class TaxonomyTerm extends Entity {
 
@@ -20,7 +20,7 @@ class TaxonomyTerm extends Entity {
    */
   protected function __construct($tid = NULL) {
     $class = new \ReflectionClass(get_called_class());
-    $vocabulary_name = Utilities::convertTitleCaseToUnderscore($class->getShortName());
+    $vocabulary_name = Utils::makeSnakeCase($class->getShortName());
 
     if (!is_null($tid) && is_numeric($tid)) {
       $term = taxonomy_term_load($tid);

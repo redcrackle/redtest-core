@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utilities as Utilities;
+use RedTest\core\Utils as Utilities;
 
 class Node extends Entity {
 
@@ -24,7 +24,7 @@ class Node extends Entity {
   protected function __construct($nid = NULL) {
     $class = new \ReflectionClass(get_called_class());
 
-    $type = Utilities::convertTitleCaseToUnderscore($class->getShortName());
+    $type = Utils::makeSnakeCase($class->getShortName());
     if (!is_null($nid) && is_numeric($nid)) {
       $node = node_load($nid);
       if ($node->type == $type) {

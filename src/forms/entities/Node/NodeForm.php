@@ -9,7 +9,7 @@
 namespace RedTest\core\forms\entities\Node;
 
 use RedTest\core\forms\entities\EntityForm;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 class NodeForm extends EntityForm {
 
@@ -26,11 +26,11 @@ class NodeForm extends EntityForm {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
-    $class_fullname = "RedTest\\entities\\Node\\" . Utilities::convertUnderscoreToTitleCase(
+    $class_fullname = "RedTest\\entities\\Node\\" . Utils::makeTitleCase(
         substr($class_shortname, 0, -4)
       );
 
-    $type = Utilities::convertTitleCaseToUnderscore(
+    $type = Utils::makeSnakeCase(
       substr($class_shortname, 0, -4)
     );
     $nodeObject = new $class_fullname($nid);
@@ -76,7 +76,7 @@ class NodeForm extends EntityForm {
       $form_state = $this->getFormState();
       $node = $form_state['node'];
       $type = $node->type;
-      $classname = Utilities::convertUnderscoreToTitleCase($type);
+      $classname = Utils::makeTitleCase($type);
       $class_fullname = "RedTest\\entities\\Node\\" . $classname;
       $nodeObject = new $class_fullname($node->nid);
       $this->setEntityObject($nodeObject);
@@ -98,14 +98,14 @@ class NodeForm extends EntityForm {
    *
    * @return array|void
    */
-  public function fillDefaultValues($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
+  public function fillDefaultValuesExcept($skip = array()) {
+    list($success, $fields, $msg) = parent::fillDefaultValuesExcept($skip);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
     if (!in_array('title', $skip)) {
-      $fields['title'] = Utilities::getRandomText(25);
+      $fields['title'] = Utils::getRandomText(25);
       $this->fillTitle($fields['title']);
     }
 

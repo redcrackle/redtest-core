@@ -9,7 +9,7 @@
 namespace RedTest\core\entities;
 
 use RedTest\core\forms\entities\User as UserForms;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 
 class User extends Entity {
@@ -155,9 +155,9 @@ class User extends Entity {
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
-      $username = Utilities::getRandomString(5);
-      $email = $username . '@' . Utilities::getRandomString(5) . '.com';
-      $password = Utilities::getRandomString();
+      $username = Utils::getRandomString(5);
+      $email = $username . '@' . Utils::getRandomString(5) . '.com';
+      $password = Utils::getRandomString();
       $object = User::registerUser($username, $email, $password);
       if ($object) {
         $output[] = $object;

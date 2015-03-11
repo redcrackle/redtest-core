@@ -8,7 +8,8 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utilities;
+use RedTest\core\fields\Field;
+use RedTest\core\Utils;
 use RedTest\core\forms;
 
 /**
@@ -84,7 +85,7 @@ abstract class Entity {
       $classnames = array_values($classes);
       $classname = $classnames[sizeof($classes) - 2];
       $class = new \ReflectionClass($classname);
-      $entity_type = Utilities::convertTitleCaseToUnderscore(
+      $entity_type = Utils::makeSnakeCase(
         $class->getShortName()
       );
 
@@ -94,7 +95,7 @@ abstract class Entity {
       // If an entity such as User is calling the class directly, then entity type will be User itself.
       $classname = get_called_class();
       $class = new \ReflectionClass($classname);
-      $entity_type = Utilities::convertTitleCaseToUnderscore(
+      $entity_type = Utils::makeSnakeCase(
         $class->getShortName()
       );
 
@@ -612,7 +613,7 @@ abstract class Entity {
       }
 
       // Get the field instance value here.
-      $function = 'view' . Utilities::convertUnderscoreToTitleCase(
+      $function = 'view' . Utils::makeTitleCase(
           $instance['widget']['type']
         );
 
@@ -630,7 +631,7 @@ abstract class Entity {
         // Check if a function exists for getting value from this particular
         // field type.
         $field = $this->getFieldInfo($field_name);
-        $function = 'view' . Utilities::convertUnderscoreToTitleCase(
+        $function = 'view' . Utils::makeTitleCase(
             $field['type']
           );
         if (method_exists($this, $function)) {
@@ -705,13 +706,13 @@ abstract class Entity {
       $field_name = '';
       if (strrpos($name, 'View') == strlen($name) - 4) {
         $op = 'view';
-        $field_name = Utilities::convertTitleCaseToUnderscore(
+        $field_name = Utils::makeSnakeCase(
           substr($name, 0, -4)
         );
       }
       elseif (strrpos($name, 'Update') == strlen($name) - 6) {
         $op = 'edit';
-        $field_name = Utilities::convertTitleCaseToUnderscore(
+        $field_name = Utils::makeSnakeCase(
           substr($name, 0, -6)
         );
       }
@@ -721,10 +722,11 @@ abstract class Entity {
       }
     }
     elseif (strpos($name, 'get') === 0) {
-      // Function name starts with "get".
+      // Function name starts with "get". This means that we need to return
+      // value of a field.
       array_unshift(
         $arguments,
-        Utilities::convertTitleCaseToUnderscore(substr($name, 3))
+        Utils::makeSnakeCase(substr($name, 3))
       );
 
       return call_user_func_array(array($this, 'getFieldValue'), $arguments);
@@ -733,7 +735,7 @@ abstract class Entity {
       // Function name starts with "view".
       array_unshift(
         $arguments,
-        Utilities::convertTitleCaseToUnderscore(substr($name, 4))
+        Utils::makeSnakeCase(substr($name, 4))
       );
 
       return call_user_func_array(array($this, 'viewField'), $arguments);
@@ -743,7 +745,7 @@ abstract class Entity {
       ) - 5
     ) {
       // Function name starts with "check" and ends with "Values".
-      $field_name = Utilities::convertTitleCaseToUnderscore(
+      $field_name = Utils::makeSnakeCase(
         substr($name, 5, -5)
       );
       array_unshift($arguments, $field_name);
@@ -754,7 +756,7 @@ abstract class Entity {
       ) - 5
     ) {
       // Function name starts with "check" and ends with "Values".
-      $field_name = Utilities::convertTitleCaseToUnderscore(
+      $field_name = Utils::makeSnakeCase(
         substr($name, 5, -5)
       );
       array_unshift($arguments, $field_name);
@@ -763,7 +765,7 @@ abstract class Entity {
   }
 
   public function checkDatetimeItems($field_name, $testClass, $values) {
-    $function = "get" . Utilities::convertUnderscoreToTitleCase($field_name);
+    $function = "get" . Utils::makeTitleCase($field_name);
     /*$testClass->assertEquals(
       $values,
       $this->$function(),
@@ -777,11 +779,11 @@ abstract class Entity {
     $values,
     $view_mode = 'default'
   ) {
-    $function = 'view' . Utilities::convertUnderscoreToTitleCase($field_name);
+    $function = 'view' . Utils::makeTitleCase($field_name);
   }
 
   public function checkFileItems($field_name, $testClass, $values) {
-    $function = "get" . Utilities::convertUnderscoreToTitleCase($field_name);
+    $function = "get" . Utils::makeTitleCase($field_name);
   }
 
   public function checkFileViews(
@@ -793,7 +795,7 @@ abstract class Entity {
     $files = call_user_func(
       array(
         $this,
-        "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+        "view" . Utils::makeTitleCase($field_name)
       ),
       $view_mode
     );
@@ -812,7 +814,7 @@ abstract class Entity {
     $view_mode = 'default'
   ) {
     if ($instance = $this->getFieldInstance($field_name)) {
-      $function = 'check' . Utilities::convertUnderscoreToTitleCase(
+      $function = 'check' . Utils::makeTitleCase(
           $instance['widget']['type']
         ) . 'Views';
       if (method_exists($this, $function)) {
@@ -820,7 +822,7 @@ abstract class Entity {
       }
       else {
         $field = $this->getFieldInfo($field_name);
-        $function = "check" . Utilities::convertUnderscoreToTitleCase(
+        $function = "check" . Utils::makeTitleCase(
             $field['type']
           ) . "Views";
         if (method_exists($this, $function)) {
@@ -832,7 +834,7 @@ abstract class Entity {
             call_user_func(
               array(
                 $this,
-                "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+                "view" . Utils::makeTitleCase($field_name)
               ),
               $view_mode
             ),
@@ -860,7 +862,7 @@ abstract class Entity {
 
   public function checkFieldItems($field_name, $testClass, $values) {
     if ($instance = $this->getFieldInstance($field_name)) {
-      $function = 'check' . Utilities::convertUnderscoreToTitleCase(
+      $function = 'check' . Utils::makeTitleCase(
           $instance['widget']['type']
         ) . 'Items';
       if (method_exists($this, $function)) {
@@ -868,7 +870,7 @@ abstract class Entity {
       }
       else {
         $field = $this->getFieldInfo($field_name);
-        $function = "check" . Utilities::convertUnderscoreToTitleCase(
+        $function = "check" . Utils::makeTitleCase(
             $field['type']
           ) . "Items";
         if (method_exists($this, $function)) {
@@ -880,7 +882,7 @@ abstract class Entity {
             call_user_func(
               array(
                 $this,
-                "get" . Utilities::convertUnderscoreToTitleCase($field_name)
+                "get" . Utils::makeTitleCase($field_name)
               ),
               $testClass,
               $values
@@ -1060,11 +1062,11 @@ abstract class Entity {
     $values
   ) {
     $testClass->assertEquals(
-      Utilities::getId($values),
+      Utils::getId($values),
       call_user_func(
         array(
           $this,
-          "get" . Utilities::convertUnderscoreToTitleCase($field_name)
+          "get" . Utils::makeTitleCase($field_name)
         )
       ),
       "Values of " . $field_name . " do not match."
@@ -1092,7 +1094,7 @@ abstract class Entity {
         call_user_func(
           array(
             $this,
-            "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+            "view" . Utils::makeTitleCase($field_name)
           ),
           $view_mode
         ),
@@ -1101,11 +1103,11 @@ abstract class Entity {
     }
     elseif (is_object($values)) {
       $testClass->assertEquals(
-        Utilities::getLabel($values),
+        Utils::getLabel($values),
         call_user_func(
           array(
             $this,
-            "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+            "view" . Utils::makeTitleCase($field_name)
           ),
           $view_mode
         ),
@@ -1118,7 +1120,7 @@ abstract class Entity {
         call_user_func(
           array(
             $this,
-            "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+            "view" . Utils::makeTitleCase($field_name)
           ),
           $view_mode
         ),
@@ -1133,7 +1135,7 @@ abstract class Entity {
     $values
   ) {
     $term_labels = call_user_func(
-      array($this, "get" . Utilities::convertUnderscoreToTitleCase($field_name))
+      array($this, "get" . Utils::makeTitleCase($field_name))
     );
 
     $testClass->assertEquals(
@@ -1152,7 +1154,7 @@ abstract class Entity {
     $term_labels = call_user_func(
       array(
         $this,
-        "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+        "view" . Utils::makeTitleCase($field_name)
       ),
       $view_mode
     );
@@ -1170,7 +1172,7 @@ abstract class Entity {
     $values
   ) {
     $current_tids = call_user_func(
-      array($this, "get" . Utilities::convertUnderscoreToTitleCase($field_name))
+      array($this, "get" . Utils::makeTitleCase($field_name))
     );
 
     if (!is_array($current_tids)) {
@@ -1254,7 +1256,7 @@ abstract class Entity {
     $current_markup = call_user_func(
       array(
         $this,
-        "view" . Utilities::convertUnderscoreToTitleCase($field_name)
+        "view" . Utils::makeTitleCase($field_name)
       ),
       $view_mode
     );
@@ -1357,30 +1359,7 @@ abstract class Entity {
         return $this->getFieldItems($field_name);
       }
 
-      // Get the field instance value here.
-      $function = 'get' . Utilities::convertUnderscoreToTitleCase(
-          $instance['widget']['type']
-        );
-
-      // Check if a function exists for getting value from this particular field
-      // instance.
-      if (method_exists($this, $function)) {
-        return $this->$function($field_name);
-      }
-      else {
-        // Check if a function exists for getting value from this particular
-        // field type.
-        $field = $this->getFieldInfo($field_name);
-        $function = 'get' . Utilities::convertUnderscoreToTitleCase(
-            $field['type']
-          );
-        if (method_exists($this, $function)) {
-          return $this->$function($field_name);
-        }
-      }
-
-      // Field instance exists but no function is defined to get value from it.
-      return NULL;
+      return Field::getValue($field_name, $this);
     }
 
     // There is no such field instance for the given entity. Check if it's a
@@ -1451,7 +1430,7 @@ abstract class Entity {
       $entity_type = self::getEntityType();
       $original_class = get_called_class();
       $class = new \ReflectionClass($original_class);
-      $formClass = "RedTest\\forms\\entities\\" . Utilities::convertUnderscoreToTitleCase(
+      $formClass = "RedTest\\forms\\entities\\" . Utils::makeTitleCase(
           $entity_type
         ) . "\\" . $class->getShortName() . 'Form';
 
@@ -1483,7 +1462,7 @@ abstract class Entity {
     return array(TRUE, $output, "");
   }
 
-  public function checkViews(
+  public function checkMarkup(
     $testClass,
     $values,
     $skip = array(),
@@ -1495,9 +1474,9 @@ abstract class Entity {
     foreach ($instances as $field_name => $instance) {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
-          $function = "check" . Utilities::convertUnderscoreToTitleCase(
+          $function = "check" . Utils::makeTitleCase(
               $field_name
-            ) . "Views";
+            ) . "Markup";
           $this->$function($testClass, $values[$field_name], $view_mode);
         }
         $checked_fields[] = $field_name;
@@ -1513,7 +1492,7 @@ abstract class Entity {
         $this->entity,
         "Field " . $field_name . " not found."
       );
-      $function = "get" . Utilities::convertUnderscoreToTitleCase(
+      $function = "get" . Utils::makeTitleCase(
           $field_name
         );
       $testClass->assertEquals(
@@ -1527,20 +1506,21 @@ abstract class Entity {
     $this->assertCount(
       0,
       sizeof($unchecked_fields),
-      "At least one property or field could not be found."
+      "Following fields or properties could not be found: " . print_r(
+        $unchecked_fields,
+        TRUE
+      )
     );
   }
 
-  public function checkItems($testClass, $values, $skip = array()) {
+  public function checkValues($testClass, $values, $skip = array()) {
     $instances = $this->getFieldInstances();
 
     $checked_fields = array();
     foreach ($instances as $field_name => $instance) {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
-          $function = "check" . Utilities::convertUnderscoreToTitleCase(
-              $field_name
-            ) . "Items";
+          $function = "check" . Utils::makeTitleCase($field_name) . "Values";
           $this->$function($testClass, $values[$field_name]);
         }
         $checked_fields[] = $field_name;
@@ -1556,9 +1536,7 @@ abstract class Entity {
         $this->entity,
         "Field " . $field_name . " not found."
       );
-      $function = "get" . Utilities::convertUnderscoreToTitleCase(
-          $field_name
-        );
+      $function = "get" . Utils::makeTitleCase($field_name);
       $testClass->assertEquals(
         $values[$field_name],
         $this->$function(),
@@ -1570,7 +1548,10 @@ abstract class Entity {
     $this->assertCount(
       0,
       sizeof($unchecked_fields),
-      "At least one property or field could not be found."
+      "Following fields or properties could not be found: " . print_r(
+        $unchecked_fields,
+        TRUE
+      )
     );
   }
 
@@ -1632,7 +1613,7 @@ abstract class Entity {
           call_user_func(
             array(
               $this,
-              "has" . Utilities::convertUnderscoreToTitleCase(
+              "has" . Utils::makeTitleCase(
                 $field_name
               ) . "ViewAccess"
             )
@@ -1645,7 +1626,7 @@ abstract class Entity {
           call_user_func(
             array(
               $this,
-              "has" . Utilities::convertUnderscoreToTitleCase(
+              "has" . Utils::makeTitleCase(
                 $field_name
               ) . "UpdateAccess"
             )

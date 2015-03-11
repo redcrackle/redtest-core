@@ -9,7 +9,7 @@
 namespace RedTest\core\forms\entities;
 
 use RedTest\core\forms\Form;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 use RedTest\core\fields\Field;
 
 abstract class EntityForm extends Form {
@@ -41,7 +41,7 @@ abstract class EntityForm extends Form {
       return array(FALSE, $termObjects, $msg);
     }
 
-    $this->fillTaxonomyShs($field_name, Utilities::getId($termObjects));
+    $this->fillTaxonomyShs($field_name, Utils::getId($termObjects));
 
     return array(TRUE, $termObjects, "");
   }
@@ -76,7 +76,7 @@ abstract class EntityForm extends Form {
 
     $files = array();
     for ($i = 0; $i < $num; $i++) {
-      $files[] = $filenames[Utilities::getRandomInt(0, sizeof($filenames) - 1)];
+      $files[] = $filenames[Utils::getRandomInt(0, sizeof($filenames) - 1)];
     }
     $values = $this->fillFileGeneric(
       $field_name,
@@ -101,7 +101,7 @@ abstract class EntityForm extends Form {
         return array(FALSE, $termObjects, $msg);
       }
 
-      $this->fillOptionsSelect($field_name, Utilities::getId($termObjects));
+      $this->fillOptionsSelect($field_name, Utils::getId($termObjects));
 
       return array(TRUE, $termObjects, "");
     }
@@ -112,7 +112,7 @@ abstract class EntityForm extends Form {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      $values[] = Utilities::getRandomInt(-255, 255);
+      $values[] = Utils::getRandomInt(-255, 255);
     }
 
     $this->fillNumber($field_name, $values);
@@ -137,7 +137,7 @@ abstract class EntityForm extends Form {
     // @todo Generate default date based on parameters.
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      $values[] = Utilities::getRandomDate(
+      $values[] = Utils::getRandomDate(
         $date_format,
         "1/1/2000"
       );
@@ -156,7 +156,7 @@ abstract class EntityForm extends Form {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
 
     // @todo We don't know yet what to do with multivalued boolean values.
-    $value = Utilities::getRandomInt(0, 1);
+    $value = Utils::getRandomInt(0, 1);
     $this->fillOptionsOnoff($field_name, $value);
 
     return array(TRUE, $value, "");
@@ -171,8 +171,8 @@ abstract class EntityForm extends Form {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      if (Utilities::getRandomInt(0, 1)) {
-        $values[] = Utilities::getRandomString();
+      if (Utils::getRandomInt(0, 1)) {
+        $values[] = Utils::getRandomString();
       }
       else {
         list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
@@ -291,7 +291,7 @@ abstract class EntityForm extends Form {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      $values[] = Utilities::getRandomString(100);
+      $values[] = Utils::getRandomString(100);
     }
 
     $this->fillTextTextarea($field_name, $values);
@@ -308,9 +308,8 @@ abstract class EntityForm extends Form {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      $values[] = Utilities::getRandomString(
-        Utilities::getRandomInt(1, $field['settings']['max_length'])
-      );
+      $length = Utils::getRandomInt(1, $field['settings']['max_length']);
+      $values[] = Utils::getRandomString($length);
     }
 
     $this->fillTextTextfield($field_name, $values);
@@ -331,8 +330,8 @@ abstract class EntityForm extends Form {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      if (Utilities::getRandomInt(0, 1)) {
-        $values[] = Utilities::getRandomString();
+      if (Utils::getRandomInt(0, 1)) {
+        $values[] = Utils::getRandomString();
       }
       else {
         list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
@@ -357,7 +356,7 @@ abstract class EntityForm extends Form {
       ) == strlen($name) - 6
     ) {
       // Function name starts with "fillDefault" and ends with "Values".
-      $field_name = Utilities::convertTitleCaseToUnderscore(
+      $field_name = Utils::makeSnakeCase(
         substr($name, 11, -6)
       );
 
@@ -365,7 +364,7 @@ abstract class EntityForm extends Form {
     }
     elseif (strpos($name, 'fill') === 0) {
       // Function name starts with "fill".
-      $field_name = Utilities::convertTitleCaseToUnderscore(substr($name, 4));
+      $field_name = Utils::makeSnakeCase(substr($name, 4));
 
       return $this->fillFieldValues($field_name, $arguments);
     }
@@ -382,15 +381,7 @@ abstract class EntityForm extends Form {
         $is_property = TRUE;
       }
       else {
-        $arguments = array_merge(
-          array($this, $field_name),
-          $values
-        );
-
-        return call_user_func_array(
-          array('Field', 'fillValues'),
-          $arguments
-        );
+        return Field::fillValues($this, $field_name, $values);
       }
     }
 
@@ -420,7 +411,7 @@ abstract class EntityForm extends Form {
     }
 
     if ($is_property) {
-      $function = "fillDefault" . Utilities::convertUnderscoreToTitleCase(
+      $function = "fillDefault" . Utils::makeTitleCase(
           $field_name
         ) . "Values";
 
@@ -428,7 +419,7 @@ abstract class EntityForm extends Form {
     }
   }
 
-  public function fillDefaultValues($skip = array()) {
+  public function fillDefaultValuesExcept($skip = array()) {
     // First get all field instances.
     $field_instances = $this->entityObject->getFieldInstances();
 
@@ -436,7 +427,7 @@ abstract class EntityForm extends Form {
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
       if (!in_array($field_name, $skip)) {
-        $function = "fillDefault" . Utilities::convertUnderscoreToTitleCase(
+        $function = "fillDefault" . Utils::makeTitleCase(
             $field_name
           ) . "Values";
         list($success, $values, $msg) = $this->$function();
@@ -457,7 +448,7 @@ abstract class EntityForm extends Form {
    */
   private function getNumberOfItemsFromCardinality($cardinality) {
     if ($cardinality == -1) {
-      $num = Utilities::getRandomInt(2, 5);
+      $num = Utils::getRandomInt(2, 5);
 
       return $num;
     }
@@ -467,7 +458,7 @@ abstract class EntityForm extends Form {
       return $num;
     }
     else {
-      $num = Utilities::getRandomInt(2, $cardinality);
+      $num = Utils::getRandomInt(2, $cardinality);
 
       return $num;
     }
@@ -479,7 +470,7 @@ abstract class EntityForm extends Form {
    * @return mixed|string
    */
   private function getVocabularyClassNameFromVocabularyName($vocabulary) {
-    $vocabularyClassName = Utilities::convertUnderscoreToTitleCase(
+    $vocabularyClassName = Utils::makeTitleCase(
       str_replace(" ", "_", $vocabulary)
     );
     $base_path = "tests\\phpunit_tests\\custom\\entities\\taxonomy_term\\";

@@ -9,7 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 class Text extends Field {
 
@@ -95,7 +95,7 @@ class Text extends Field {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utilities::convertUnderscoreToTitleCase(
+      $function = 'fillDefault' . Utils::makeTitleCase(
           $instance['widget']['type']
         ) . 'Values';
 
@@ -103,7 +103,7 @@ class Text extends Field {
     }
   }
 
-  public static function fillFieldValues(
+  public static function fillValues(
     Form $formObject,
     $field_name,
     $values
@@ -111,7 +111,7 @@ class Text extends Field {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fill' . Utilities::convertUnderscoreToTitleCase(
+      $function = 'fill' . Utils::makeTitleCase(
           $instance['widget']['type']
         ) . 'Values';
 
@@ -198,10 +198,10 @@ class Text extends Field {
 
     $values = array();
     for ($i = 0; $i < $num; $i++) {
-      $values[$i]['value'] = Utilities::getRandomText(100);
+      $values[$i]['value'] = Utils::getRandomText(100);
       $values[$i]['format'] = $filter_formats[array_rand($filter_formats)];
       if ($generate_summary) {
-        $values[$i]['summary'] = Utilities::getRandomText(25);
+        $values[$i]['summary'] = Utils::getRandomText(25);
       }
     }
 

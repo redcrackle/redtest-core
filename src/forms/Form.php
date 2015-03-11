@@ -8,7 +8,7 @@
 
 namespace RedTest\core\forms;
 
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 class Form {
 
@@ -1151,7 +1151,7 @@ class Form {
   public function __call($name, $arguments) {
     if (strpos($name, 'fill') === 0) {
       // Function name starts with "get".
-      $field_name = Utilities::convertTitleCaseToUnderscore(substr($name, 3));
+      $field_name = Utils::makeSnakeCase(substr($name, 3));
       $field = field_info_field($field_name);
       if (is_null($field)) {
         return;

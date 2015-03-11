@@ -9,7 +9,7 @@
 namespace RedTest\core\forms\entities\TaxonomyTerm;
 
 use RedTest\core\forms\entities\EntityForm;
-use RedTest\core\Utilities;
+use RedTest\core\Utils;
 
 class TaxonomyFormTerm extends EntityForm {
 
@@ -19,7 +19,7 @@ class TaxonomyFormTerm extends EntityForm {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
-    $vocabulary_name = Utilities::convertTitleCaseToUnderscore(
+    $vocabulary_name = Utils::makeSnakeCase(
       substr($class_shortname, 0, -4)
     );
 
@@ -71,14 +71,14 @@ class TaxonomyFormTerm extends EntityForm {
    *   executed without any error), an array of fields which were modified and
    *   an empty message.
    */
-  public function fillDefaultValues($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
+  public function fillDefaultValuesExcept($skip = array()) {
+    list($success, $fields, $msg) = parent::fillDefaultValuesExcept($skip);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
     if (!in_array('name', $skip)) {
-      $name = Utilities::getRandomString();
+      $name = Utils::getRandomString();
       $this->fillName($name);
       $fields['name'] = $name;
     }
