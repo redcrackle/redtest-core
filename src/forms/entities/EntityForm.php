@@ -349,50 +349,61 @@ abstract class EntityForm extends Form {
     return array(TRUE, $values, "");
   }
 
+  /**
+   * __call Magic method. If function name matches the pattern
+   * fillDefault*Values, then fillDefaultFieldValues() function is called with
+   * the appropriate field name. If function name matches "fill*", then
+   * fillFieldValues() function is called with appropriate field name and
+   * arguments.
+   *
+   * @param string $name
+   *   Function name.
+   * @param $arguments
+   *   Arguments passed to the function.
+   *
+   * @return array|mixed
+   *   Values returned by the matching function.
+   */
   public function __call($name, $arguments) {
-    if (strpos($name, 'fillDefault') === 0 && strrpos(
-        $name,
-        'Values'
-      ) == strlen($name) - 6
-    ) {
-      // Function name starts with "fillDefault" and ends with "Values".
-      $field_name = Utils::makeSnakeCase(
-        substr($name, 11, -6)
-      );
+    if ($this->isFillDefaultFieldValuesFunction($name)) {
+      $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
 
       return $this->fillDefaultFieldValues($field_name);
     }
-    elseif (strpos($name, 'fill') === 0) {
-      // Function name starts with "fill".
+    elseif ($this->isFillFieldValuesFunction($name)) {
       $field_name = Utils::makeSnakeCase(substr($name, 4));
 
       return $this->fillFieldValues($field_name, $arguments);
     }
   }
 
+  /**
+   * Fill specified field with the provided values.
+   *
+   * @param string $field_name
+   *   Field name.
+   * @param string|int|array $values
+   *   Value that needs to be filled.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether the field could be filled with provided values.
+   *   (2) $values: Values that were filled.
+   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   */
   public function fillFieldValues($field_name, $values) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
-    $is_property = FALSE;
-    if (is_null($field)) {
-      $is_property = TRUE;
-    }
-    else {
-      if (is_null($instance)) {
-        $is_property = TRUE;
-      }
-      else {
-        return Field::fillValues($this, $field_name, $values);
-      }
+    if (!is_null($field) && !is_null($instance)) {
+      return Field::fillValues($this, $field_name, $values);
     }
 
-    if ($is_property) {
-      if (is_array($values)) {
-        $values = $values[0];
-      }
-      $this->fillValues(array($field_name => $values));
-
-      return array(TRUE, $values, "");
+    // $field_name is a property.
+    if (is_array($values)) {
+      $values = $values[0];
     }
+    $this->fillValues(array($field_name => $values));
+
+    return array(TRUE, $values, "");
   }
 
   public function fillDefaultFieldValues($field_name) {
@@ -521,5 +532,38 @@ abstract class EntityForm extends Form {
     }
 
     return array($field, $instance, $num);
+  }
+
+  /**
+   * Returns whether the function name matches the pattern to fill a field with
+   * default values.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE if not.
+   */
+  private function isFillDefaultFieldValuesFunction($name) {
+    // Check if function name starts with "fillDefault" and ends with "Values".
+    return (strpos($name, 'fillDefault') === 0 && strrpos(
+        $name,
+        'Values'
+      ) == strlen($name) - 6);
+  }
+
+  /**
+   * Returns whether the function name matches the pattern to fill a field with
+   * provided values.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE if not.
+   */
+  private function isFillFieldValuesFunction($name) {
+    // Check if function name starts with "fill".
+    return strpos($name, 'fill') === 0;
   }
 }
