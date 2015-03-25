@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utils as Utilities;
+use RedTest\core\Utils;
 
 class Node extends Entity {
 

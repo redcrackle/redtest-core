@@ -207,4 +207,59 @@ class Text extends Field {
 
     return $values;
   }
-} 
+
+  private static function generateTextFieldValues($num) {
+    $values = array();
+    for ($i = 0; $i < $num; $i++) {
+      $values[$i]['value'] = Utils::getRandomText(100);
+    }
+
+    return $values;
+  }
+
+  public static function fillDefaultTextTextfieldValues($formObject, $field_name) {
+    $num = 1;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    }
+
+    $values = self::generateTextFieldValues($num);
+
+    return self::fillValues($formObject, $field_name, $values);
+  }
+
+  public static function fillTextTextfieldValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    $formObject->emptyField($field_name);
+
+    $input = array();
+
+    if (is_string($values)) {
+      // Values is a string, which means that it's single-valued.
+      $input[0] = array('value' => $values);
+    }
+    elseif (is_array($values)) {
+      // $values is an array. It can be an array of strings or an array of arrays.
+      foreach ($values as $key => $val) {
+        if (is_string($val)) {
+          $input[$key] = array('value' => $val);
+        }
+        elseif (is_array($val)) {
+          $input[$key] = $val;
+        }
+      }
+    }
+
+    $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+
+    if (sizeof($input) == 1 && is_string($input[0])) {
+      $input = $input[0];
+    }
+
+    return array(TRUE, $input, "");
+  }
+}
