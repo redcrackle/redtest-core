@@ -51,7 +51,7 @@ class NodeForm extends EntityForm {
    * @param string $username
    *   Username of the author.
    */
-  function setAuthorname($username) {
+  private function setAuthorname($username) {
     $this->fillValues(
       array(
         'name' => $username,

@@ -13,8 +13,8 @@ use RedTest\core\Utils;
 class Form {
 
   private $form_id;
-  private $form;
-  private $form_state;
+  public $form;
+  public $form_state;
   private $errors;
   private $ajax_post;
   private $upload_image;
@@ -43,6 +43,10 @@ class Form {
     return $this->form;
   }
 
+  public function setForm($form) {
+    $this->form = $form;
+  }
+
   /**
    * Return the form state.
    *
@@ -51,6 +55,10 @@ class Form {
    */
   public function getFormState() {
     return $this->form_state;
+  }
+
+  public function setFormState($form_state) {
+    $this->form_state = $form_state;
   }
 
   public function getErrors() {
@@ -126,6 +134,19 @@ class Form {
   }
 
   /**
+   * Returns whether a key is set in form_state.
+   *
+   * @param string $key
+   *   Key string.
+   *
+   * @return bool
+   *   TRUE if key is set and FALSE otherwise.
+   */
+  protected function hasKey($key) {
+    return isset($this->form_state[$key]);
+  }
+
+  /**
    * Unset a field.
    *
    * @param string $field_name
@@ -141,30 +162,6 @@ class Form {
 
   public function setValues($field_name, $values) {
     $this->form_state['values'][$field_name] = $values;
-  }
-
-  /**
-   * Fill values in a text field.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param array $values
-   *   Array of field values if the field is multi-valued or a single value if
-   *   the field is single-valued.
-   */
-  public function fillTextField($field_name, $values) {
-    $this->emptyField($field_name);
-
-    if (is_array($values)) {
-      $index = 0;
-      foreach ($values as $value) {
-        $this->form_state['values'][$field_name][LANGUAGE_NONE][$index]['value'] = $value;
-        $index++;
-      }
-    }
-    else {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE][0]['value'] = $values;
-    }
   }
 
   /**
@@ -414,6 +411,50 @@ class Form {
     else {
       $this->form[$field_name][LANGUAGE_NONE] = $sub_form;
     }
+  }
+
+  public function addMore($field_name, $input, $triggering_element_name) {
+    $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
+    $this->form_state = form_state_defaults();
+    // Get the form from the cache.
+    $this->form = form_get_cache($this->form['#build_id'], $this->form_state);
+    $unprocessed_form = $this->form;
+    $this->form_state['input'] = $old_form_state_values;
+    $this->form_state['input'][$field_name][LANGUAGE_NONE] = $input;
+    $this->form_state['input']['form_build_id'] = $this->form['#build_id'];
+    $this->form_state['input']['form_id'] = $this->form['#form_id'];
+    $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];
+    $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
+    //$this->form_state['input']['_triggering_element_value'] = $triggering_element_value;
+    $this->form_state['no_redirect'] = TRUE;
+    $this->form_state['method'] = 'post';
+    $this->form_state['programmed'] = TRUE;
+
+    drupal_process_form(
+      $this->form['#form_id'],
+      $this->form,
+      $this->form_state
+    );
+
+    // Rebuild the form and set it in cache. This is the code at the end of
+    // drupal_process_form() after above code boils out at
+    // $form_state['programmed'] = TRUE.
+    // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc can add a default value at the end. Otherwise multi-valued submit fails.
+    $this->form_state['programmed'] = FALSE;
+    $this->form = drupal_rebuild_form(
+      $this->form['#form_id'],
+      $this->form_state,
+      $this->form
+    );
+    if (!$this->form_state['rebuild'] && $this->form_state['cache'] && empty($this->form_state['no_cache'])) {
+      form_set_cache(
+        $this->form['#build_id'],
+        $unprocessed_form,
+        $this->form_state
+      );
+    }
+
+    unset($this->form_state['values'][$triggering_element_name]);
   }
 
   /**

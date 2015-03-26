@@ -32,11 +32,13 @@ class Node extends Entity {
       }
     }
     else {
+      global $user;
       $node = (object) array(
         'title' => NULL,
         'type' => $type,
         'language' => LANGUAGE_NONE,
         'is_new' => TRUE,
+        'name' => $user->name,
       );
       node_object_prepare($node);
       parent::__construct($node);

@@ -11,7 +11,7 @@ namespace RedTest\core\fields;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
-class Text extends Field {
+class TextWithSummary extends Field {
 
   /**
    * Fills default values in the provided field.
@@ -31,9 +31,10 @@ class Text extends Field {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
+      /*$function = 'fillDefault' . Utils::makeTitleCase(
           $instance['widget']['type']
-        ) . 'Values';
+        ) . 'Values';*/
+      $function = 'fillDefaultTextTextAreaWithSummaryValues';
 
       return self::$function($formObject, $field_name);
     }
@@ -109,7 +110,6 @@ class Text extends Field {
     Form $formObject,
     $field_name
   ) {
-
     $num = 1;
     $display_summary = TRUE;
     $text_processing = TRUE;

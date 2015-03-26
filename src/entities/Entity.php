@@ -59,10 +59,59 @@ abstract class Entity {
     if (method_exists($this->entity, 'identifier')) {
       return $this->entity->identifier();
     }
-    $info = entity_get_info($this->entity_type);
+    $info = entity_get_info($this->getEntityType());
     $key = isset($info['entity keys']['name']) ? $info['entity keys']['name'] : $info['entity keys']['id'];
 
     return isset($this->entity->$key) ? $this->entity->$key : NULL;
+  }
+
+  /**
+   * Returns entity type from the called class.
+   *
+   * @return bool|string
+   *   Entity type if one exists, FALSE otherwise.
+   */
+  private static function getClassEntityType() {
+    $classes = class_parents(get_called_class());
+    if (sizeof($classes) >= 2) {
+      // If there are at least 2 parent classes, such as Entity and Node.
+      $classnames = array_values($classes);
+      $classname = $classnames[sizeof($classes) - 2];
+      $class = new \ReflectionClass($classname);
+      $entity_type = Utils::makeSnakeCase(
+        $class->getShortName()
+      );
+
+      return $entity_type;
+    }
+    elseif (sizeof($classes) == 1) {
+      // If an entity such as User is calling the class directly, then entity type will be User itself.
+      $classname = get_called_class();
+      $class = new \ReflectionClass($classname);
+      $entity_type = Utils::makeSnakeCase(
+        $class->getShortName()
+      );
+
+      return $entity_type;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Returns entity type from the object.
+   *
+   * @return bool|string
+   *   Entity type if one exists, FALSE otherwise.
+   */
+  private function getObjectEntityType() {
+    // If the function is being called from static context and $this->entity_type is defined, then return it.
+    if (!is_null($this->entity_type)) {
+      return $this->entity_type;
+    }
+
+    return self::getClassEntityType();
   }
 
   /**
@@ -71,7 +120,7 @@ abstract class Entity {
    * @return bool|string $entity_type
    *   Entity type if one exists, FALSE otherwise.
    */
-  public function getEntityType() {
+  /*public function getEntityType() {
     // Check if this function is being called from static context. This usually happens when calling hasCreateAccess() function.
     $static = !(isset($this) && get_class($this) == __CLASS__);
     // If the function is being called from static context and $this->entity_type is defined, then return it.
@@ -104,7 +153,7 @@ abstract class Entity {
     else {
       return FALSE;
     }
-  }
+  }*/
 
   /**
    * Reloads the entity from database.
@@ -680,9 +729,27 @@ abstract class Entity {
   }
 
   /**
+   * Magic method. This function will be executed when a matching static function is
+   * not found. Currently this supports getEntityType() function.
+   *
+   * @param string $name
+   *   Called function name.
+   * @param $arguments
+   *   Function arguments.
+   *
+   * @return mixed
+   *   Output depends on which function ultimately gets called.
+   */
+  public static function __callStatic($name, $arguments) {
+    if ($name == 'getEntityType') {
+      return self::getClassEntityType();
+    }
+  }
+
+  /**
    * Magic method. This function will be executed when a matching function is
-   * not found. Currently this supports two kinds of functions:
-   * get<FieldName>() and has<FieldName><View|Edit>Access().
+   * not found. Currently this supports three kinds of functions:
+   * getEntityType(), get<FieldName>() and has<FieldName><View|Edit>Access().
    *
    * @param string $name
    *   Called function name.
@@ -693,7 +760,10 @@ abstract class Entity {
    *   Output depends on which function ultimately gets called.
    */
   public function __call($name, $arguments) {
-    if (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
+    if ($name == 'getEntityType') {
+      return $this->getObjectEntityType();
+    }
+    elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
         $name
       ) - 6
     ) {
@@ -1454,7 +1524,7 @@ abstract class Entity {
       $classForm = new $formClass();
 
       // Fill default values in the form.
-      list($success, $fields, $msg) = $classForm->fillDefaultValues($skip);
+      list($success, $fields, $msg) = $classForm->fillDefaultValuesExcept($skip);
       if (!$success) {
         return array(FALSE, $output, $msg);
       }

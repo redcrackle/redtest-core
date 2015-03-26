@@ -137,17 +137,13 @@ class Field {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       $field = self::getFieldInfo($field_name);
-      $field_class = "RedTest\\core\\Fields\\" . Utils::makeTitleCase(
-          $field['module']
-        );
+      //$short_field_class = Utils::makeTitleCase($field['module']);
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
 
-      return call_user_func_array(
-        array($field_class, 'fillDefaultValues'),
-        array($formObject, $field_name)
-      );
+      return $field_class::fillDefaultValues($formObject, $field_name);
     }
   }
-
 
   /**
    * Fills values in the specified field. Internally it calls the class of the

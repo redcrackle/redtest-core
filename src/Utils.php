@@ -109,6 +109,34 @@ class Utils {
   }
 
   /**
+   * Returns a randomly generated email address. If Faker library is present,
+   * then it uses its create() function. If not, it generates one using
+   * strings.
+   *
+   * @return string
+   *   Random email address.
+   */
+  public static function getRandomEmail() {
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+
+      return $faker->safeEmail();
+    }
+
+    return self::getRandomString(8) . '@' . self::getRandomString(20) . '.com';
+  }
+
+  public static function getRandomUrl() {
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+
+      return $faker->url();
+    }
+
+    return 'www.' . self::getRandomString(10) . '.com';
+  }
+
+  /**
    * Returns a random date in the specified date format between start date and
    * end date.
    *
@@ -252,7 +280,8 @@ class Utils {
   }
 
   /**
-   * Returns the first value of the input array if there is only item in the array. If there are more items in the array, then return the full array.
+   * Returns the first value of the input array if there is only item in the
+   * array. If there are more items in the array, then return the full array.
    *
    * @param array $input
    *   An array of values.
@@ -266,5 +295,30 @@ class Utils {
     }
 
     return $input;
+  }
+
+  /**
+   * Converts an associative array of errors to string.
+   *
+   * @param array $errors
+   *   An array of errors.
+   *
+   * @return string
+   *   Error in string format.
+   */
+  public static function convertErrorArrayToString($errors) {
+    $output = '';
+    $index = 1;
+    foreach ($errors as $key => $value) {
+      $output .= " (" . $index . ") " . $key . " - ";
+      if (is_string($value)) {
+        $output .= $value;
+      }
+      elseif (is_array($value)) {
+        $output .= self::convertErrorArrayToString($value);
+      }
+    }
+
+    return $output;
   }
 }
