@@ -68,18 +68,41 @@ class Utils {
    *
    * @param int $length
    *   Length of the returned string. Defaults to 20.
+   * @param int $num
+   *   Number of string values to return.
    *
-   * @return string
-   *   Random string of specified length.
+   * @return null|string|array
+   *   NULL if $num < 1, a random string if $num = 1 and an array of strings if
+   *   $num > 1.
    */
-  public static function getRandomString($length = 20) {
-    return substr(
-      str_shuffle(
-        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      ),
-      0,
-      $length
-    );
+  public static function getRandomString($length = 20, $num = 1) {
+    if ($num < 1) {
+      return NULL;
+    }
+
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+
+      if ($num == 1) {
+        return $faker->word();
+      }
+      else {
+        return $faker->words($num);
+      }
+    }
+
+    $string_array = array();
+    foreach (range(0, $num - 1) as $index) {
+      $string_array[] = substr(
+        str_shuffle(
+          "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        ),
+        0,
+        $length
+      );
+    }
+
+    return self::normalize($string_array);
   }
 
   /**
@@ -88,24 +111,40 @@ class Utils {
    *
    * @param int $length
    *   Length of the returned text. Defaults to 100.
+   * @param int $num
+   *   Number of text values to return.
    *
-   * @return string
-   *   Random text of specified length.
+   * @return null|string|array
+   *   NULL if $num < 1, a random text if $num = 1 and an array of text if $num
+   *   > 1.
    */
-  public static function getRandomText($length = 100) {
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-
-      return $faker->text($length);
+  public static function getRandomText($length = 100, $num = 1) {
+    if ($num < 1) {
+      return NULL;
     }
 
-    return substr(
-      str_shuffle(
-        " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      ),
-      0,
-      $length
-    );
+    $faker = NULL;
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+    }
+
+    $text_array = array();
+    foreach (range(0, $num - 1) as $index) {
+      if (!is_null($faker)) {
+        $text_array[] = $faker->text($length);
+      }
+      else {
+        $text_array[] = substr(
+          str_shuffle(
+            " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+          ),
+          0,
+          $length
+        );
+      }
+    }
+
+    return self::normalize($text_array);
   }
 
   /**
@@ -113,27 +152,86 @@ class Utils {
    * then it uses its create() function. If not, it generates one using
    * strings.
    *
-   * @return string
-   *   Random email address.
+   * @param int $num
+   *   Number of email addresses to return.
+   *
+   * @return null|string|array
+   *   NULL if $num < 1, a random email address string if $num = 1 and an array
+   *   of email address strings if $num > 1.
    */
-  public static function getRandomEmail() {
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-
-      return $faker->safeEmail();
+  public static function getRandomEmail($num = 1) {
+    if ($num < 1) {
+      return NULL;
     }
 
-    return self::getRandomString(8) . '@' . self::getRandomString(20) . '.com';
+    $faker = NULL;
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+    }
+
+    $email_addresses = array();
+    foreach (range(0, $num - 1) as $index) {
+      if (!is_null($faker)) {
+        $email_addresses[] = $faker->safeEmail();
+      }
+      else {
+        $email_addresses[] = self::getRandomString(
+            8
+          ) . '@' . self::getRandomString(20) . '.com';
+      }
+    }
+
+    return self::normalize($email_addresses);
   }
 
-  public static function getRandomUrl() {
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-
-      return $faker->url();
+  /**
+   * Returns random URL.
+   *
+   * @param string $type
+   *   "relative" for relative URL, "absolute" for absolute URL and "any" for
+   *   relative URL 50% of time and absolute URL 50% of time.
+   * @param int $num
+   *   Number of URLs to return.
+   *
+   * @return null|string|array
+   *   NULL if $num < 1, a random URL string if $num = 1 and an array of URL
+   *   strings if $num > 1.
+   */
+  public static function getRandomUrl($type = 'any', $num = 1) {
+    if ($num < 1) {
+      return NULL;
     }
 
-    return 'www.' . self::getRandomString(10) . '.com';
+    $faker = NULL;
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+    }
+
+    $urls = array();
+    if ($type == 'relative' || ($type == 'any' && self::getRandomBool())
+    ) {
+      $parts = self::getRandomInt(1, 5);
+      $paths = array();
+      if (!is_null($faker)) {
+        $paths = $faker->words($parts);
+      }
+      else {
+        $paths = Utils::getRandomString(8, $parts);
+      }
+      $urls[] = implode("/", $paths);
+    }
+    else {
+      foreach (range(0, $num - 1) as $index) {
+        if (!is_null($faker)) {
+          $urls[] = $faker->url();
+        }
+        else {
+          $urls[] = 'www.' . self::getRandomString(10) . '.com';
+        }
+      }
+    }
+
+    return self::normalize($urls);
   }
 
   /**
@@ -176,12 +274,34 @@ class Utils {
    *   Start integer.
    * @param int $end_int
    *   End integer.
+   * @param int $num
+   *   Number of integers to return.
    *
-   * @return int
-   *   Random integer.
+   * @return int|array|null
+   *   NULL if $num is less than 1, random integer if $num = 1 and an array of
+   *   integers if $num > 1.
    */
-  public static function getRandomInt($start_int, $end_int) {
-    return mt_rand($start_int, $end_int);
+  public static function getRandomInt($start_int, $end_int, $num = 1) {
+    if ($num < 1) {
+      return NULL;
+    }
+
+    $faker = NULL;
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+    }
+
+    $numbers = array();
+    foreach (range(0, $num - 1) as $index) {
+      if (!is_null($faker)) {
+        $numbers[] = $faker->numberBetween($start_int, $end_int);
+      }
+      else {
+        $numbers[] = mt_rand($start_int, $end_int);
+      }
+    }
+
+    return self::normalize($numbers);
   }
 
   /**
@@ -320,5 +440,34 @@ class Utils {
     }
 
     return $output;
+  }
+
+  /**
+   * Returns TRUE or FALSE randomly.
+   *
+   * @param int $num
+   *   Number of booleans to return.
+   *
+   * @return null|bool|array
+   *   NULL if $num is less than 1, random boolean if $num = 1 and an array of
+   *   booleans if $num > 1.
+   */
+  public static function getRandomBool($num = 1) {
+    if ($num < 1) {
+      return NULL;
+    }
+
+    $bools = array();
+    $ints = Utils::getRandomInt(0, 1, $num);
+    if (is_array($ints)) {
+      foreach ($ints as $integer) {
+        $bools = $integer ? TRUE : FALSE;
+      }
+    }
+    else {
+      $bools = array($ints ? TRUE : FALSE);
+    }
+
+    return self::normalize($bools);
   }
 }
