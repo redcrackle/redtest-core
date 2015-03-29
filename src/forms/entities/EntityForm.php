@@ -410,9 +410,7 @@ abstract class EntityForm extends Form {
       return Field::fillDefaultValues($this, $field_name);
     }
 
-    $function = "fillDefault" . Utils::makeTitleCase(
-        $field_name
-      ) . "Values";
+    $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";
 
     return $this->$function();
   }
