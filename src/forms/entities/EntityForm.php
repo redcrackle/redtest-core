@@ -175,8 +175,7 @@ abstract class EntityForm extends Form {
         $values[] = Utils::getRandomString();
       }
       else {
-        list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
-        );
+        list($success, $termObject, $msg) = $vocabularyClassName::createDefault();
         if (!$success) {
           return array(FALSE, $values, $msg);
         }
@@ -334,8 +333,7 @@ abstract class EntityForm extends Form {
         $values[] = Utils::getRandomString();
       }
       else {
-        list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
-        );
+        list($success, $termObject, $msg) = $vocabularyClassName::createDefault();
         if (!$success) {
           return array(FALSE, $values, $msg);
         }
@@ -408,26 +406,15 @@ abstract class EntityForm extends Form {
 
   public function fillDefaultFieldValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
-    $is_property = FALSE;
-    if (is_null($field)) {
-      $is_property = TRUE;
-    }
-    else {
-      if (is_null($instance)) {
-        $is_property = TRUE;
-      }
-      else {
-        return Field::fillDefaultValues($this, $field_name);
-      }
+    if (!is_null($field) && !is_null($instance)) {
+      return Field::fillDefaultValues($this, $field_name);
     }
 
-    if ($is_property) {
-      $function = "fillDefault" . Utils::makeTitleCase(
-          $field_name
-        ) . "Values";
+    $function = "fillDefault" . Utils::makeTitleCase(
+        $field_name
+      ) . "Values";
 
-      return $this->$function();
-    }
+    return $this->$function();
   }
 
   public function fillDefaultValuesExcept($skip = array()) {
