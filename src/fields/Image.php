@@ -11,19 +11,7 @@ namespace RedTest\core\fields;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
-class Image extends Field {
-
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      return self::$function($formObject, $field_name);
-    }
-  }
+class Image extends File {
 
   public static function fillDefaultImageImageValues(
     Form $formObject,
@@ -107,7 +95,12 @@ class Image extends Field {
       }
     }
 
-    return self::fillImageImageValues($formObject, $field_name, $files, $uri_scheme);
+    return self::fillImageImageValues(
+      $formObject,
+      $field_name,
+      $files,
+      $uri_scheme
+    );
   }
 
   /**
@@ -156,72 +149,36 @@ class Image extends Field {
     $image_paths,
     $scheme = 'public'
   ) {
-    $formObject->emptyField($field_name);
+    return parent::fillFileGeneric($formObject, $field_name, $image_paths, $scheme);
+  }
 
-    if (is_string($image_paths)) {
-      // Image paths are provided in the form of first acceptable format.
-      $image_paths = array(array('uri' => $image_paths));
-    }
-    elseif (is_array($image_paths) && !array_key_exists('uri', $image_paths)) {
-      $index = 0;
-      foreach ($image_paths as $image_path) {
-        if (is_string($image_path)) {
-          // Image paths are provided in the form of second acceptable format.
-          $image_paths[$index] = array('uri' => $image_path);
-        }
-        $index++;
-      }
-    }
-    elseif (is_array($image_paths) && array_key_exists('uri', $image_paths)) {
-      // Image paths are provided in the form of third acceptable format.
-      $image_paths = array($image_paths);
-    }
-
-    $stored_file_uris = array();
-    $index = 0;
-    $input = array();
-    foreach ($image_paths as $image_path) {
-      $filename = !empty($image_path['name']) ? $image_path['name'] : drupal_basename(
-        $image_path
-      );
-      //$full_image_path = 'tests/assets/' . $image_path;
-      $file_temp = file_get_contents($image_path['uri']);
-      $file_temp = file_save_data(
-        $file_temp,
-        $scheme . '://' . $filename,
-        FILE_EXISTS_RENAME
-      );
-      // Set file status to temporary otherwise there is validation error.
-      $file_temp->status = 0;
-      file_save($file_temp);
-      $stored_file_uris[$index] = $file_temp->uri;
-
-      $image_info = image_get_info($file_temp->uri);
-      $input[$index] = array(
-        'fid' => $file_temp->fid,
-        'display' => 1,
-        'width' => $image_info['width'],
-        'height' => $image_info['height'],
-      );
-
-      if (!empty($image_path['alt'])) {
-        $input[$index]['alt'] = $image_path['alt'];
-      }
-
-      if (!empty($image_path['title'])) {
-        $input[$index]['title'] = $image_path['title'];
-      }
-
-      $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . (sizeof(
-            $input
-          ) - 1) . '_upload_button';
-      $formObject->addMore($field_name, $input, $triggering_element_name);
-
-      $index++;
+  /**
+   * Creates an input array based on file object and information.
+   *
+   * @param object $file
+   *   File object.
+   * @param $file_info
+   *   File information array.
+   *
+   * @return array
+   *   Input array that can be sent in the form POST.
+   */
+  protected static function createInput($file, $file_info) {
+    $image_info = image_get_info($file->uri);
+    $input = array(
+      'fid' => $file->fid,
+      'display' => 1,
+      'width' => $image_info['width'],
+      'height' => $image_info['height'],
+    );
+    if (!empty($file_info['alt'])) {
+      $input['alt'] = $file_info['alt'];
     }
 
-    //$formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+    if (!empty($file_info['title'])) {
+      $input['title'] = $file_info['title'];
+    }
 
-    return array(TRUE, Utils::normalize($input), "");
+    return $input;
   }
 }

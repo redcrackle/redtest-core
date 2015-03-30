@@ -79,30 +79,72 @@ class LinkField extends Field {
   ) {
     $formObject->emptyField($field_name);
 
-    if (is_string($values) || is_numeric($values)) {
-      $values = array($values);
-    }
+    $values = self::normalizeInput($values);
 
     $input = array();
     $index = 0;
     foreach ($values as $key => $value) {
-      if (is_string($value)) {
-        $input[$index] = array(
-          'url' => $value
-        );
-      }
-      else {
-        $input[$index] = $value;
-      }
-
-      $triggering_element_name = $field_name . '_add_more';
-      //$triggering_element_value = 'Add another item';
+      $input[$index] = self::createInput($value);
+      $triggering_element_name = self::getTriggeringElementName($field_name);
       $formObject->addMore($field_name, $input, $triggering_element_name);
       $index++;
     }
 
-    //$formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-
     return array(TRUE, Utils::normalize($input), "");
+  }
+
+  /**
+   * Returns name of the triggering element based on field name.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return string
+   *   Triggering element name.
+   */
+  private static function getTriggeringElementName($field_name) {
+    return $field_name . '_add_more';
+  }
+
+  /**
+   * Creates an input array based on the provided values.
+   *
+   * @param string|array $value
+   *   Provided values.
+   *
+   * @return mixed
+   *   Input array that can be sent in form POST.
+   */
+  private static function createInput($value) {
+    if (is_string($value)) {
+      $input = array(
+        'url' => $value
+      );
+    }
+    else {
+      $input = $value;
+    }
+
+    return $input;
+  }
+
+  /**
+   * Normalizes the input values so that they are in the acceptable input
+   * format.
+   *
+   * @param string|array $values
+   *   A string URL or an array of URLs.
+   *
+   * @return array
+   *   Standardized format: array of URLs.
+   */
+  private static function normalizeInput($values) {
+    if (is_string($values)) {
+      $values = array($values);
+
+      return $values;
+    }
+
+    return $values;
   }
 }
