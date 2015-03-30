@@ -46,46 +46,6 @@ abstract class EntityForm extends Form {
     return array(TRUE, $termObjects, "");
   }
 
-  /**
-   * Fill generic file. Upload images.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param mixed $image_paths
-   *   A path or an array of paths of images which are to be uploaded.
-   */
-  public function fillDefaultFileGenericValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-    $extensions = str_replace(
-      " ",
-      "|",
-      $instance['settings']['file_extensions']
-    );
-    $files = file_scan_directory(
-      'tests/assets',
-      '/^.*\.(' . $extensions . ')$/i'
-    );
-    $filenames = array();
-    foreach ($files as $file_name => $file_array) {
-      $filenames[] = $file_array->filename;
-    }
-
-    if (!sizeof($filenames)) {
-      return array(FALSE, array(), "Could not attach a file.");
-    }
-
-    $files = array();
-    for ($i = 0; $i < $num; $i++) {
-      $files[] = $filenames[Utils::getRandomInt(0, sizeof($filenames) - 1)];
-    }
-    $values = $this->fillFileGeneric(
-      $field_name,
-      $files,
-      $field['settings']['uri_scheme']
-    );
-
-    return array(TRUE, $values, "");
-  }
 
   public function fillDefaultOptionsSelectValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
@@ -105,23 +65,6 @@ abstract class EntityForm extends Form {
 
       return array(TRUE, $termObjects, "");
     }
-  }
-
-  public function fillDefaultNumberValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      $values[] = Utils::getRandomInt(-255, 255);
-    }
-
-    $this->fillNumber($field_name, $values);
-
-    if (sizeof($values) == 1) {
-      $values = $values[0];
-    }
-
-    return array(TRUE, $values, "");
   }
 
   public function fillDefaultDatePopupValues($field_name) {
@@ -152,16 +95,6 @@ abstract class EntityForm extends Form {
     return array(TRUE, $values, "");
   }
 
-  public function fillDefaultOptionsOnoffValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    // @todo We don't know yet what to do with multivalued boolean values.
-    $value = Utils::getRandomInt(0, 1);
-    $this->fillOptionsOnoff($field_name, $value);
-
-    return array(TRUE, $value, "");
-  }
-
   public function fillDefaultTaxonomyAutocompleteValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
 
@@ -175,7 +108,8 @@ abstract class EntityForm extends Form {
         $values[] = Utils::getRandomString();
       }
       else {
-        list($success, $termObject, $msg) = $vocabularyClassName::createDefault();
+        list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
+        );
         if (!$success) {
           return array(FALSE, $values, $msg);
         }
@@ -224,102 +158,6 @@ abstract class EntityForm extends Form {
     return array(TRUE, array(), "");
   }
 
-  public function fillDefaultImageImageValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    $uri_scheme = $field['settings']['uri_scheme'];
-    $file_extensions = explode(' ', $instance['settings']['file_extensions']);
-    $max_filesize = $instance['settings']['max_filesize'];
-    $max_resolution = $instance['settings']['max_resolution'];
-    $min_resolution = $instance['settings']['min_resolution'];
-    list($min_width, $min_height) = explode('x', $min_resolution);
-    list($max_width, $max_height) = explode('x', $max_resolution);
-
-    $files = file_scan_directory(
-      'tests/assets',
-      '/.*\.(' . implode('|', $file_extensions) . ')$/',
-      array('recurse' => TRUE)
-    );
-
-    $valid_files = array();
-    foreach ($files as $uri => $file) {
-      $image_info = image_get_info($uri);
-
-      if (!empty($max_filesize) && $image_info['file_size'] > $max_filesize) {
-        continue;
-      }
-
-      if (!empty($min_width) && $image_info['width'] < $min_width) {
-        continue;
-      }
-
-      if (!empty($max_width) && $image_info['width'] > $max_width) {
-        continue;
-      }
-
-      if (!empty($min_height) && $image_info['height'] < $min_height) {
-        continue;
-      }
-
-      if (!empty($max_height) && $image_info['height'] > $max_height) {
-        continue;
-      }
-
-      $valid_files[$uri] = $file;
-    }
-
-    if (empty($valid_files)) {
-      return array(
-        FALSE,
-        array(),
-        'Appropriate image could not be found for ' . $field_name
-      );
-    }
-
-    $stored_file_uris = $this->fillImageImage(
-      $field_name,
-      array_keys($valid_files),
-      $uri_scheme
-    );
-
-    return array(TRUE, $stored_file_uris, "");
-  }
-
-  public function fillDefaultTextTextareaValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      $values[] = Utils::getRandomString(100);
-    }
-
-    $this->fillTextTextarea($field_name, $values);
-
-    if (sizeof($values) == 1) {
-      $values = $values[0];
-    }
-
-    return array(TRUE, $values, "");
-  }
-
-  public function fillDefaultTextTextfieldValues($field_name) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      $length = Utils::getRandomInt(1, $field['settings']['max_length']);
-      $values[] = Utils::getRandomString($length);
-    }
-
-    $this->fillTextTextfield($field_name, $values);
-
-    if (sizeof($values) == 1) {
-      $values = $values[0];
-    }
-
-    return array(TRUE, $values, "");
-  }
-
   public function fillDefaultAutocompleteDeluxeTaxonomyValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
 
@@ -333,7 +171,8 @@ abstract class EntityForm extends Form {
         $values[] = Utils::getRandomString();
       }
       else {
-        list($success, $termObject, $msg) = $vocabularyClassName::createDefault();
+        list($success, $termObject, $msg) = $vocabularyClassName::createDefault(
+        );
         if (!$success) {
           return array(FALSE, $values, $msg);
         }
@@ -386,7 +225,7 @@ abstract class EntityForm extends Form {
    * @return array
    *   An array with 3 values:
    *   (1) $success: Whether the field could be filled with provided values.
-   *   (2) $values: Values that were filled.
+   *   (2) $values: Values that were actually filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
   public function fillFieldValues($field_name, $values) {
@@ -415,11 +254,29 @@ abstract class EntityForm extends Form {
     return $this->$function();
   }
 
+  /**
+   * Fills default values in all the fields except that are asked to be
+   * skipped.
+   *
+   * @param array $skip
+   *   An array of field names which are not supposed to be filled by default
+   *   values.
+   *
+   * @return array
+   *   An array with the following values:
+   *   (1) $success: TRUE if all the fields except the ones to be skipped could
+   *   be filled and FALSE otherwise.
+   *   (2) $fields: An associative array of field values that were filled keyed
+   *   by the field name.
+   *   (3) $msg: An error message if there was an error filling fields with
+   *   default values and an empty string otherwise.
+   */
   public function fillDefaultValuesExcept($skip = array()) {
     // First get all field instances.
     $field_instances = $this->entityObject->getFieldInstances();
 
-    // Iterate over all the field instances and unless they are in $skip array, fill default values for them.
+    // Iterate over all the field instances and unless they are in $skip array,
+    // fill default values for them.
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
       if (!in_array($field_name, $skip)) {
@@ -438,9 +295,17 @@ abstract class EntityForm extends Form {
   }
 
   /**
-   * @param $cardinality
+   * Returns the number of values to be filled in the field based on the
+   * field's cardinality. If cardinality is unlimited, then a random integer
+   * between 2 and 5 (inclusive) is returned. If cardinality is 1, then 1 is
+   * returned. If cardinality is any other number, then a random integer
+   * between 2 and that integer is returned.
+   *
+   * @param int $cardinality
+   *   Field's cardinality.
    *
    * @return int
+   *   Number of values to be filled in the field.
    */
   private function getNumberOfItemsFromCardinality($cardinality) {
     if ($cardinality == -1) {
@@ -476,10 +341,13 @@ abstract class EntityForm extends Form {
   }
 
   /**
-   * @param $field_name
+   * Returns field instance information.
    *
-   * @return mixed
-   * @throws \EntityMalformedException
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   Field instance array.
    */
   private function getFieldInstance($field_name) {
     list(, , $bundle) = entity_extract_ids(
@@ -496,16 +364,28 @@ abstract class EntityForm extends Form {
   }
 
   /**
-   * @param $field_name
+   * Returns field information.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   Field information array.
    */
   private function getFieldInfo($field_name) {
     return field_info_field($field_name);
   }
 
   /**
-   * @param $field_name
+   * Returns field information, field instance information and number of values
+   * to be filled in the field.
+   *
+   * @param string $field_name
+   *   Field name.
    *
    * @return array
+   *   An array of field information, field instance information and the number
+   *   of values to be filled in the field.
    */
   public function getFieldDetails($field_name) {
     $instance = NULL;

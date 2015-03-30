@@ -19,7 +19,12 @@ class Form {
   private $ajax_post;
   private $upload_image;
 
-
+  /**
+   * Default constructor.
+   *
+   * @param string $form_id
+   *   Form id.
+   */
   protected function __construct($form_id) {
     $args = func_get_args();
     $this->form_id = $form_id;
@@ -43,6 +48,12 @@ class Form {
     return $this->form;
   }
 
+  /**
+   * Sets the value of form array to the one provided.
+   *
+   * @param array $form
+   *   Form array.
+   */
   public function setForm($form) {
     $this->form = $form;
   }
@@ -57,10 +68,22 @@ class Form {
     return $this->form_state;
   }
 
+  /**
+   * Sets the value of form state to the one provided.
+   *
+   * @param array $form_state
+   *   Form state array.
+   */
   public function setFormState($form_state) {
     $this->form_state = $form_state;
   }
 
+  /**
+   * Returns an array of errors.
+   *
+   * @return array
+   *   Array of errors.
+   */
   public function getErrors() {
     return $this->errors;
   }
@@ -156,10 +179,27 @@ class Form {
     unset($this->form_state['values'][$field_name]);
   }
 
+  /**
+   * Returns value of a field set is form_state array.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return null|mixed
+   *   Value of the field set in form state array.
+   */
   protected function getValues($field_name) {
     return !empty($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
   }
 
+  /**
+   * Sets value of a field in form state array.
+   *
+   * @param string $field_name
+   *   Field name.
+   * @param mixed $values
+   *   Value to be set in form state array for a field.
+   */
   public function setValues($field_name, $values) {
     $this->form_state['values'][$field_name] = $values;
   }
@@ -183,99 +223,6 @@ class Form {
         )
       )
     );
-  }
-
-  public function fillImageImage(
-    $field_name,
-    $image_paths,
-    $scheme = 'public'
-  ) {
-    $this->emptyField($field_name);
-
-    if (is_string($image_paths)) {
-      $image_paths = array($image_paths);
-    }
-
-    $stored_file_uris = array();
-    $index = 0;
-    foreach ($image_paths as $image_path) {
-      $filename = drupal_basename($image_path);
-      //$full_image_path = 'tests/assets/' . $image_path;
-      $file_temp = file_get_contents($image_path);
-      $file_temp = file_save_data(
-        $file_temp,
-        $scheme . '://' . $filename,
-        FILE_EXISTS_RENAME
-      );
-      // Set file status to temporary otherwise there is validation error.
-      $file_temp->status = 0;
-      file_save($file_temp);
-      $stored_file_uris[$index] = $file_temp->uri;
-
-      $image_info = image_get_info($file_temp->uri);
-      $this->form_state['values'][$field_name][LANGUAGE_NONE][$index] = array(
-        'alt' => '',
-        'fid' => $file_temp->fid,
-        'display' => 1,
-        'width' => $image_info['width'],
-        'height' => $image_info['height'],
-      );
-
-      $index++;
-    }
-
-    if (sizeof($stored_file_uris) == 1) {
-      return $stored_file_uris[0];
-    }
-
-    return $stored_file_uris;
-  }
-
-  public function fillNumber($field_name, $values) {
-    $this->emptyField($field_name);
-
-    // is_string doesn't work here because a numeric value shows FALSE in
-    // is_string().
-    if (!is_array($values)) {
-      $values = array($values);
-    }
-
-    $index = 0;
-    foreach ($values as $value) {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE][$index]['value'] = $value;
-      $index++;
-    }
-  }
-
-  public function fillTextTextarea($field_name, $values, $format = '') {
-    $this->emptyField($field_name);
-
-    $defaults = array();
-    if (!empty($format)) {
-      $defaults['format'] = $format;
-    }
-
-    unset($this->form_state['values'][$field_name]);
-
-    $input = array();
-
-    if (is_string($values)) {
-      // Values is a string, which means that it's single-valued.
-      $input[0] = array('value' => $values) + $defaults;
-    }
-    elseif (is_array($values)) {
-      // $values is an array. It can be an array of strings or an array of arrays.
-      foreach ($values as $key => $val) {
-        if (is_string($val)) {
-          $input[$key] = array('value' => $val) + $defaults;
-        }
-        elseif (is_array($val)) {
-          $input[$key] = $val + $defaults;
-        }
-      }
-    }
-
-    $this->form_state['values'][$field_name][LANGUAGE_NONE] = $input;
   }
 
   /**
@@ -413,6 +360,18 @@ class Form {
     }
   }
 
+  /**
+   * Simulate action of pressing of an Add More button. This function processed
+   * the form based on the specified inputs and updates the form with the new
+   * values in the cache so that the form's submit button can work correctly.
+   *
+   * @param string $field_name
+   *   Field whose Add More button is pressed.
+   * @param array $input
+   *   User supplied input in the field.
+   * @param string $triggering_element_name
+   *   Name of the Add More button.
+   */
   public function addMore($field_name, $input, $triggering_element_name) {
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
@@ -426,6 +385,7 @@ class Form {
     $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];
     $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
     //$this->form_state['input']['_triggering_element_value'] = $triggering_element_value;
+    //$this->form_state['input']['_triggering_element_value'] = 'Upload';
     $this->form_state['no_redirect'] = TRUE;
     $this->form_state['method'] = 'post';
     $this->form_state['programmed'] = TRUE;
@@ -439,7 +399,8 @@ class Form {
     // Rebuild the form and set it in cache. This is the code at the end of
     // drupal_process_form() after above code boils out at
     // $form_state['programmed'] = TRUE.
-    // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc can add a default value at the end. Otherwise multi-valued submit fails.
+    // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc
+    // can add a default value at the end. Otherwise multi-valued submit fails.
     $this->form_state['programmed'] = FALSE;
     $this->form = drupal_rebuild_form(
       $this->form['#form_id'],
@@ -458,146 +419,6 @@ class Form {
   }
 
   /**
-   * Fill generic file. Upload images.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param mixed $image_paths
-   *   A path or an array of paths of images which are to be uploaded.
-   */
-  public function fillFileGeneric(
-    $field_name,
-    $image_paths,
-    $scheme = 'public'
-  ) {
-    $this->emptyField($field_name);
-
-    if (is_string($image_paths)) {
-      $image_paths = array($image_paths);
-    }
-
-    $index = 0;
-    $input = array();
-    $files = array();
-    foreach ($image_paths as $image_path) {
-      $filename = drupal_basename($image_path);
-      $full_image_path = 'tests/assets/' . $image_path;
-      $file_temp = file_get_contents($full_image_path);
-      $file_temp = file_save_data(
-        $file_temp,
-        $scheme . '://' . $filename,
-        FILE_EXISTS_RENAME
-      );
-      // Set file status to temporary otherwise there is validation error.
-      $file_temp->status = 0;
-      file_save($file_temp);
-
-      $files[] = $file_temp;
-
-      $input[$index] = array(
-        'fid' => $file_temp->fid,
-        'display' => 1,
-      );
-
-      $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
-      $this->form_state = form_state_defaults();
-      // Get the form from the cache.
-      $this->form = form_get_cache($this->form['#build_id'], $this->form_state);
-      $unprocessed_form = $this->form;
-      $this->form_state['input'] = $old_form_state_values;
-      $this->form_state['input'][$field_name][LANGUAGE_NONE] = $input;
-      $this->form_state['input']['form_build_id'] = $this->form['#build_id'];
-      $this->form_state['input']['form_id'] = $this->form['#form_id'];
-      $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];
-      $button_name = $field_name . '_' . LANGUAGE_NONE . '_' . (sizeof(
-            $input
-          ) - 1) . '_upload_button';
-      //$button_name = $field_name . '_' . LANGUAGE_NONE . '_0_upload_button';
-      $this->form_state['input']['_triggering_element_name'] = $button_name;
-      $this->form_state['input']['_triggering_element_value'] = 'Upload';
-      $this->form_state['no_redirect'] = TRUE;
-      $this->form_state['method'] = 'post';
-      $this->form_state['programmed'] = TRUE;
-
-      drupal_process_form(
-        $this->form['#form_id'],
-        $this->form,
-        $this->form_state
-      );
-
-      // Rebuild the form and set it in cache. This is the code at the end of
-      // drupal_process_form() after above code boils out at
-      // $form_state['programmed'] = TRUE.
-      // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc can add a default value at the end. Otherwise multi-valued submit fails.
-      $this->form_state['programmed'] = FALSE;
-      $this->form = drupal_rebuild_form(
-        $this->form['#form_id'],
-        $this->form_state,
-        $this->form
-      );
-      if (!$this->form_state['rebuild'] && $this->form_state['cache'] && empty($this->form_state['no_cache'])) {
-        form_set_cache(
-          $this->form['#build_id'],
-          $unprocessed_form,
-          $this->form_state
-        );
-      }
-
-      unset($this->form_state['values'][$button_name]);
-
-      //$_GET['q'] = 'file/ajax/field_contract_files/und/' . $this->form['#build_id'];
-      /*$_POST = $this->form_state['values'];
-      $_POST[$field_name][$index] = $input[$index];
-      $_POST['form_build_id'] = $this->form['#build_id'];
-      $_POST['form_token'] = $this->form['form_token']['#default_value'];
-      $_POST['form_id'] = $this->form['#form_id'];*/
-
-      /*list($form, $form_state, $form_id, $form_build_id, $commands) = ajax_get_form();
-      // Get the current element and count the number of files.
-      $current_element = $form;
-      foreach ($form_parents as $parent) {
-        $current_element = $current_element[$parent];
-      }
-      $current_file_count = isset($current_element['#file_upload_delta']) ? $current_element['#file_upload_delta'] : 0;
-
-      // Process user input. $form and $form_state are modified in the process.
-      drupal_process_form($form['#form_id'], $form, $form_state);*/
-      /*$commands = file_ajax_upload(
-        'file',
-        'ajax',
-        $field_name,
-        LANGUAGE_NONE,
-        $this->form['#build_id']
-      );
-      unset($_POST);*/
-
-      $index++;
-    }
-
-
-    /*$_FILES['files'] = array(
-      'name' => array(
-        'field_contract_files_und_0' => 'Continuous Delivery.pdf',
-      ),
-      'type' => array(
-        'field_contract_files_und_0' => 'application / pdf',
-      ),
-      'tmp_name' => array(
-        //'field_contract_files_und_0' => '/private/var/tmp / php7uhiOH',
-        'field_contract_files_und_0' => $file_temp->uri,
-      ),
-      'error' => array(
-        'field_contract_files_und_0' => 0,
-      ),
-      'size' => array(
-        'field_contract_files_und_0' => 173988,
-      ),
-    );*/
-
-    return $files;
-  }
-
-  /**
    * This function is used to check the field access
    *
    * @param $field_name
@@ -611,28 +432,6 @@ class Form {
     }
     else {
       return FALSE;
-    }
-  }
-
-  /**
-   * Fill URL field.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param mixed $values
-   *   A URL string or an array of URL strings.
-   */
-  public function fillUrlField($field_name, $values) {
-    $this->emptyField($field_name);
-
-    if (is_string($values)) {
-      $values = array($values);
-    }
-
-    $index = 0;
-    foreach ($values as $value) {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE][$index]['url'] = $value;
-      $index++;
     }
   }
 
@@ -674,51 +473,6 @@ class Form {
       'textfield' => '',
       'value_field' => '""' . implode('"" ""', $values) . '""',
     );
-  }
-
-  public function fillOptionsOnoff($field_name, $value) {
-    $this->emptyField($field_name);
-
-    if ($value) {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE] = $value;
-    }
-  }
-
-  public function fillOptionsSelect($field_name, $values) {
-    $this->emptyField($field_name);
-
-    if (is_string($values)) {
-      $values = array($values);
-    }
-
-    $field = field_info_field($field_name);
-    if ($field['cardinality'] == 1) {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE] = implode(
-        ",",
-        $values
-      );
-    }
-    else {
-      $index = 0;
-      foreach ($values as $value) {
-        $this->form_state['values'][$field_name][LANGUAGE_NONE][$index] = $value;
-        $index++;
-      }
-    }
-  }
-
-  public function fillTextTextfield($field_name, $values) {
-    $this->emptyField($field_name);
-
-    if (is_string($values)) {
-      $values = array($values);
-    }
-
-    $index = 0;
-    foreach ($values as $value) {
-      $this->form_state['values'][$field_name][LANGUAGE_NONE][$index]['value'] = $value;
-      $index++;
-    }
   }
 
   public function fillDatePopup($field_name, $values) {
@@ -1189,6 +943,10 @@ class Form {
     }
   }
 
+  /**
+   * @param $name
+   * @param $arguments
+   */
   public function __call($name, $arguments) {
     if (strpos($name, 'fill') === 0) {
       // Function name starts with "get".
