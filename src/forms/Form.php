@@ -13,8 +13,8 @@ use RedTest\core\Utils;
 class Form {
 
   private $form_id;
-  public $form;
-  public $form_state;
+  private $form;
+  private $form_state;
   private $errors;
   private $ajax_post;
   private $upload_image;

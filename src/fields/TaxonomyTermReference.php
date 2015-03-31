@@ -50,10 +50,6 @@ class TaxonomyTermReference extends Field {
 
     // Create new taxonomy terms in the specified vocabulary.
     $vocabulary_class = Utils::makeTitleCase($vocabulary);
-    /**
-     * @todo Remove the require statement once autoload is working.
-     */
-    require_once 'tests/RedTest/entities/TaxonomyTerm/Tags.php';
     $terms = $vocabulary_class::createDefault($num);
 
     return self::fillTaxonomyAutocompleteValues($formObject, $field_name, $terms);
