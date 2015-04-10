@@ -43,7 +43,7 @@ class TaxonomyFormTerm extends EntityForm {
     }
     else {
       // Proper tid is not provided. Create a dummy term object.
-      $base_path = "tests\\phpunit_tests\\custom\\entities\\taxonomy_term\\";
+      $base_path = "RedTest\\entities\\TaxonomyTerm\\";
       $class_fullname = $base_path . substr($class_shortname, 0, -4);
       $termObject = new $class_fullname();
       $this->setEntityObject($termObject);
@@ -78,7 +78,7 @@ class TaxonomyFormTerm extends EntityForm {
     }
 
     if (!in_array('name', $skip)) {
-      $name = Utils::getRandomString();
+      $name = Utils::getRandomText(10);
       $this->fillName($name);
       $fields['name'] = $name;
     }
@@ -102,7 +102,7 @@ class TaxonomyFormTerm extends EntityForm {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
-    $base_path = "tests\\phpunit_tests\\custom\\entities\\taxonomy_term\\";
+    $base_path = "RedTest\\entities\\TaxonomyTerm\\";
     $class_fullname = $base_path . substr($class_shortname, 0, -4);
 
     $form_state = $this->getFormState();

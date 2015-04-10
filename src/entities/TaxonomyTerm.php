@@ -8,7 +8,7 @@
 
 namespace RedTest\core\entities;
 
-use RedTest\core\Utils as Utilities;
+use RedTest\core\Utils;
 
 class TaxonomyTerm extends Entity {
 
@@ -39,5 +39,9 @@ class TaxonomyTerm extends Entity {
       );
       parent::__construct($term);
     }
+  }
+
+  public function delete() {
+    taxonomy_term_delete($this->getId());
   }
 }

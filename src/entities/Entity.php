@@ -286,6 +286,9 @@ abstract class Entity {
     )) {
       entity_get_controller($this->entity_type)->delete(array($this->getId()));
     }
+    else {
+      return FALSE;
+    }
   }
 
   /**

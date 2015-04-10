@@ -375,6 +375,17 @@ class Utils {
         entity_get_controller($entity_type)->delete($entity_ids);
       }
       else {
+        if ($entity_type == 'node') {
+          node_delete_multiple($entity_ids);
+        }
+        elseif ($entity_type == 'user') {
+          user_delete_multiple($entity_ids);
+        }
+        elseif ($entity_type == 'taxonomy_term') {
+          foreach ($entity_ids as $entity_id) {
+            taxonomy_term_delete($entity_id);
+          }
+        }
         return FALSE;
       }
     }
@@ -394,9 +405,9 @@ class Utils {
       }
     }
 
-    self::deleteEntities('node', 103931);
-    self::deleteEntities('taxonomy_term', 19066);
-    self::deleteEntities('user', 10);
+    self::deleteEntities('node', 10);
+    self::deleteEntities('taxonomy_term', 0);
+    self::deleteEntities('user', 1);
   }
 
   /**
@@ -410,7 +421,7 @@ class Utils {
    *   First value of the input array or the full input array.
    */
   public static function normalize($input) {
-    if (sizeof($input) == 1) {
+    if (is_array($input) && sizeof($input) == 1) {
       return array_shift($input);
     }
 

@@ -209,6 +209,7 @@ abstract class EntityForm extends Form {
     }
     elseif ($this->isFillFieldValuesFunction($name)) {
       $field_name = Utils::makeSnakeCase(substr($name, 4));
+      $arguments = array_shift($arguments);
 
       return $this->fillFieldValues($field_name, $arguments);
     }
@@ -231,13 +232,14 @@ abstract class EntityForm extends Form {
   public function fillFieldValues($field_name, $values) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
     if (!is_null($field) && !is_null($instance)) {
-      return Field::fillValues($this, $field_name, $values);
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+      return $field_class::fillValues($this, $field_name, $values);
     }
 
     // $field_name is a property.
-    if (is_array($values)) {
-      $values = $values[0];
-    }
+    $values = Utils::normalize($values);
     $this->fillValues(array($field_name => $values));
 
     return array(TRUE, $values, "");
@@ -246,7 +248,10 @@ abstract class EntityForm extends Form {
   public function fillDefaultFieldValues($field_name) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
     if (!is_null($field) && !is_null($instance)) {
-      return Field::fillDefaultValues($this, $field_name);
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+      return $field_class::fillDefaultValues($this, $field_name);
     }
 
     $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";

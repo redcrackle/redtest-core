@@ -136,12 +136,16 @@ class Field {
   public static function fillDefaultValues(Form $formObject, $field_name) {
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
-      $field = self::getFieldInfo($field_name);
-      //$short_field_class = Utils::makeTitleCase($field['module']);
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+
       $short_field_class = Utils::makeTitleCase($field['type']);
       $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
 
-      return $field_class::fillDefaultValues($formObject, $field_name);
+      $function = 'fillDefault' . Utils::makeTitleCase(
+          $instance['widget']['type']
+        ) . 'Values';
+
+      return $field_class::$function($formObject, $field_name);
     }
   }
 
@@ -164,15 +168,17 @@ class Field {
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
     if (method_exists($formObject, 'getEntityObject')) {
-      $field = self::getFieldInfo($field_name);
-      $field_class = "RedTest\\core\\Fields\\" . Utils::makeTitleCase(
-          $field['module']
-        );
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
 
-      return call_user_func_array(
-        array($field_class, 'fillValues'),
-        array($formObject, $field_name, $values)
-      );
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+      $function = 'fill' . Utils::makeTitleCase(
+          $instance['widget']['type']
+        ) . 'Values';
+
+      return $field_class::$function($formObject, $field_name, $values);
     }
   }
 }
