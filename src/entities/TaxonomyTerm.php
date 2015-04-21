@@ -44,4 +44,100 @@ class TaxonomyTerm extends Entity {
   public function delete() {
     taxonomy_term_delete($this->getId());
   }
+
+  /**
+   * @param $tid
+   * @param $vocabulary
+   *
+   * @return bool|object
+   */
+  public static function termExistsForTid($tid, $vocabulary = NULL) {
+    if (!is_numeric($tid)) {
+      return FALSE;
+    }
+
+    $term = taxonomy_term_load($tid);
+    if (!$term) {
+      return FALSE;
+    }
+
+    if (!is_null(
+        $vocabulary
+      ) && $term->vocabulary_machine_name != $vocabulary
+    ) {
+      return FALSE;
+    }
+
+    $short_class = Utils::makeTitleCase($term->vocabulary_machine_name);
+    $full_class = "RedTest\\entities\\TaxonomyTerm\\" . $short_class;
+    $termObject = new $full_class($term->tid);
+
+    return $termObject;
+  }
+
+  public static function termExistsForName($name, $vocabulary = NULL) {
+    if (!is_string($name) && !is_numeric($name)) {
+      return FALSE;
+    }
+
+    $terms = taxonomy_get_term_by_name($name, $vocabulary);
+    if (!sizeof($terms)) {
+      return FALSE;
+    }
+
+    $term = array_shift($terms);
+
+    $short_class = Utils::makeTitleCase($term->vocabulary_machine_name);
+    $full_class = "RedTest\\entities\\TaxonomyTerm\\" . $short_class;
+    $termObject = new $full_class($term->tid);
+
+    return $termObject;
+  }
+
+  /**
+   * @param $tids
+   *
+   * @return array
+   */
+  public static function createTermObjectsFromTids($tids, $vocabulary = NULL, $false_on_invalid = TRUE) {
+    $terms = taxonomy_term_load_multiple($tids);
+
+    $termObjects = array();
+    foreach ($tids as $tid) {
+      if (empty($terms[$tid])) {
+        if ($false_on_invalid) {
+          $termObjects[] = FALSE;
+        }
+        else {
+          $termObjects = $tid;
+        }
+        continue;
+      }
+
+      $vocabulary = $terms[$tid]->vocabulary_machine_name;
+      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+          $vocabulary
+        );
+      $termObjects[] = new $term_class($tid);
+    }
+
+    return $termObjects;
+  }
+
+  public static function createTermObjectsFromNames($names, $vocabulary = NULL, $false_on_invalid = TRUE) {
+    $termObjects = array();
+    foreach ($names as $name) {
+      if ($termObject = TaxonomyTerm::termExistsForName($name, $vocabulary)) {
+        $termObjects[] = $termObject;
+      }
+      elseif (!$false_on_invalid) {
+        $termObjects[] = $name;
+      }
+      else {
+        $termObjects[] = FALSE;
+      }
+    }
+
+    return $termObjects;
+  }
 }

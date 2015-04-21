@@ -13,18 +13,6 @@ use RedTest\core\Utils;
 
 class Email extends Field {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      return self::$function($formObject, $field_name);
-    }
-  }
-
   public static function fillDefaultEmailTextfieldValues(
     Form $formObject,
     $field_name
@@ -40,7 +28,9 @@ class Email extends Field {
       $values[] = Utils::getRandomEmail();
     }
 
-    return self::fillEmailTextfieldValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillEmailTextfieldValues(

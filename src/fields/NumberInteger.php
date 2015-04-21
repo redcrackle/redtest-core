@@ -13,18 +13,6 @@ use RedTest\core\Utils;
 
 class NumberInteger extends Field {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      return self::$function($formObject, $field_name);
-    }
-  }
-
   public static function fillDefaultNumberValues(
     Form $formObject,
     $field_name
@@ -50,7 +38,9 @@ class NumberInteger extends Field {
       $values[] = Utils::getRandomInt($min, $max);
     }
 
-    return self::fillNumberValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillNumberValues(

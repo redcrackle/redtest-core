@@ -10,6 +10,7 @@ namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
+use RedTest\core\entities\Entity;
 
 class Image extends File {
 
@@ -20,10 +21,11 @@ class Image extends File {
     $num = 1;
     $show_title = FALSE;
     $show_alt = FALSE;
+    $scheme = 'public';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $uri_scheme = $field['settings']['uri_scheme'];
+      $scheme = $field['settings']['uri_scheme'];
       $file_extensions = explode(' ', $instance['settings']['file_extensions']);
       $max_filesize = $instance['settings']['max_filesize'];
       $max_resolution = $instance['settings']['max_resolution'];
@@ -93,14 +95,12 @@ class Image extends File {
       if ($show_alt) {
         $files[$index]['alt'] = Utils::getRandomText(20);
       }
+      $files[$index]['scheme'] = $scheme;
     }
 
-    return self::fillImageImageValues(
-      $formObject,
-      $field_name,
-      $files,
-      $uri_scheme
-    );
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($files);
   }
 
   /**
@@ -121,6 +121,7 @@ class Image extends File {
    *         'name' => 'Image1', // this is an optional parameter
    *         'alt' => 'Alt text 1', // This is an optional parameter
    *         'title' => 'Title text 1', // This is an optional parameter
+   *         'scheme' => 'private', // this is an optional parameter
    *       )
    *   (4) array(
    *         array(
@@ -129,6 +130,7 @@ class Image extends File {
    *           'name' => 'Image1', // this is an optional parameter
    *           'alt' => 'Alt text 1', // This is an optional parameter
    *           'title' => 'Title text 1', // This is an optional parameter
+   *           'scheme' => 'private', // this is an optional parameter
    *         ),
    *         array(
    *           'uri' => 'ImageDirectory2/Image2.jpg',
@@ -136,20 +138,18 @@ class Image extends File {
    *           'name' => 'Image2', // this is an optional parameter
    *           'alt' => 'Alt text 2', // This is an optional parameter
    *           'title' => 'Title text 2', // This is an optional parameter
+   *           'scheme' => 'public', // this is an optional parameter
    *         ),
    *       )
-   * @param string $scheme
-   *   URI scheme for saving the image.
    *
    * @return array
    */
   public static function fillImageImageValues(
     Form $formObject,
     $field_name,
-    $image_paths,
-    $scheme = 'public'
+    $image_paths
   ) {
-    return parent::fillFileGeneric($formObject, $field_name, $image_paths, $scheme);
+    return parent::fillFileGenericValues($formObject, $field_name, $image_paths);
   }
 
   /**
@@ -167,7 +167,6 @@ class Image extends File {
     $image_info = image_get_info($file->uri);
     $input = array(
       'fid' => $file->fid,
-      'display' => 1,
       'width' => $image_info['width'],
       'height' => $image_info['height'],
     );
@@ -180,5 +179,20 @@ class Image extends File {
     }
 
     return $input;
+  }
+
+  public static function getImageImageValues(Entity $entityObject, $field_name, $post_process = FALSE) {
+    return parent::getFileGenericValues($entityObject, $field_name, $post_process);
+  }
+
+  public static function checkImageImageValues(Entity $entity, $field_name, $values) {
+    $function = "get" . Utils::makeTitleCase($field_name) . "Values";
+    $actual_values = $entity->$function();
+
+    return self::compareImageImageValues($actual_values, $values);
+  }
+
+  public static function compareImageImageValues($actual_values, $values) {
+    return parent::compareFileGenericValues($actual_values, $values);
   }
 }

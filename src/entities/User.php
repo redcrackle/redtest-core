@@ -133,18 +133,24 @@ class User extends Entity {
   }
 
   /**
-   * Log a user in programmatically.
+   * Log a user in programmatically. The function first checks if the provided
+   * input is a valid user id. If not, it checks whether it is a valid
+   * username.
    *
-   * @param string $username
-   *   Username.
+   * @param string|int $uid_or_username
+   *   Uid or Username.
    *
    * @return object $user
    *   User object.
    */
-  public static function loginProgrammatically($username) {
+  public static function loginProgrammatically($uid_or_username) {
     global $user;
-    $user = user_load_by_name($username);
-    $login_array = array('name' => $username);
+    if (is_numeric($uid_or_username) && $user = user_load($uid_or_username)) {
+      $login_array = array('name' => $user->name);
+    }
+    elseif ($user = user_load_by_name($uid_or_username)) {
+      $login_array = array('name' => $uid_or_username);
+    }
     user_login_finalize($login_array);
 
     return new User($user->uid);
@@ -155,8 +161,23 @@ class User extends Entity {
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
-      $username = Utils::getRandomString(5);
-      $email = $username . '@' . Utils::getRandomString(5) . '.com';
+      $username = '';
+      do {
+        $username = Utils::getRandomString(20);
+        $a = user_validate_name($username);
+        $b = user_load_by_name($username);
+        $c = !$a || $b;
+      } while (!is_null(user_validate_name($username)) || user_load_by_name(
+          $username
+        ));
+
+      $email = '';
+      do {
+        $email = $username . '@' . Utils::getRandomString(20) . '.com';
+      } while (!is_null(user_validate_mail($email)) || user_load_by_mail(
+          $email
+        ));
+
       $password = Utils::getRandomString();
       $object = User::registerUser($username, $email, $password);
       if ($object) {

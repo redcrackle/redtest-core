@@ -98,15 +98,15 @@ class NodeForm extends EntityForm {
    *
    * @return array|void
    */
-  public function fillDefaultValuesExcept($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValuesExcept($skip);
+  public function fillDefaultValues($skip = array()) {
+    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
     if (!in_array('title', $skip)) {
       $fields['title'] = Utils::getRandomText(25);
-      $this->fillTitle($fields['title']);
+      $this->fillTitleValues($fields['title']);
     }
 
     return array(TRUE, $fields, "");

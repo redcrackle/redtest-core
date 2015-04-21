@@ -98,7 +98,7 @@ class Field {
    *   Number of field values to create.
    *
    */
-  private function getNumberOfItemsFromCardinality($cardinality) {
+  private static function getNumberOfItemsFromCardinality($cardinality) {
     if ($cardinality == -1) {
       // -1 denotes that cardinality is unlimited.
       $num = Utils::getRandomInt(2, 3);
@@ -172,13 +172,62 @@ class Field {
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
 
       $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
-      $function = 'fill' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
+      $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+      $function = 'fill' . $widget_type . 'Values';
 
       return $field_class::$function($formObject, $field_name, $values);
     }
+  }
+
+  public static function checkValues(
+    Entity $entityObject,
+    $field_name,
+    $values
+  ) {
+    list($field, $instance, $num) = Field::getFieldDetails(
+      $entityObject,
+      $field_name
+    );
+
+    $short_field_class = Utils::makeTitleCase($field['type']);
+    $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+    $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+    $function = "check" . $widget_type . "Values";
+
+    return $field_class::$function($entityObject, $field_name, $values);
+  }
+
+  public static function getValues(
+    Entity $entityObject,
+    $field_name,
+    $post_process = TRUE
+  ) {
+    list($field, $instance, $num) = Field::getFieldDetails(
+      $entityObject,
+      $field_name
+    );
+
+    $short_field_class = Utils::makeTitleCase($field['type']);
+    $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+    $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+    $function = "get" . $widget_type . "Values";
+
+    return $field_class::$function($entityObject, $field_name);
+
+    /*$field = $entityObject->getFieldItems($field_name);
+    if (!$post_process) {
+      return $field;
+    }
+
+    $output = array();
+    foreach ($field as $fid => $file) {
+      $output[] = $fid;
+    }
+
+    return Utils::normalize($output);*/
   }
 }

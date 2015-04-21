@@ -10,22 +10,9 @@ namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
+use RedTest\core\entities\Entity;
 
 class File extends Field {
-
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      $field_class = get_called_class();
-
-      return $field_class::$function($formObject, $field_name);
-    }
-  }
 
   /**
    * Fill generic file. Upload images.
@@ -78,16 +65,22 @@ class File extends Field {
         $files[] = array(
           'uri' => $filenames[Utils::getRandomInt(0, sizeof($filenames) - 1)],
           'description' => Utils::getRandomText(20),
+          'scheme' => $scheme,
         );
       }
       else {
-        $files[] = $filenames[Utils::getRandomInt(0, sizeof($filenames) - 1)];
+        $files[] = array(
+          'uri' => $filenames[Utils::getRandomInt(0, sizeof($filenames) - 1)],
+          'scheme' => $scheme,
+        );
       }
     }
 
     $files = Utils::normalize($files);
 
-    return self::fillFileGeneric($formObject, $field_name, $files, $scheme);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($files);
   }
 
   /**
@@ -97,48 +90,51 @@ class File extends Field {
    *   Form object.
    * @param string $field_name
    *   Field name.
-   * @param string|array $image_paths
+   * @param string|array $file_info
    *   An image path or an array of image paths relative to Drupal root
    *   folder. The acceptable formats are:
    *   (1) "tests/assets/Filename.jpg"
    *   (2) array(
    *         'uri' => 'Directory1/Filename.jpg",
-   *         'description' => 'File description',
+   *         'description' => 'File description', // this is an optional
+   *                                              // parameter,
+   *         'scheme' => 'private', // this is an optional parameter
    *       )
    *   (3) array("Directory1/Filename1.jpg", "Directory2/Filename2.jpg")
    *   (4) array(
    *         array(
    *           'uri' => 'Directory1/Filename1.jpg",
-   *           'description' => 'File description 1',
+   *           'description' => 'File description 1', // this is an optional
+   *                                                  // parameter
+   *           'scheme' => 'private', // this is an optional parameter
    *         ),
    *         array(
    *           'uri' => 'Directory2/Filename2.jpg",
-   *           'description' => 'File description 2',
+   *           'description' => 'File description 2', // this is an optional
+   *                                                  // parameter
+   *           'scheme' => 'public', // this is an optional parameter
    *         ),
    *       )
-   * @param string $scheme
-   *   URI scheme where file needs to be stored.
    *
    * @return mixed $image_paths
    *   A path or an array of paths of images which are to be uploaded.
    */
-  public static function fillFileGeneric(
+  public static function fillFileGenericValues(
     Form $formObject,
     $field_name,
-    $image_paths,
-    $scheme = 'public'
+    $file_info
   ) {
     $formObject->emptyField($field_name);
 
     $field_class = get_called_class();
 
-    $image_paths = $field_class::normalizeInput($image_paths);
+    $file_info = $field_class::normalizeInput($file_info);
 
     $index = 0;
     $input = array();
     $output = array();
-    foreach ($image_paths as $image_path) {
-      $file_temp = $field_class::saveFile($image_path, $scheme);
+    foreach ($file_info as $image_path) {
+      $file_temp = $field_class::saveFile($image_path);
       $input[$index] = $field_class::createInput($file_temp, $image_path);
       $output[$index] = $input[$index];
       $output[$index]['uri'] = $file_temp->uri;
@@ -158,7 +154,7 @@ class File extends Field {
    * Normalizes the input values so that they are in the acceptable input
    * format 4.
    *
-   * @param string|array $image_paths
+   * @param string|array $file_info
    *   An image path or an array of image paths relative to Drupal root folder.
    *   The acceptable formats are:
    *   (1) "tests/assets/Filename.jpg"
@@ -166,6 +162,7 @@ class File extends Field {
    *         'uri' => 'Directory1/Filename.jpg",
    *         'description' => 'File description', // this is an optional
    *                                              // parameter
+   *         'scheme' => 'private', // this is an optional parameter
    *       )
    *   (3) array("Directory1/Filename1.jpg", "Directory2/Filename2.jpg")
    *   (4) array(
@@ -173,11 +170,13 @@ class File extends Field {
    *           'uri' => 'Directory1/Filename1.jpg",
    *           'description' => 'File description 1', // this is an optional
    *                                                  // parameter
+   *           'scheme' => 'private', // this is an optional parameter
    *         ),
    *         array(
    *           'uri' => 'Directory2/Filename2.jpg",
    *           'description' => 'File description 2', // this is an optional
    *                                                  // parameter
+   *           'scheme' => 'public', // this is an optional parameter
    *         ),
    *       )
    *
@@ -188,40 +187,46 @@ class File extends Field {
    *       'uri' => 'Directory1/Filename1.jpg",
    *       'description' => 'File description 1', // this is an optional
    *                                              // parameter
+   *       'scheme' => 'private', // this is an optional parameter
    *     ),
    *     array(
    *       'uri' => 'Directory2/Filename2.jpg",
    *       'description' => 'File description 2', // this is an optional
    *                                              // parameter
+   *       'scheme' => 'public', // this is an optional parameter
    *     ),
    *   )
    *
    */
-  protected static function normalizeInput($image_paths) {
-    if (is_string($image_paths)) {
+  protected static function normalizeInput($file_info) {
+    if (is_string($file_info)) {
       // File paths are provided in the form of first acceptable format.
-      $image_paths = array(array('uri' => $image_paths));
+      $file_info = array(array('uri' => $file_info));
     }
-    elseif (is_array($image_paths) && array_key_exists('uri', $image_paths)) {
+    elseif (is_array($file_info) && array_key_exists('uri', $file_info)) {
       // File paths are provided in the form of second acceptable format.
-      $image_paths = array($image_paths);
+      $file_info = array($file_info);
     }
-    elseif (is_array($image_paths)) {
-      foreach ($image_paths as $key => $image_path) {
+    elseif (is_array($file_info)) {
+      foreach ($file_info as $key => $image_path) {
         if (is_string($image_path)) {
           // File paths are provided in the form of third acceptable format.
-          $image_paths[$key] = array('uri' => $image_path);
+          $file_info[$key] = array('uri' => $image_path);
+        }
+        elseif (is_array($image_path) && array_key_exists('uri', $image_path)) {
+          // File paths are provided in the form of fourth acceptable format.
+          $file_info[$key] = $image_path;
         }
       }
     }
 
-    return $image_paths;
+    return $file_info;
   }
 
   /**
    * Saves the file as a temporary managed file.
    *
-   * @param array $image_path
+   * @param array $file_info
    *   An array of information about the file. It should be in the following
    *   format:
    *   array(
@@ -229,18 +234,18 @@ class File extends Field {
    *     'name' => 'Filename1.jpg', // this is an optional parameter
    *     'description' => 'File description 1', // this is an optional
    *                                            // parameter
+   *     'scheme' => 'private', // this is an optional parameter
    *   )
-   * @param string $scheme
-   *   URI scheme.
    *
    * @return object
    *   Saved file object.
    */
-  protected static function saveFile($image_path, $scheme) {
-    $filename = !empty($image_path['name']) ? $image_path['name'] : drupal_basename(
-      $image_path['uri']
+  protected static function saveFile($file_info) {
+    $filename = !empty($file_info['name']) ? $file_info['name'] : drupal_basename(
+      $file_info['uri']
     );
-    $file_temp = file_get_contents($image_path['uri']);
+    $scheme = !empty($file_info['scheme']) ? $file_info['scheme'] : 'public';
+    $file_temp = file_get_contents($file_info['uri']);
     $file_temp = file_save_data(
       $file_temp,
       $scheme . '://' . $filename,
@@ -295,5 +300,80 @@ class File extends Field {
         ) - 1) . '_upload_button';
 
     return $triggering_element_name;
+  }
+
+  public static function getFileGenericValues(Entity $entityObject, $field_name, $post_process = FALSE) {
+    $field = $entityObject->getFieldItems($field_name);
+    if (!$post_process) {
+      return $field;
+    }
+
+    $output = array();
+    foreach ($field as $fid => $file) {
+      $output[] = $fid;
+    }
+
+    return Utils::normalize($output);
+  }
+
+  public static function checkFileGenericValues(Entity $entity, $field_name, $values) {
+    $function = "get" . Utils::makeTitleCase($field_name) . "Values";
+    $actual_values = $entity->$function();
+
+    return self::compareFileGenericValues($actual_values, $values);
+  }
+
+  public static function compareFileGenericValues($actual_values, $values) {
+    $values = self::normalizeInputForCompare($values);
+    $actual_values = self::normalizeInputForCompare($actual_values);
+
+    if (sizeof($actual_values) != sizeof($values)) {
+      return array(FALSE, "Number of values do not match.");
+    }
+
+    // Iterate over values and make sure that all the keys match.
+    foreach ($values as $index => $value_array) {
+      foreach ($value_array as $key => $value) {
+        if ($actual_values[$index][$key] != $value) {
+          return array(FALSE, "Key " . $key . " does not match.");
+        }
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  private static function normalizeInputForCompare($values) {
+    $formatted_values = array();
+    if (is_numeric($values)) {
+      $formatted_values[] = array('fid' => $values);
+    }
+    elseif (is_object($values) && property_exists($values, 'fid')) {
+      $file = get_object_vars($values);
+      $formatted_values[] = $file;
+    }
+    elseif (is_array($values)) {
+      if (array_key_exists('fid', $values)) {
+        $formatted_values[] = $values;
+      }
+      else {
+        foreach ($values as $key => $value) {
+          if (is_numeric($value)) {
+            $formatted_values[] = array('fid' => $value);
+          }
+          elseif (is_object($value) && property_exists($value, 'fid')) {
+            $file = get_object_vars($value);
+            $formatted_values[] = $file;
+          }
+          elseif (is_array($value)) {
+            if (array_key_exists('fid', $value)) {
+              $formatted_values[] = $value;
+            }
+          }
+        }
+      }
+    }
+
+    return $formatted_values;
   }
 }

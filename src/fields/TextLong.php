@@ -12,10 +12,10 @@ use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 
-class TextWithSummary extends Text {
+class TextLong extends Text {
 
   /**
-   * Fills text area with summary field with default values.
+   * Fills text area field with default values.
    *
    * @param Form $formObject
    *   Form object.
@@ -33,20 +33,13 @@ class TextWithSummary extends Text {
     $field_name
   ) {
     $num = 1;
-    $display_summary = TRUE;
-    $text_processing = TRUE;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $display_summary = $instance['settings']['display_summary'];
       $text_processing = $instance['settings']['text_processing'];
     }
 
-    $values = self::generateValues(
-      $num,
-      $text_processing,
-      $display_summary
-    );
+    $values = self::generateValues($num, $text_processing);
 
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
@@ -54,7 +47,7 @@ class TextWithSummary extends Text {
   }
 
   /**
-   * Fill text area with summary widget.
+   * Fills text area field with provided values.
    *
    * @param Form $formObject
    *   Form object.
@@ -66,28 +59,20 @@ class TextWithSummary extends Text {
    *   assumed that the field is multi-valued and the strings in the array
    *   correspond to multiple text values of this field. If it is an array of
    *   arrays, then it is assumed that the field is multi-valued and the inside
-   *   array can have the keys 'value', 'summary' or 'format' which will be set
+   *   array can have the keys 'value' or 'format' which will be set
    *   in form_state. Here are a few examples this parameter can take:
    *   "<p>This is text string.</p>", or
    *   array("<p>This is text string 1.</p>", "This is text string 2."), or
    *   array(
    *     array(
    *       'value' => "This is text string 1.",
-   *       'summary' => "<p>Text string 1</p>", // this is an optional parameter
-   *       'format' => 'filtered_html', // this is an optional parameter
+   *       'format' => 'filtered_html',
    *     ),
    *     array(
    *       'value' => "This is text string 2.",
-   *       'summary' => "Text string 2", // this is an optional parameter
-   *       'format' => 'plain_text', // this is an optional parameter
+   *       'format' => 'plain_text',
    *     ),
    *   );
-   * @param string $summary
-   *   Summary text. If $values parameter doesn't specify summary explicitly,
-   *   then this parameter is used as a default.
-   * @param string $format
-   *   Text format. If $values parameter doesn't specify text format
-   *   explicitly, then this parameter is used as a default.
    *
    * @return array
    *   An array with 3 values:
@@ -98,16 +83,11 @@ class TextWithSummary extends Text {
   public static function fillValues(
     Form $formObject,
     $field_name,
-    $values,
-    $summary = '',
-    $format = ''
+    $values
   ) {
     $formObject->emptyField($field_name);
 
     $defaults = array();
-    if (!empty($summary)) {
-      $defaults['summary'] = $summary;
-    }
     if (!empty($format)) {
       $defaults['format'] = $format;
     }

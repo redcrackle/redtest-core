@@ -291,34 +291,76 @@ abstract class Entity {
     }
   }
 
+  public static function hasClassAccess($op) {
+    if ($op !== 'create') {
+      return FALSE;
+    }
+
+    $entity_class = get_called_class();
+    $entity_type = $entity_class::getEntityType();
+    if (module_exists('entity')) {
+      return entity_access($op, $entity_type);
+    }
+    elseif ($entity_type == 'node') {
+      $class = new \ReflectionClass($entity_class);
+      $bundle = Utils::makeSnakeCase($class->getShortName());
+      return node_access($op, $bundle);
+    }
+    elseif (($info = entity_get_info()) && isset($info[$entity_type]['access callback'])) {
+      return $info[$entity_type]['access callback']($op, NULL, NULL, $entity_type);
+    }
+
+    return FALSE;
+  }
+
+  public function hasObjectAccess($op) {
+    if (!in_array($op, array('update', 'view', 'delete'))) {
+      return FALSE;
+    }
+
+    $entity_type = $this->getEntityType();
+    if (module_exists('entity')) {
+      return entity_access($op, $entity_type);
+    }
+    elseif ($entity_type == 'node') {
+      return node_access($op, $this->getEntity());
+    }
+    elseif (($info = entity_get_info()) && isset($info[$entity_type]['access callback'])) {
+      return $info[$entity_type]['access callback']($op, $this->getEntity(), NULL, $entity_type);
+    }
+
+    return FALSE;
+  }
+
   /**
-   * Returns whether currently logged in user has access to view the entity.
+   * Returns whether currently logged in user has access to create the entity.
    *
-   * @return bool $out
+   * @return bool
    *   TRUE if user has access and FALSE otherwise.
    */
   public static function hasCreateAccess() {
-    return entity_access('create', self::getEntityType());
+    $entity_class = get_called_class();
+    return $entity_class::hasAccess('create');
   }
 
   /**
-   * Returns whether currently logged in user has access to view the node.
+   * Returns whether currently logged in user has access to view the entity.
    *
-   * @return bool $out
+   * @return bool
    *   TRUE if user has access and FALSE otherwise.
    */
   public function hasViewAccess() {
-    return entity_access('view', $this->getEntityType(), $this->entity);
+    return $this->hasAccess('view');
   }
 
   /**
-   * Returns whether currently logged in user has access to update the node.
+   * Returns whether currently logged in user has access to update the entity.
    *
-   * @return bool $out
+   * @return bool
    *   TRUE if user has access and FALSE otherwise.
    */
   public function hasUpdateAccess() {
-    return entity_access('update', $this->getEntityType(), $this->entity);
+    return $this->hasAccess('update');
   }
 
   /**
@@ -328,9 +370,22 @@ abstract class Entity {
    *   TRUE if user has access and FALSE otherwise.
    */
   public function hasDeleteAccess() {
-    return entity_access('delete', $this->getEntityType(), $this->entity);
+    return $this->hasAccess('delete');
   }
 
+  /**
+   * Returns whether currently logged in user has access to do specified
+   * operation on the given field.
+   *
+   * @param string $field_name
+   *   Field name.
+   * @param string $op
+   *   Operation. It can be either 'view' or 'edit'.
+   *
+   * @return bool|null
+   *   If field exists, then this function returns TRUE or FALSE depending on
+   *   the access. If field does not exist, then it returns NULL.
+   */
   public function hasFieldAccess($field_name, $op = 'view') {
     if (($field = field_info_field($field_name)) && in_array(
         $op,
@@ -732,8 +787,8 @@ abstract class Entity {
   }
 
   /**
-   * Magic method. This function will be executed when a matching static function is
-   * not found. Currently this supports getEntityType() function.
+   * Magic method. This function will be executed when a matching static
+   * function is not found. Currently this supports getEntityType() function.
    *
    * @param string $name
    *   Called function name.
@@ -746,6 +801,10 @@ abstract class Entity {
   public static function __callStatic($name, $arguments) {
     if ($name == 'getEntityType') {
       return self::getClassEntityType();
+    }
+    elseif ($name == 'hasAccess') {
+      $class = get_called_class();
+      return call_user_func_array(array($class, 'hasClassAccess'), $arguments);
     }
   }
 
@@ -765,6 +824,9 @@ abstract class Entity {
   public function __call($name, $arguments) {
     if ($name == 'getEntityType') {
       return $this->getObjectEntityType();
+    }
+    elseif ($name == 'hasAccess') {
+      return call_user_func_array(array($this, 'hasObjectAccess'), $arguments);
     }
     elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
         $name
@@ -794,15 +856,15 @@ abstract class Entity {
         return $this->hasFieldAccess($field_name, $op);
       }
     }
-    elseif (strpos($name, 'get') === 0) {
+    elseif (strpos($name, 'get') === 0 && strrpos($name, 'Values') == strlen($name) - 6) {
       // Function name starts with "get". This means that we need to return
       // value of a field.
       array_unshift(
         $arguments,
-        Utils::makeSnakeCase(substr($name, 3))
+        Utils::makeSnakeCase(substr($name, 3, -6))
       );
 
-      return call_user_func_array(array($this, 'getFieldValue'), $arguments);
+      return call_user_func_array(array($this, 'getFieldValues'), $arguments);
     }
     elseif (strpos($name, 'view') === 0) {
       // Function name starts with "view".
@@ -813,17 +875,32 @@ abstract class Entity {
 
       return call_user_func_array(array($this, 'viewField'), $arguments);
     }
-    elseif (strpos($name, "check") === 0 && strrpos($name, 'Items') == strlen(
+    elseif (strpos($name, "check") === 0 && strrpos($name, 'Values') == strlen(
         $name
-      ) - 5
+      ) - 6
     ) {
       // Function name starts with "check" and ends with "Values".
-      $field_name = Utils::makeSnakeCase(
-        substr($name, 5, -5)
-      );
+      $field_name = Utils::makeSnakeCase(substr($name, 5, -6));
       array_unshift($arguments, $field_name);
-      call_user_func_array(array($this, 'checkFieldItems'), $arguments);
+
+      return call_user_func_array(array($this, 'checkFieldValues'), $arguments);
     }
+    /*elseif (strpos($name, "compare") === 0 && strrpos(
+        $name,
+        'Values'
+      ) == strlen(
+        $name
+      ) - 6
+    ) {
+      // Function name starts with "compare" and ends with "Values".
+      $field_name = Utils::makeSnakeCase(substr($name, 7, -6));
+      array_unshift($arguments, $field_name);
+
+      return call_user_func_array(
+        array($this, 'compareFieldValues'),
+        $arguments
+      );
+    }*/
     elseif (strpos($name, "check") === 0 && strrpos($name, 'Views') == strlen(
         $name
       ) - 5
@@ -833,7 +910,8 @@ abstract class Entity {
         substr($name, 5, -5)
       );
       array_unshift($arguments, $field_name);
-      call_user_func_array(array($this, 'checkFieldViews'), $arguments);
+
+      return call_user_func_array(array($this, 'checkFieldViews'), $arguments);
     }
   }
 
@@ -933,53 +1011,26 @@ abstract class Entity {
     );
   }
 
-  public function checkFieldItems($field_name, $testClass, $values) {
-    if ($instance = $this->getFieldInstance($field_name)) {
-      $function = 'check' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Items';
-      if (method_exists($this, $function)) {
-        $this->$function($field_name, $testClass, $values);
-      }
-      else {
-        $field = $this->getFieldInfo($field_name);
-        $function = "check" . Utils::makeTitleCase(
-            $field['type']
-          ) . "Items";
-        if (method_exists($this, $function)) {
-          $this->$function($field_name, $testClass, $values);
-        }
-        else {
-          $testClass->assertEquals(
-            $values,
-            call_user_func(
-              array(
-                $this,
-                "get" . Utils::makeTitleCase($field_name)
-              ),
-              $testClass,
-              $values
-            ),
-            "Values for " . $field_name . " do not match."
-          );
-        }
-      }
+  public function checkFieldValues($field_name, $values) {
+    list($field, $instance, $num) = Field::getFieldDetails($this, $field_name);
+    if (!is_null($field) && !is_null($instance)) {
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
 
-      return;
+      return $field_class::checkValues($this, $field_name, $values);
     }
 
     // Field instance does not exist. Check if a property exists and its value
     // matches.
-    $testClass->assertObjectHasAttribute(
-      $field_name,
-      $this->entity,
-      "Field " . $field_name . " not found."
-    );
-    $testClass->assertEquals(
-      $values,
-      $this->entity->$field_name,
-      "Values of the " . $field_name . " do not match."
-    );
+    if (!property_exists($this->entity, $field_name)) {
+      return array(FALSE, "Field " . $field_name . " not found.");
+    }
+
+    if ($this->entity->$field_name != $values) {
+      return array(FALSE, "Values of " . $field_name . " do not match.");
+    }
+
+    return array(TRUE, "");
   }
 
   public function getText($field_name, $post_process = TRUE) {
@@ -1423,16 +1474,14 @@ abstract class Entity {
    *
    * @throws \EntityMalformedException
    */
-  public function getFieldValue($field_name, $post_process = TRUE) {
-    if ($instance = $this->getFieldInstance($field_name)) {
+  public function getFieldValues($field_name, $post_process = TRUE) {
+    list($field, $instance, $num) = Field::getFieldDetails($this, $field_name);
+    if (!is_null($field) && !is_null($instance)) {
       // Field instance exists.
-      // If post-processing is not required, then just return the field values
-      // as provided by Drupal.
-      if (!$post_process) {
-        return $this->getFieldItems($field_name);
-      }
+      $short_field_class = Utils::makeTitleCase($field['type']);
+      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
 
-      return Field::getValue($field_name, $this);
+      return $field_class::getValues($this, $field_name, $post_process);
     }
 
     // There is no such field instance for the given entity. Check if it's a
@@ -1527,7 +1576,7 @@ abstract class Entity {
       $classForm = new $formClass();
 
       // Fill default values in the form.
-      list($success, $fields, $msg) = $classForm->fillDefaultValuesExcept($skip);
+      list($success, $fields, $msg) = $classForm->fillDefaultValues($skip);
       if (!$success) {
         return array(FALSE, $output, $msg);
       }
@@ -1605,7 +1654,7 @@ abstract class Entity {
     );
   }
 
-  public function checkValues($testClass, $values, $skip = array()) {
+  public function checkValues($values, $skip = array()) {
     $instances = $this->getFieldInstances();
 
     $checked_fields = array();
@@ -1615,7 +1664,10 @@ abstract class Entity {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
           $function = "check" . Utils::makeTitleCase($field_name) . "Values";
-          $this->$function($testClass, $values[$field_name]);
+          list($success, $msg) = $this->$function($values[$field_name]);
+          if (!$success) {
+            return array(FALSE, "Field " . $field_name . ": " . $msg);
+          }
         }
         // Field has been checked so add it to $checked_fields array.
         $checked_fields[] = $field_name;
@@ -1628,28 +1680,29 @@ abstract class Entity {
 
     // Unchecked fields could be properties.
     foreach ($unchecked_fields as $field_name) {
-      $testClass->assertObjectHasAttribute(
-        $field_name,
-        $this->entity,
-        "Field " . $field_name . " not found."
-      );
-      $function = "get" . Utils::makeTitleCase($field_name);
-      $testClass->assertEquals(
-        $values[$field_name],
-        $this->$function(),
-        "Values of the " . $field_name . " do not match."
-      );
-      unset($unchecked_fields[$field_name]);
+      if (!property_exists($this->entity, $field_name)) {
+        return array(FALSE, "Field " . $field_name . " not found.");
+      }
+
+      $function = "get" . Utils::makeTitleCase($field_name) . "Values";
+      if ($this->$function() != $values[$field_name]) {
+        return array(FALSE, "Values of " . $field_name . " do not match.");
+      }
+
+      $unchecked_fields = array_diff($unchecked_fields, array($field_name));
     }
 
-    $this->assertCount(
-      0,
-      sizeof($unchecked_fields),
-      "Following fields or properties could not be found: " . print_r(
-        $unchecked_fields,
-        TRUE
-      )
-    );
+    if (sizeof($unchecked_fields)) {
+      return array(
+        FALSE,
+        "Following fields or properties could not be found: " . print_r(
+          $unchecked_fields,
+          TRUE
+        )
+      );
+    }
+
+    return array(TRUE, "");
   }
 
   public function checkFieldStructure($testClass) {

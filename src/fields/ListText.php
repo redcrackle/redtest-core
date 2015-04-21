@@ -27,7 +27,9 @@ class ListText extends ListField {
 
     $values = self::generateListValues($allowed_values, $num);
 
-    return self::fillOptionsButtonsValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillOptionsButtonsValues(
@@ -69,7 +71,9 @@ class ListText extends ListField {
 
     $values = self::generateListValues($allowed_values, $num);
 
-    return self::fillOptionsSelectValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillOptionsSelectValues(
@@ -109,7 +113,7 @@ class ListText extends ListField {
    *   A string if only one value was to be returned, an array of strings
    *   otherwise.
    */
-  private static function generateListTextValues($allowed_values, $num = 1) {
+  /*private static function generateListTextValues($allowed_values, $num = 1) {
     $selected_keys = array_rand($allowed_values, min($num, sizeof($allowed_values)));
     if (is_numeric($selected_keys)) {
       $selected_keys = array($selected_keys);
@@ -120,5 +124,5 @@ class ListText extends ListField {
     }
 
     return Utils::normalize($values);
-  }
+  }*/
 }

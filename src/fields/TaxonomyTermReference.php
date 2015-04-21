@@ -10,32 +10,47 @@ namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
-use RedTest\entities\TaxonomyTerm;
+use RedTest\core\entities\Entity;
+use RedTest\core\entities\TaxonomyTerm;
 
 class TaxonomyTermReference extends Field {
 
   public static function fillDefaultValues(Form $formObject, $field_name) {
     $num = 1;
     $vocabulary = '';
+    $widget_type = '';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
+      $widget_type = $instance['widget']['type'];
     }
 
     // Create new taxonomy terms in the specified vocabulary.
     $vocabulary_class = Utils::makeTitleCase($vocabulary);
     $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . $vocabulary_class;
-    list($success, $termObjects, $msg) = $vocabulary_class::createDefault($num);
-    if (!$success) {
-      return array(
-        FALSE,
-        $termObjects,
-        "Could not create taxonomy terms for the field " . $field_name . ": " . $msg
-      );
+
+    $termObjects = array();
+    for ($i = 0; $i < $num; $i++) {
+      if ($widget_type == 'taxonomy_autocomplete' && Utils::getRandomBool()) {
+        // Instead of creating a new term, we just pass its name so that Drupal
+        // creates a new one automatically.
+        $termObjects[] = Utils::getRandomText(10);
+      }
+      else {
+        list($success, $termObject, $msg) = $vocabulary_class::createDefault();
+        if (!$success) {
+          return array(
+            FALSE,
+            $termObjects,
+            "Could not create taxonomy terms for the field " . $field_name . ": " . $msg
+          );
+        }
+        $termObjects[] = $termObject;
+      }
     }
 
-    $function = "fill" . Utils::makeTitleCase($field_name);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
     return $formObject->$function($termObjects);
   }
@@ -58,15 +73,59 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $tids = self::convertValues($values);
-    $term_names = self::convertValues($values, TRUE);
-    if (is_array($term_names)) {
-      $term_names = implode(",", $term_names);
+    $formObject->emptyField($field_name);
+
+    $vocabulary = NULL;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
     }
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => $term_names));
-    $termObjects = self::createTermObjectsFromTids($tids);
+
+    $names = self::convertValues($values, $vocabulary, TRUE, FALSE);
+    $field_value = is_array($names) ? implode(",", $names) : $names;
+    $formObject->setValues($field_name, array(LANGUAGE_NONE => $field_value));
+
+    $termObjects = TaxonomyTerm::createTermObjectsFromNames(
+      $names,
+      $vocabulary,
+      FALSE
+    );
 
     return array(TRUE, $termObjects, "");
+  }
+
+  public static function checkValues(
+    Entity $entityObject,
+    $field_name,
+    $values
+  ) {
+    $function = "get" . Utils::makeTitleCase($field_name) . "Values";
+    $actual_values = $entityObject->$function();
+
+    return self::compareValues($actual_values, $values);
+  }
+
+  public static function getValues(
+    Entity $entityObject,
+    $field_name,
+    $post_process = FALSE
+  ) {
+    $field = $entityObject->getFieldItems($field_name);
+
+    return $field;
+  }
+
+  public static function compareValues($actual_values, $values) {
+    $actual_values = self::convertValues($actual_values, NULL);
+    $values = self::convertValues($values, NULL);
+
+    if ($actual_values === $values) {
+      return array(TRUE, "");
+    }
+    else {
+      return array(FALSE, "Values do not match.");
+    }
   }
 
   public static function fillOptionsButtonsValues(
@@ -74,12 +133,21 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $tids = self::convertValues($values);
+    $formObject->emptyField($field_name);
+
+    $vocabulary = NULL;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
+    }
+
+    $tids = self::convertValues($values, $vocabulary);
     $formObject->setValues(
       $field_name,
       array(LANGUAGE_NONE => drupal_map_assoc($tids))
     );
-    $termObjects = self::createTermObjectsFromTids($tids);
+    $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
     return array(TRUE, $termObjects, "");
   }
@@ -89,9 +157,18 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $tids = self::convertValues($values);
+    $formObject->emptyField($field_name);
+
+    $vocabulary = NULL;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
+    }
+
+    $tids = self::convertValues($values, NULL);
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $tids));
-    $termObjects = self::createTermObjectsFromTids($tids);
+    $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
     return array(TRUE, $termObjects, "");
   }
@@ -189,221 +266,126 @@ class TaxonomyTermReference extends Field {
    *           'entity' => Entity object,
    *           'entity_term' => 'taxonomy_term',
    *         ),
-   *       )   *
+   *       )
+   * @param null|string $vocabulary
+   * @param bool $return_name
+   * @param bool $false_on_invalid
    *
    * @return array
+   *
+   * @todo Refactor the code to make it more understandable.
    */
-  private static function convertValues($values, $return_name = FALSE) {
-    $tids = array();
-    $names = array();
-    if (is_object($values)) {
-      $parent_class = get_parent_class($values);
-      if ($parent_class == "RedTest\\core\\entities\\TaxonomyTerm") {
-        // $values follows acceptable format (i).
-        if ($return_name) {
-          $names = array(Utils::getLabel($values));
-        }
-        else {
-          $tids = array(Utils::getId($values));
-        }
-      }
-      elseif (property_exists($values, 'tid')) {
-        // $values follows acceptable format (f).
-        if ($return_name) {
-          $term = taxonomy_term_load($values->tid);
-          $names = array($term->name);
-        }
-        else {
-          $tids = array($values->tid);
-        }
-      }
-      elseif (property_exists($values, 'name')) {
-        $terms = array();
-        if (property_exists($values, 'vocabulary')) {
-          // $values follows acceptable input format (h).
-          $terms = taxonomy_get_term_by_name(
-            $values->name,
-            $values->vocabulary
-          );
-        }
-        else {
-          // $values follows acceptable input format (g).
-          $terms = taxonomy_get_term_by_name($values->name);
-        }
-        if (sizeof($terms)) {
-          $term = array_shift($terms);
-          if ($return_name) {
-            $names = array($term->name);
-          }
-          else {
-            $tids = array($term->tid);
-          }
-        }
-      }
+  private static function convertValues(
+    $values,
+    $vocabulary = NULL,
+    $return_name = FALSE,
+    $false_on_invalid = TRUE
+  ) {
+    $output = array();
+    $function = $return_name ? "getLabel" : "getId";
+    if ($termObject = self::isTermObject($values, $vocabulary)) {
+      $output[] = Utils::$function($termObject);
+    }
+    elseif (!$false_on_invalid && !is_array($values) && (is_numeric(
+          $values
+        ) || is_string($values))
+    ) {
+      $output[] = $values;
     }
     elseif (is_array($values)) {
-      if (array_key_exists('tid', $values)) {
-        // $values follows acceptable input format (c).
-        if ($return_name) {
-          $term = taxonomy_term_load($values['tid']);
-          $names = array($term->name);
-        }
-        else {
-          $tids = array($values['tid']);
-        }
-      }
-      elseif (array_key_exists('name', $values)) {
-        $terms = array();
-        if (array_key_exists('vocabulary', $values)) {
-          // $values follows acceptable input format (e).
-          $terms = taxonomy_get_term_by_name(
-            $values['name'],
-            $values['vocabulary']
-          );
-        }
-        else {
-          // $values follows acceptable input format (d).
-          $terms = taxonomy_get_term_by_name($values['name']);
-        }
-        if (sizeof($terms)) {
-          $term = array_shift($terms);
-          if ($return_name) {
-            $names = array($term->name);
-          }
-          else {
-            $tids = array($term->tid);
-          }
-        }
-      }
       foreach ($values as $key => $value) {
-        if (is_numeric($value)) {
-          if ($term = taxonomy_term_load($value)) {
-            // $values follows acceptable input format (j).
-            if ($return_name) {
-              $names[] = $term->name;
-            }
-            else {
-              $tids[] = $term->tid;
-            }
-            continue;
-          }
+        if ($termObject = self::isTermObject($value, $vocabulary)) {
+          $output[] = Utils::$function($termObject);
         }
-
-        if (is_string($value)) {
-          // $values follows acceptable input format (k).
-          $terms = taxonomy_get_term_by_name($value);
-          if (sizeof($terms)) {
-            $term = array_shift($terms);
-            if ($return_name) {
-              $tids[] = $term->name;
-            }
-            else {
-              $tids[] = $term->tid;
-            }
-          }
+        elseif (!$false_on_invalid && !is_array($value) && (is_numeric(
+              $value
+            ) || is_string($value))
+        ) {
+          $output[] = $value;
         }
-        elseif (is_object($value)) {
-          $parent_class = get_parent_class($value);
-          if ($parent_class == "RedTest\\core\\entities\\TaxonomyTerm") {
-            // $values follows acceptable format (r).
-            if ($return_name) {
-              $names[] = Utils::getLabel($value);
-            }
-            else {
-              $tids[] = Utils::getId($value);
-            }
-          }
-          elseif (property_exists($value, 'tid')) {
-            // $values follows acceptable format (o).
-            if ($return_name) {
-              $term = taxonomy_term_load($values['tid']);
-              $names[] = $term->name;
-            }
-            else {
-              $tids[] = $value->tid;
-            }
-          }
-          elseif (property_exists($value, 'name')) {
-            $terms = array();
-            if (property_exists($value, 'vocabulary')) {
-              // $values follows acceptable input format (q).
-              $terms = taxonomy_get_term_by_name(
-                $value->name,
-                $value->vocabulary
-              );
-            }
-            else {
-              // $values follows acceptable format (p).
-              $terms = taxonomy_get_term_by_name($value->name);
-            }
-            if (sizeof($terms)) {
-              $term = array_shift($terms);
-              if ($return_name) {
-                $names[] = $term->name;
-              }
-              else {
-                $tids[] = $term->tid;
-              }
-            }
-          }
-        }
-        elseif (is_array($value)) {
-          if (array_key_exists('tid', $value)) {
-            // $values follows acceptable format (l).
-            if ($return_name) {
-              $names[] = $value['name'];
-            }
-            else {
-              $tids[] = $value['tid'];
-            }
-          }
-          elseif (array_key_exists('name', $value)) {
-            $terms = array();
-            if (array_key_exists('vocabulary', $value)) {
-              // $values follows acceptable format (n).
-              $terms = taxonomy_get_term_by_name(
-                $value['name'],
-                $value['vocabulary']
-              );
-            }
-            else {
-              // $values follows acceptable format (m).
-              $terms = taxonomy_get_term_by_name($value['name']);
-            }
-            if (sizeof($terms)) {
-              $term = array_shift($terms);
-              if ($return_name) {
-                $names[] = $term->name;
-              }
-              else {
-                $tids[] = $term->tid;
-              }
-            }
-          }
+        elseif ($false_on_invalid) {
+          $output[] = FALSE;
         }
       }
     }
+    elseif ($false_on_invalid) {
+      $output[] = FALSE;
+    }
 
-    return $return_name ? $names : $tids;
+    return $output;
   }
 
-  /**
-   * @param $tids
-   *
-   * @return array
-   */
-  private static function createTermObjectsFromTids($tids) {
-    $terms = taxonomy_term_load_multiple($tids);
-
-    $termObjects = array();
-    foreach ($tids as $tid) {
-      $vocabulary = $terms[$tid]->vocabulary_machine_name;
-      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
-          $vocabulary
-        );
-      $termObjects[] = new $term_class($tid);
+  private static function isTermObject($value, $vocabulary) {
+    if ($termObject = TaxonomyTerm::termExistsForTid($value, $vocabulary)) {
+      // $values follows acceptable format (a).
+      return $termObject;
     }
-
-    return $termObjects;
+    elseif ($termObject = TaxonomyTerm::termExistsForName(
+      $value,
+      $vocabulary
+    )
+    ) {
+      // $values follows acceptable format (b).
+      return $termObject;
+    }
+    elseif (is_object($value)) {
+      $parent_class = get_parent_class($value);
+      if ($parent_class == "RedTest\\core\\entities\\TaxonomyTerm") {
+        // $values follows acceptable format (i).
+        return $value;
+      }
+      elseif (property_exists(
+          $value,
+          'tid'
+        ) && $termObject = TaxonomyTerm::termExistsForTid(
+          $value->tid,
+          $vocabulary
+        )
+      ) {
+        // $values follows acceptable format (f).
+        return $termObject;
+      }
+      elseif (property_exists(
+          $value,
+          'name'
+        ) && $termObject = TaxonomyTerm::termExistsForTid(
+          $value->tid,
+          property_exists(
+            $value,
+            'vocabulary'
+          ) ? $value->vocabulary : $vocabulary
+        )
+      ) {
+        // $values follows acceptable format (g).
+        return $termObject;
+      }
+    }
+    elseif (is_array($value)) {
+      if (array_key_exists(
+          'tid',
+          $value
+        ) && $termObject = TaxonomyTerm::termExistsForTid(
+          $value['tid'],
+          $vocabulary
+        )
+      ) {
+        // $values follows acceptable format (c).
+        return $termObject;
+      }
+      elseif (array_key_exists(
+          'name',
+          $value
+        ) && $termObject = TaxonomyTerm::termExistsForName(
+          $value['name'],
+          array_key_exists(
+            'vocabulary',
+            $value
+          ) ? $value['vocabulary'] : $vocabulary
+        )
+      ) {
+        // $values follows acceptable format (d).
+        return $termObject;
+      }
+    }
   }
 }

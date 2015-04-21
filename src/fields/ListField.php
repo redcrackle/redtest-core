@@ -13,20 +13,6 @@ use RedTest\core\Utils;
 
 class ListField extends Field {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      $called_class = get_called_class();
-
-      return $called_class::$function($formObject, $field_name);
-    }
-  }
-
   public static function fillDefaultOptionsButtonsValues(
     Form $formObject,
     $field_name
@@ -40,14 +26,11 @@ class ListField extends Field {
     }
 
     $called_class = get_called_class();
-
     $values = $called_class::generateListValues($allowed_values, $num);
 
-    return $called_class::fillOptionsButtonsValues(
-      $formObject,
-      $field_name,
-      $values
-    );
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillOptionsButtonsValues(
@@ -90,7 +73,9 @@ class ListField extends Field {
     $called_class = get_called_class();
     $values = $called_class::generateListValues($allowed_values, $num);
 
-    return $called_class::fillOptionsSelectValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillOptionsSelectValues(

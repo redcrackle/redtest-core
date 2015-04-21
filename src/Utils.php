@@ -407,7 +407,7 @@ class Utils {
 
     self::deleteEntities('node', 10);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1);
+    self::deleteEntities('user', 758);
   }
 
   /**
@@ -480,5 +480,148 @@ class Utils {
     }
 
     return self::normalize($bools);
+  }
+
+  /**
+   * Sorts an array of objects.
+   *
+   * @param $array
+   *   An array of objects.
+   * @param $orderBy
+   */
+  public static function sort(&$array, $orderBy) {
+    $new_array = array();
+    foreach ($array as $key => $obj) {
+      $new_array[$key] = get_object_vars($obj->getEntity());
+      $obj->hash = $new_array[$key]['hash'] = spl_object_hash($obj);
+    }
+
+    $new_array = self::sort_array_multidim($new_array, $orderBy);
+
+    $output = array();
+    foreach ($new_array as $key => $value) {
+
+    }
+    print_r($new_array);
+  }
+
+  public static function filter(&$array, $filterBy) {
+    if (is_object($array)) {
+      $array = array($array);
+    }
+
+    $output = $array;
+    foreach ($filterBy as $filter) {
+      $name = $filter['name'];
+      $value = $filter['value'];
+      $new_output = array();
+      foreach ($output as $key => $obj) {
+        $output_val = $output[$key]->$name;
+        if (is_null($value) && is_null($output_val)) {
+          $new_output[] = $output[$key];
+        }
+        elseif (empty($value) && empty($output_val)) {
+          $new_output[] = $output[$key];
+        }
+        elseif ((is_string($value) || is_numeric($value)) && (is_string($output_val) || is_numeric($output_val)) && $output_val == $value) {
+          $new_output[] = $output[$key];
+        }
+        elseif (is_array($output_val)) {
+          if (is_string($value) || is_numeric($value)) {
+            
+          }
+        }
+      }
+    }
+    $output = array();
+    foreach ($array as $key => $obj) {
+      $entity = $obj->getEntity();
+      foreach ($filterBy as $filter) {
+        $name = $filter['name'];
+        $value = $filter['value'];
+        if (is_null($value) && is_null($array[$key]->$name)) {
+          $output[] = $array[$key];
+        }
+        elseif (empty($value) && empty($array[$key]->$name)) {
+          $output[] = $array[$key];
+        }
+      }
+    }
+  }
+
+  /**
+   * @name Mutlidimensional Array Sorter.
+   * @author Tufan Barış YILDIRIM
+   * @link http://www.tufanbarisyildirim.com
+   * @github http://github.com/tufanbarisyildirim
+   *
+   * This function can be used for sorting a multidimensional array by sql like order by clause
+   *
+   * @param mixed $array
+   * @param mixed $order_by
+   * @return array
+   */
+  public static function sort_array_multidim(array $array, $order_by)
+  {
+    //TODO -c flexibility -o tufanbarisyildirim : this error can be deleted if you want to sort as sql like "NULL LAST/FIRST" behavior.
+    if(!is_array($array[0]))
+      throw new Exception('$array must be a multidimensional array!',E_USER_ERROR);
+
+    $columns = explode(',',$order_by);
+    foreach ($columns as $col_dir)
+    {
+      if(preg_match('/(.*)([\s]+)(ASC|DESC)/is',$col_dir,$matches))
+      {
+        if(!array_key_exists(trim($matches[1]),$array[0]))
+          trigger_error('Unknown Column <b>' . trim($matches[1]) . '</b>',E_USER_NOTICE);
+        else
+        {
+          if(isset($sorts[trim($matches[1])]))
+            trigger_error('Redundand specified column name : <b>' . trim($matches[1] . '</b>'));
+
+          $sorts[trim($matches[1])] = 'SORT_'.strtoupper(trim($matches[3]));
+        }
+      }
+      else
+      {
+        throw new Exception("Incorrect syntax near : '{$col_dir}'",E_USER_ERROR);
+      }
+    }
+
+    //TODO -c optimization -o tufanbarisyildirim : use array_* functions.
+    $colarr = array();
+    foreach ($sorts as $col => $order)
+    {
+      $colarr[$col] = array();
+      foreach ($array as $k => $row)
+      {
+        $colarr[$col]['_'.$k] = strtolower($row[$col]);
+      }
+    }
+
+    $multi_params = array();
+    foreach ($sorts as $col => $order)
+    {
+      $multi_params[] = '$colarr[\'' . $col .'\']';
+      $multi_params[] = $order;
+    }
+
+    $rum_params = implode(',',$multi_params);
+    eval("array_multisort({$rum_params});");
+
+
+    $sorted_array = array();
+    foreach ($colarr as $col => $arr)
+    {
+      foreach ($arr as $k => $v)
+      {
+        $k = substr($k,1);
+        if (!isset($sorted_array[$k]))
+          $sorted_array[$k] = $array[$k];
+        $sorted_array[$k][$col] = $array[$k][$col];
+      }
+    }
+
+    return array_values($sorted_array);
   }
 }

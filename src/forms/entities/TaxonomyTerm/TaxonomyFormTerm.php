@@ -71,16 +71,22 @@ class TaxonomyFormTerm extends EntityForm {
    *   executed without any error), an array of fields which were modified and
    *   an empty message.
    */
-  public function fillDefaultValuesExcept($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValuesExcept($skip);
+  public function fillDefaultValues($skip = array()) {
+    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
     if (!in_array('name', $skip)) {
       $name = Utils::getRandomText(10);
-      $this->fillName($name);
+      $this->fillNameValues($name);
       $fields['name'] = $name;
+    }
+
+    if (!in_array('description', $skip)) {
+      $description = Utils::getRandomText(100);
+      $this->fillDescriptionValues($description);
+      $fields['description'] = $description;
     }
 
     return array(TRUE, $fields, "");

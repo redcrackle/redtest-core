@@ -11,33 +11,7 @@ namespace RedTest\core\fields;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
-class ListBoolean extends Field {
-
-  /**
-   * Fill field is specified form with default values.
-   *
-   * @param Form $formObject
-   *   Form object.
-   * @param string $field_name
-   *   Field name.
-   *
-   * @return array
-   *   An array with 2 values:
-   *   (1) $success: Whether default values could be filled in the field.
-   *   (2) $msg: Message in case there is an error. This will be empty if
-   *   $success is TRUE.
-   */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      return self::$function($formObject, $field_name);
-    }
-  }
+class ListBoolean extends ListField {
 
   /**
    * Fill checkbox field with default values.
@@ -82,7 +56,9 @@ class ListBoolean extends Field {
       $values[] = $allowed_values[$key];
     }
 
-    return self::fillOptionsButtonsValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
 
@@ -99,7 +75,9 @@ class ListBoolean extends Field {
 
     $values = ($required || Utils::getRandomInt(0, 1)) ? array(1) : array();
 
-    return self::fillOptionsButtonsValues($formObject, $field_name, $values);
+    $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
+
+    return $formObject->$function($values);
   }
 
   public static function fillOptionsOnOffValues(
