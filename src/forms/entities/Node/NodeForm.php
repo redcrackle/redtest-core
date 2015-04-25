@@ -37,7 +37,8 @@ class NodeForm extends EntityForm {
     $this->setEntityObject($nodeObject);
 
     if (!is_null($this->getEntityObject()->getEntity())) {
-      module_load_include('inc', 'node', 'node.pages');
+      $this->includeFile('inc', 'node', 'node.pages');
+      //module_load_include('inc', 'node', 'node.pages');
       parent::__construct(
         $type . '_node_form',
         $this->getEntityObject()->getEntity()

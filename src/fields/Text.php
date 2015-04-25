@@ -307,6 +307,7 @@ class Text extends Field {
   ) {
     $field_class = get_called_class();
 
+    xdebug_break();
     $values = $field_class::convertValuesToInput($values, $defaults);
 
     $input = array();

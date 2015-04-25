@@ -405,9 +405,9 @@ class Utils {
       }
     }
 
-    self::deleteEntities('node', 10);
+    self::deleteEntities('node', 1399);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 758);
+    self::deleteEntities('user', 31819);
   }
 
   /**

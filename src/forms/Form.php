@@ -26,14 +26,27 @@ class Form {
   protected function __construct($form_id) {
     $args = func_get_args();
     $this->form_id = $form_id;
-    if (!empty($args)) {
-      $this->form = call_user_func_array('drupal_get_form', $args);
+    array_shift($args);
+    $this->form_state['build_info']['args'] = $args;
+
+    $this->form = drupal_build_form($form_id, $this->form_state);
+
+    /*if (!empty($args)) {
+      //$this->form = call_user_func_array('drupal_get_form', $args);
+      $this->form_state['build_info']['args'] = array('test');
+      $this->form = drupal_build_form($form_id, $this->form_state);
     }
     else {
-      $this->form = drupal_get_form($this->form_id);
-    }
+      //$this->form = drupal_get_form($this->form_id);
+      $this->form_state['build_info']['args'] = array();
+      $this->form = drupal_build_form($form_id, $this->form_state);
+    }*/
 
     return $this->form;
+  }
+
+  public function includeFile($type, $module, $name = NULL) {
+    form_load_include($this->form_state, $type, $module, $name);
   }
 
   /**
@@ -122,6 +135,7 @@ class Form {
     $this->form_state['rebuild'] = FALSE;
     $this->removeKey('input');
     $this->clearErrors();
+    $this->make_unchecked_checkboxes_null();
     drupal_form_submit($this->form_id, $this->form_state);
     if ($errors = form_get_errors()) {
       $this->errors = $errors;
@@ -130,6 +144,24 @@ class Form {
     }
 
     return array(TRUE, array());
+  }
+
+  private function make_unchecked_checkboxes_null($element = NULL) {
+    if (is_null($element)) {
+      $element = $this->form;
+    }
+    if (!empty($element['#type']) && $element['#type'] == 'checkbox') {
+      $key_exists = FALSE;
+      $value = drupal_array_get_nested_value($this->form_state['values'], $element['#parents'], $key_exists);
+      if ($key_exists && !is_null($value) && !$value) {
+        form_set_value($element, NULL, $this->form_state);
+      }
+    }
+    else {
+      foreach (element_children($element) as $key) {
+        $this->make_unchecked_checkboxes_null($element[$key]);
+      }
+    }
   }
 
   /**

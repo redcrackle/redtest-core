@@ -1486,7 +1486,7 @@ abstract class Entity {
 
     // There is no such field instance for the given entity. Check if it's a
     // property.
-    if (!empty($this->entity->$field_name)) {
+    if (isset($this->entity->$field_name)) {
       return $this->entity->$field_name;
     }
 
@@ -1582,17 +1582,17 @@ abstract class Entity {
       }
 
       // Submit the form to create the entity.
-      $success = $classForm->submit();
+      list($success, $object, $msg) = $classForm->submit();
       if (!$success) {
         return array(
           FALSE,
           $output,
-          "Could not create $original_class entity."
+          "Could not create $original_class entity: " . $msg
         );
       }
 
       // Store the created entity in the output array.
-      $object = $classForm->getEntityObject();
+      //$object = $classForm->getEntityObject();
       $output[] = $object;
 
       // Store the created entity in $entities so that it can later be deleted.
