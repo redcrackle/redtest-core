@@ -143,7 +143,7 @@ class Form {
       return array(FALSE, implode(", ", $this->errors));
     }
 
-    return array(TRUE, array());
+    return array(TRUE, "");
   }
 
   private function make_unchecked_checkboxes_null($element = NULL) {
@@ -253,10 +253,10 @@ class Form {
     $this->form = form_get_cache($this->form['#build_id'], $this->form_state);
     $unprocessed_form = $this->form;
     $this->form_state['input'] = $old_form_state_values;
-    $this->form_state['input'][$field_name][LANGUAGE_NONE] = $input;
-    $this->form_state['input']['form_build_id'] = $this->form['#build_id'];
+    //$this->form_state['input'][$field_name][LANGUAGE_NONE] = $input;
+    /*$this->form_state['input']['form_build_id'] = $this->form['#build_id'];
     $this->form_state['input']['form_id'] = $this->form['#form_id'];
-    $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];
+    $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];*/
     $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
     //$this->form_state['input']['_triggering_element_value'] = $triggering_element_value;
     //$this->form_state['input']['_triggering_element_value'] = 'Upload';
@@ -277,7 +277,7 @@ class Form {
     // can add a default value at the end. Otherwise multi-valued submit fails.
     $this->form_state['programmed'] = FALSE;
     $this->form = drupal_rebuild_form(
-      $this->form['#form_id'],
+      $this->form_id,
       $this->form_state,
       $this->form
     );
@@ -322,6 +322,43 @@ class Form {
         return;
       }
     }
+    elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
+        $name
+      ) - 6
+    ) {
+      // Function name starts with "has" and ends with "Access". Function name
+      // is not one of "hasCreateAccess", "hasUpdateAccess", "hasViewAccess" or
+      // "hasDeleteAccess" otherwise code execution would not have reached this
+      // function. This means that we are checking if a field is accessible.
+      $field_name = Utils::makeSnakeCase(substr($name, 3, -6));
+      return $this->hasAccess($field_name);
+    }
+  }
+
+  public function hasAccess($field_name) {
+    $parents = explode('][', $field_name);
+    $element = $this->getForm();
+    if (array_key_exists('#access', $element) && !$element['#access']) {
+      return FALSE;
+    }
+
+    foreach ($parents as $parent) {
+      if (!empty($element[$parent])) {
+        $element = $element[$parent];
+        if (array_key_exists('#access', $element) && !$element['#access']) {
+          return FALSE;
+        }
+      }
+      else {
+        throw new \Exception("Key $parent not present.");
+      }
+    }
+
+    if (array_key_exists('#access', $element) && !$element['#access']) {
+      return FALSE;
+    }
+
+    return TRUE;
   }
 }
 

@@ -13,7 +13,7 @@ use RedTest\core\Utils;
 
 class Email extends Field {
 
-  public static function fillDefaultEmailTextfieldValues(
+  public static function fillDefaultValues(
     Form $formObject,
     $field_name
   ) {
@@ -33,29 +33,66 @@ class Email extends Field {
     return $formObject->$function($values);
   }
 
-  public static function fillEmailTextfieldValues(
+  public static function fillValues(
     Form $formObject,
     $field_name,
     $values
   ) {
     $formObject->emptyField($field_name);
 
-    if (is_string($values) || is_numeric($values)) {
-      $values = array($values);
-    }
+    $values = self::normalizeInputForCompare($values);
 
     $input = array();
     $index = 0;
     foreach ($values as $key => $value) {
+      if ($index >= 1) {
+        $triggering_element_name = $field_name . '_add_more';
+        $formObject->addMore($field_name, $input, $triggering_element_name);
+      }
       $input[$index] = array('email' => $value);
-      $triggering_element_name = $field_name . '_add_more';
-      //$triggering_element_value = 'Add another item';
-      $formObject->addMore($field_name, $input, $triggering_element_name);
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
       $index++;
     }
 
-    //$formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-
     return array(TRUE, Utils::normalize($input), "");
+  }
+
+  public static function compareValues($actual_values, $values) {
+    $field_class = get_called_class();
+
+    $actual_values = $field_class::normalizeInputForCompare($actual_values);
+    $values = $field_class::normalizeInputForCompare($values);
+
+    xdebug_break();
+    if (sizeof($actual_values) != sizeof($values)) {
+      return array(FALSE, "Number of values do not match.");
+    }
+
+    foreach ($values as $key => $value) {
+      if ($value != $actual_values[$key]) {
+        return array(FALSE, "Key " . $key . " does not match.");
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  public static function normalizeInputForCompare($values) {
+    $output = array();
+    if (!empty($values) && (is_string($values) || is_numeric($values))) {
+      $output[] = $values;
+    }
+    elseif (is_array($values)) {
+      foreach ($values as $key => $value) {
+        if (!empty($values) && (is_string($value) || is_numeric($value))) {
+          $output[] = $value;
+        }
+        elseif (is_array($value) && array_key_exists('email', $value)) {
+          $output[] = $value['email'];
+        }
+      }
+    }
+
+    return $output;
   }
 }

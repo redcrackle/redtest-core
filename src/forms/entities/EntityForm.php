@@ -65,6 +65,9 @@ abstract class EntityForm extends Form {
 
       return $this->fillFieldValues($field_name, $arguments);
     }
+    else {
+      return parent::__call($name, $arguments);
+    }
   }
 
   /**
@@ -148,7 +151,9 @@ abstract class EntityForm extends Form {
     // fill default values for them.
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
-      if (!in_array($field_name, $skip)) {
+      $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+      $access = $this->$access_function();
+      if (!in_array($field_name, $skip) && $access) {
         $function = "fillDefault" . Utils::makeTitleCase(
             $field_name
           ) . "Values";
@@ -157,6 +162,9 @@ abstract class EntityForm extends Form {
         if (!$success) {
           return array(FALSE, $fields, $msg);
         }
+      }
+      elseif (!$access) {
+        $fields[$field_name] = '';
       }
     }
 

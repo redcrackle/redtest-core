@@ -39,15 +39,17 @@ class UserRegisterForm extends EntityForm {
    */
   public function submit() {
     $this->fillValues(array('op' => t('Create new account')));
-    $output = parent::submit();
-    if ($output) {
-      // Get the user from form_state.
-      $form_state = $this->getFormState();
-      $uid = $form_state['uid'];
-      $userObject = new User($uid);
-      $this->setEntityObject($userObject);
+    list($success, $msg) = parent::submit();
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
     }
 
-    return $output;
+    // Get the user from form_state.
+    $form_state = $this->getFormState();
+    $uid = $form_state['user']->uid;
+    $userObject = new User($uid);
+    $this->setEntityObject($userObject);
+
+    return array(TRUE, $userObject, "");
   }
 } 

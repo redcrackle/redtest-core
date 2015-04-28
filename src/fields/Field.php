@@ -197,7 +197,15 @@ class Field {
     $widget_type = Utils::makeTitleCase($instance['widget']['type']);
     $function = "check" . $widget_type . "Values";
 
-    return $field_class::$function($entityObject, $field_name, $values);
+    if (method_exists($field_class, $function)) {
+      return $field_class::$function($entityObject, $field_name, $values);
+    }
+    else {
+      $function = "get" . Utils::makeTitleCase($field_name) . "Values";
+      $actual_values = $entityObject->$function();
+
+      return $field_class::compareValues($actual_values, $values);
+    }
   }
 
   public static function getValues(
@@ -216,18 +224,11 @@ class Field {
     $widget_type = Utils::makeTitleCase($instance['widget']['type']);
     $function = "get" . $widget_type . "Values";
 
-    return $field_class::$function($entityObject, $field_name);
-
-    /*$field = $entityObject->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
+    if (method_exists($field_class, $function)) {
+      return $field_class::$function($entityObject, $field_name);
     }
-
-    $output = array();
-    foreach ($field as $fid => $file) {
-      $output[] = $fid;
+    else {
+      return $entityObject->getFieldItems($field_name);
     }
-
-    return Utils::normalize($output);*/
   }
 }

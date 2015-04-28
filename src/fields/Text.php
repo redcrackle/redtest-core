@@ -307,16 +307,17 @@ class Text extends Field {
   ) {
     $field_class = get_called_class();
 
-    xdebug_break();
     $values = $field_class::convertValuesToInput($values, $defaults);
 
     $input = array();
     $index = 0;
     foreach ($values as $key => $value) {
+      if ($index >= 1) {
+        $triggering_element_name = $field_name . '_add_more';
+        $formObject->addMore($field_name, $input, $triggering_element_name);
+      }
       $input[$index] = $value;
-      $triggering_element_name = $field_name . '_add_more';
-      //$triggering_element_value = 'Add another item';
-      $formObject->addMore($field_name, $input, $triggering_element_name);
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
       $index++;
     }
 

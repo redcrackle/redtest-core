@@ -21,8 +21,8 @@ class User extends Entity {
    *   User id.
    */
   public function __construct($uid = NULL) {
-    if (!is_null($uid) && is_numeric($uid)) {
-      $this->setEntity(user_load($uid));
+    if (!is_null($uid) && is_numeric($uid) && $account = user_load($uid)) {
+      parent::__construct($account);
     }
   }
 
@@ -64,12 +64,14 @@ class User extends Entity {
    *   Email address.
    * @param string $password
    *   Password.
+   * @param array $roles
+   *   An array of roles that are to be added to the user in addition to the default role(s) that the user gets on registering. You can either pass in role id or role string.
    *
    * @return mixed $user
    *   User object if the user logged in successfully and an array of errors,
    *   otherwise.
    */
-  public static function registerUser($username, $email, $password) {
+  public static function registerUser($username, $email, $password, $roles = array()) {
     $userRegisterForm = new UserForms\UserRegisterForm();
     $userRegisterForm->fillValues(
       array(
@@ -82,12 +84,65 @@ class User extends Entity {
       )
     );
 
-    $output = $userRegisterForm->submit();
-    if ($output) {
-      return $userRegisterForm->getEntityObject();
+    list($success, $userObject, $msg) = $userRegisterForm->submit();
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
     }
 
-    return FALSE;
+    /**
+     * @todo Find a better way to make the user active and add roles than using user_save().
+     */
+    $roles = self::formatRoles($roles);
+
+    if (!$userObject->getStatusValues() || sizeof($roles)) {
+      $account = $userObject->getEntity();
+      $edit['status'] = TRUE;
+      $edit['roles'] = $account->roles + $roles;
+      $account = user_save($account, $edit);
+      if (!$account) {
+        return array(
+          FALSE,
+          NULL,
+          "Could not make the user active or could not add roles"
+        );
+      }
+
+      $userObject = new User(Utils::getId($userObject));
+    }
+
+    return array(TRUE, $userObject, "");
+  }
+
+  /**
+   * Converts an array of role ids or role names to an array of role_id => role_name key/paid values.
+   *
+   * @param array $roles
+   *   An array of role ids or role names.
+   * @return array
+   *   An associative array with role id as key and role name as value.
+   *
+   * @throws \Exception
+   *   if provided role id or role name does not exist.
+   */
+  private static function formatRoles($roles) {
+    if (is_string($roles) || is_numeric($roles)) {
+      $roles = array($roles);
+    }
+
+    $output_roles = array();
+    foreach ($roles as $rid) {
+      if (is_numeric($rid) && $role = user_role_load($rid)) {
+        $output_roles[$role->rid] = $role->name;
+      }
+      elseif (is_string($rid) && $role = user_role_load_by_name($rid)) {
+        $output_roles[$role->rid] = $role->name;
+      }
+      else {
+        throw new \Exception("Role $rid does not exist.");
+      }
+    }
+
+    return $output_roles;
   }
 
   /**
@@ -98,26 +153,6 @@ class User extends Entity {
       $this->getEntity()
     );
     $userCancelConfirmForm->submit();
-  }
-
-  /**
-   * Returns the user id.
-   *
-   * @return int $uid
-   *   User id.
-   */
-  public function getUid() {
-    return $this->getEntity()->uid;
-  }
-
-  /**
-   * Returns email address of the user.
-   *
-   * @return string $email
-   *   Email address.
-   */
-  public function getEmailAddress() {
-    return $this->getEntity()->mail;
   }
 
   /**
@@ -156,7 +191,7 @@ class User extends Entity {
     return new User($user->uid);
   }
 
-  public static function createDefault($num = 1, $skip = array()) {
+  public static function createDefault($num = 1, $skip = array(), $roles = array()) {
     global $entities;
 
     $output = array();
@@ -179,17 +214,15 @@ class User extends Entity {
         ));
 
       $password = Utils::getRandomString();
-      $object = User::registerUser($username, $email, $password);
-      if ($object) {
-        $output[] = $object;
-        $entities['user'][$object->getId()] = $object;
+      list($success, $object, $msg) = User::registerUser($username, $email, $password, $roles);
+      if (!$success) {
+        return array(FALSE, $output, $msg);
       }
+
+      $output[] = $object;
+      $entities['user'][$object->getId()] = $object;
     }
 
-    if (sizeof($output) == 1) {
-      return array(TRUE, $output[0], "");
-    }
-
-    return array(TRUE, $output, "");
+    return array(TRUE, Utils::normalize($output), "");
   }
 }
