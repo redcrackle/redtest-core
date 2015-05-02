@@ -11,15 +11,10 @@ namespace RedTest\core\fields;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
-/**
- * Class NumberDecimal
- *
- * @package RedTest\core\fields
- */
-class NumberDecimal extends Field {
+class NumberFloat extends Field {
 
   /**
-   * Fill random decimal values in the provided field.
+   * Fill random float values in the provided field.
    *
    * @param Form $formObject
    *   Form object.
@@ -33,15 +28,10 @@ class NumberDecimal extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(
-    Form $formObject,
-    $field_name
-  ) {
+  public static function fillDefaultValues(Form $formObject, $field_name) {
     $num = 1;
     $min = -255;
     $max = 255;
-    $scale = 2;
-    $decimal_separator = '.';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
@@ -51,20 +41,9 @@ class NumberDecimal extends Field {
       if (!empty($instance['settings']['max'])) {
         $max = $instance['settings']['max'];
       }
-      $scale = $field['settings']['scale'];
-      $decimal_separator = $field['settings']['decimal_separator'];
     }
 
-    $values = array();
-    for ($i = 0; $i < $num; $i++) {
-      // We are assuming that precision is set correctly to accommodate min and
-      // max values.
-      $min_int = $min * pow(10, $scale);
-      $max_int = $max * pow(10, $scale);
-      $number = Utils::getRandomInt($min_int, $max_int) / pow(10, $scale);
-      $number = str_replace(".", $decimal_separator, $number);
-      $values[] = $number;
-    }
+    $values = Utils::getRandomFloat($min, $max, $num);
 
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
@@ -72,7 +51,7 @@ class NumberDecimal extends Field {
   }
 
   /**
-   * Fills provided decimal values in the field.
+   * Fills provided float values in the field.
    *
    * @param Form $formObject
    *   Form object.
@@ -91,37 +70,34 @@ class NumberDecimal extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillValues(
-    Form $formObject,
-    $field_name,
-    $values
-  ) {
+  public static function fillValues(Form $formObject, $field_name, $values) {
     $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
     $access = $formObject->$access_function();
     if (!$access) {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
 
+    $formObject->emptyField($field_name);
+
     list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
     $decimal_separator = $field['settings']['decimal_separator'];
 
     $values = self::normalizeInput($values, $decimal_separator);
     $values = self::addCorrectDecimalSeparator($values, $decimal_separator);
-    $values = self::formatValuesForInput($values);
 
-    $return = $formObject->fillMultiValued($field_name, $values);
+    $input = array();
+    $index = 0;
+    foreach ($values as $key => $value) {
+      if ($index >= 1) {
+        $triggering_element_name = $field_name . '_add_more';
+        $formObject->addMore($field_name, $input, $triggering_element_name);
+      }
+      $input[$index] = array('value' => $value);
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      $index++;
+    }
 
-    $return = self::normalizeInput($return, $decimal_separator);
-
-    return array(TRUE, Utils::normalize($return), "");
-  }
-
-  public static function getEmptyValue(Form $formObject, $field_name) {
-    return array('value' => '');
-  }
-
-  public static function getTriggeringElementName($field_name) {
-    return $field_name . '_add_more';
+    return array(TRUE, Utils::normalize($values), "");
   }
 
   /**
@@ -149,7 +125,6 @@ class NumberDecimal extends Field {
   public static function compareValues($actual_values, $values, $field) {
     $decimal_separator = $field['settings']['decimal_separator'];
 
-    xdebug_break();
     $actual_values = self::normalizeInput(
       $actual_values,
       $decimal_separator
@@ -217,7 +192,7 @@ class NumberDecimal extends Field {
    *   Decimal separator.
    *
    * @return bool
-   *   Whether the provided input is a valid decimal number or not.
+   *   Whether the provided input is a valid float or not.
    */
   private static function isValidValue($value, $decimal_separator = '.') {
     if (!empty($value) && (is_string($value) || is_numeric($value))) {
@@ -248,15 +223,6 @@ class NumberDecimal extends Field {
     $output = array();
     foreach ($values as $value) {
       $output[] = str_replace('.', $decimal_separator, $value);
-    }
-
-    return $output;
-  }
-
-  private static function formatValuesForInput($values) {
-    $output = array();
-    foreach ($values as $key => $value) {
-      $output[$key] = array('value' => $value);
     }
 
     return $output;

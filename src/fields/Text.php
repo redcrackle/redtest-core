@@ -96,6 +96,12 @@ class Text extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $field_class = get_called_class();
@@ -134,7 +140,11 @@ class Text extends Field {
   public static function compareValues($actual_values, $values) {
     $field_class = get_called_class();
 
-    $actual_values = $field_class::convertValuesToInput($actual_values, array());
+    xdebug_break();
+    $actual_values = $field_class::convertValuesToInput(
+      $actual_values,
+      array()
+    );
     $values = $field_class::convertValuesToInput($values, array());
 
     if (sizeof($values) != sizeof($actual_values)) {
@@ -207,20 +217,25 @@ class Text extends Field {
    *   arrays, then it is assumed that the field is multi-valued and the inside
    *   array can have the keys 'value', 'summary' or 'format' which will be set
    *   in form_state. Here are a few examples this parameter can take:
-   *   "<p>This is text string.</p>", or
-   *   array("<p>This is text string 1.</p>", "This is text string 2."), or
-   *   array(
-   *     array(
-   *       'value' => "This is text string 1.",
-   *       'summary' => "<p>Text string 1</p>",
-   *       'format' => 'filtered_html',
-   *     ),
-   *     array(
-   *       'value' => "This is text string 2.",
-   *       'summary' => "Text string 2",
-   *       'format' => 'plain_text',
-   *     ),
-   *   );
+   *   (a) "<p>This is text string.</p>", or
+   *   (b) array("<p>This is text string 1.</p>", "This is text string 2."), or
+   *   (c) array(
+   *         'value' => "This is text string 1.",
+   *         'summary' => "<p>Text string 1</p>",
+   *         'format' => 'filtered_html',
+   *       ),
+   *   (d) array(
+   *         array(
+   *           'value' => "This is text string 1.",
+   *           'summary' => "<p>Text string 1</p>",
+   *           'format' => 'filtered_html',
+   *         ),
+   *         array(
+   *           'value' => "This is text string 2.",
+   *           'summary' => "Text string 2",
+   *           'format' => 'plain_text',
+   *         ),
+   *       );
    * @param array $defaults
    *   Defaults array for the field.
    *
@@ -228,6 +243,10 @@ class Text extends Field {
    *   An input array suitable to be set in the form state array.
    */
   protected static function convertValuesToInput($values, $defaults) {
+    if (empty($values)) {
+      return array();
+    }
+
     $input = array();
 
     if (is_string($values)) {
@@ -238,7 +257,17 @@ class Text extends Field {
     elseif (is_array($values)) {
       if (array_key_exists('value', $values)) {
         // $values is in acceptable format (c).
-        $input[] = $values + $defaults;
+        // Make sure that at least one value is filled.
+        $value_exists = FALSE;
+        foreach ($values as $key => $value) {
+          if (!empty($value)) {
+            $value_exists = TRUE;
+            break;
+          }
+        }
+        if ($value_exists) {
+          $input[] = $values + $defaults;
+        }
       }
       else {
         // $values is an array. It can be an array of strings or array of
@@ -250,7 +279,17 @@ class Text extends Field {
           }
           elseif (is_array($val)) {
             // $values is in acceptable format (d).
-            $input[$key] = $val + $defaults;
+            // Make sure that at least one value is filled.
+            $value_exists = FALSE;
+            foreach ($val as $index => $value) {
+              if (!empty($value)) {
+                $value_exists = TRUE;
+                break;
+              }
+            }
+            if ($value_exists) {
+              $input[$key] = $val + $defaults;
+            }
           }
         }
       }
@@ -309,18 +348,8 @@ class Text extends Field {
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
-    $input = array();
-    $index = 0;
-    foreach ($values as $key => $value) {
-      if ($index >= 1) {
-        $triggering_element_name = $field_name . '_add_more';
-        $formObject->addMore($field_name, $input, $triggering_element_name);
-      }
-      $input[$index] = $value;
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $index++;
-    }
+    $return = $formObject->fillMultiValued($field_name, $values);
 
-    return array(TRUE, Utils::normalize($input), "");
+    return array(TRUE, Utils::normalize($return), "");
   }
 }

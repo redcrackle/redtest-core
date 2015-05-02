@@ -1591,6 +1591,11 @@ abstract class Entity {
         );
       }
 
+      // Make sure that there is an id.
+      if (!$object->getId()) {
+        return array(FALSE, $output, "Could not create $original_class entity: " . $msg);
+      }
+
       // Store the created entity in the output array.
       //$object = $classForm->getEntityObject();
       $output[] = $object;

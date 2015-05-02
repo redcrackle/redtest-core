@@ -151,9 +151,7 @@ abstract class EntityForm extends Form {
     // fill default values for them.
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
-      $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-      $access = $this->$access_function();
-      if (!in_array($field_name, $skip) && $access) {
+      if (!in_array($field_name, $skip)) {
         $function = "fillDefault" . Utils::makeTitleCase(
             $field_name
           ) . "Values";
@@ -162,9 +160,6 @@ abstract class EntityForm extends Form {
         if (!$success) {
           return array(FALSE, $fields, $msg);
         }
-      }
-      elseif (!$access) {
-        $fields[$field_name] = '';
       }
     }
 
@@ -294,5 +289,43 @@ abstract class EntityForm extends Form {
     return (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
         $name
       ) - 6);
+  }
+
+  public function fillMultiValued($field_name, $values) {
+    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+    $short_field_class = Utils::makeTitleCase($field['type']);
+    $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+
+    $original_values = $this->getValues($field_name);
+    $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
+    unset($original_values['add_more']);
+    $input_replace = array_slice($values, 0, sizeof($original_values), TRUE);
+    $input = $input_replace;
+
+    $return = array();
+    if (sizeof($values) > sizeof($original_values)) {
+      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+      $input_add = array_slice($values, sizeof($original_values), NULL, TRUE);
+      foreach ($input_add as $key => $value) {
+        $triggering_element_name = $field_class::getTriggeringElementName($field_name, $key);
+        $this->addMore($field_name, $input, $triggering_element_name);
+        $input[] = $value;
+        $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+      }
+      $return = $input;
+    }
+    elseif (sizeof($input) < sizeof($original_values) - 1) {
+      $return = $input;
+      for ($i = sizeof($input); $i < sizeof($original_values) - 1; $i++) {
+        $input[] = $field_class::getEmptyValue($this, $field_name);
+      }
+      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+    }
+    else {
+      $return = $input;
+      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+    }
+
+    return $return;
   }
 }

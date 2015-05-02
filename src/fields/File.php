@@ -124,6 +124,12 @@ class File extends Field {
     $field_name,
     $file_info
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $field_class = get_called_class();
@@ -140,7 +146,7 @@ class File extends Field {
       $output[$index]['uri'] = $file_temp->uri;
       $triggering_element_name = $field_class::getTriggeringElementName(
         $field_name,
-        $input
+        $index
       );
       $formObject->addMore($field_name, $input, $triggering_element_name);
 
@@ -288,16 +294,14 @@ class File extends Field {
    *
    * @param string $field_name
    *   Field name.
-   * @param array $input
-   *   Input array.
+   * @param int $index
+   *   Index of the button in multivalued field.
    *
    * @return string
    *   Triggering element name.
    */
-  protected static function getTriggeringElementName($field_name, $input) {
-    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . (sizeof(
-          $input
-        ) - 1) . '_upload_button';
+  public static function getTriggeringElementName($field_name, $index) {
+    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . ($index - 1) . '_upload_button';
 
     return $triggering_element_name;
   }

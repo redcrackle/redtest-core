@@ -386,6 +386,7 @@ class Utils {
             taxonomy_term_delete($entity_id);
           }
         }
+
         return FALSE;
       }
     }
@@ -405,9 +406,9 @@ class Utils {
       }
     }
 
-    self::deleteEntities('node', 1399);
+    self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 31819);
+    self::deleteEntities('user', 1090);
   }
 
   /**
@@ -483,6 +484,47 @@ class Utils {
   }
 
   /**
+   * Get random floating point number.
+   *
+   * @param float $min
+   *   Minimum floating point value to return.
+   * @param float $max
+   *   Maximum floating point value to return.
+   * @param int $num
+   *   Number of values to return.
+   * @param int $precision
+   *   Number of decimal digits to round to.
+   *
+   * @return array|null|float
+   *   NULL if the number of values requested is NULL. A floating point number
+   *   if the number of values requested is 1 and an array of floating point
+   *   numbers if the number of values requested is more than 1.
+   */
+  public static function getRandomFloat($min, $max, $num = 1, $precision = 3) {
+    if ($num < 1) {
+      return NULL;
+    }
+
+    $faker = NULL;
+    if (class_exists('\Faker\Factory')) {
+      $faker = \Faker\Factory::create();
+    }
+
+    $numbers = array();
+    foreach (range(0, $num - 1) as $index) {
+      if (!is_null($faker)) {
+        $number = $faker->randomFloat(NULL, $min, $max);
+      }
+      else {
+        $number = $min + mt_rand() / mt_getrandmax() * ($max - $min);
+      }
+      $numbers[] = substr(round($number, 3), 0, 10);
+    }
+
+    return $numbers;
+  }
+
+  /**
    * Sorts an array of objects.
    *
    * @param $array
@@ -523,12 +565,15 @@ class Utils {
         elseif (empty($value) && empty($output_val)) {
           $new_output[] = $output[$key];
         }
-        elseif ((is_string($value) || is_numeric($value)) && (is_string($output_val) || is_numeric($output_val)) && $output_val == $value) {
+        elseif ((is_string($value) || is_numeric($value)) && (is_string(
+              $output_val
+            ) || is_numeric($output_val)) && $output_val == $value
+        ) {
           $new_output[] = $output[$key];
         }
         elseif (is_array($output_val)) {
           if (is_string($value) || is_numeric($value)) {
-            
+
           }
         }
       }
@@ -555,69 +600,77 @@ class Utils {
    * @link http://www.tufanbarisyildirim.com
    * @github http://github.com/tufanbarisyildirim
    *
-   * This function can be used for sorting a multidimensional array by sql like order by clause
+   * This function can be used for sorting a multidimensional array by sql like
+   *   order by clause
    *
    * @param mixed $array
    * @param mixed $order_by
+   *
    * @return array
    */
-  public static function sort_array_multidim(array $array, $order_by)
-  {
+  public static function sort_array_multidim(array $array, $order_by) {
     //TODO -c flexibility -o tufanbarisyildirim : this error can be deleted if you want to sort as sql like "NULL LAST/FIRST" behavior.
-    if(!is_array($array[0]))
-      throw new Exception('$array must be a multidimensional array!',E_USER_ERROR);
+    if (!is_array($array[0])) {
+      throw new Exception(
+        '$array must be a multidimensional array!',
+        E_USER_ERROR
+      );
+    }
 
-    $columns = explode(',',$order_by);
-    foreach ($columns as $col_dir)
-    {
-      if(preg_match('/(.*)([\s]+)(ASC|DESC)/is',$col_dir,$matches))
-      {
-        if(!array_key_exists(trim($matches[1]),$array[0]))
-          trigger_error('Unknown Column <b>' . trim($matches[1]) . '</b>',E_USER_NOTICE);
-        else
-        {
-          if(isset($sorts[trim($matches[1])]))
-            trigger_error('Redundand specified column name : <b>' . trim($matches[1] . '</b>'));
+    $columns = explode(',', $order_by);
+    foreach ($columns as $col_dir) {
+      if (preg_match('/(.*)([\s]+)(ASC|DESC)/is', $col_dir, $matches)) {
+        if (!array_key_exists(trim($matches[1]), $array[0])) {
+          trigger_error(
+            'Unknown Column <b>' . trim($matches[1]) . '</b>',
+            E_USER_NOTICE
+          );
+        }
+        else {
+          if (isset($sorts[trim($matches[1])])) {
+            trigger_error(
+              'Redundand specified column name : <b>' . trim(
+                $matches[1] . '</b>'
+              )
+            );
+          }
 
-          $sorts[trim($matches[1])] = 'SORT_'.strtoupper(trim($matches[3]));
+          $sorts[trim($matches[1])] = 'SORT_' . strtoupper(trim($matches[3]));
         }
       }
-      else
-      {
-        throw new Exception("Incorrect syntax near : '{$col_dir}'",E_USER_ERROR);
+      else {
+        throw new Exception(
+          "Incorrect syntax near : '{$col_dir}'", E_USER_ERROR
+        );
       }
     }
 
     //TODO -c optimization -o tufanbarisyildirim : use array_* functions.
     $colarr = array();
-    foreach ($sorts as $col => $order)
-    {
+    foreach ($sorts as $col => $order) {
       $colarr[$col] = array();
-      foreach ($array as $k => $row)
-      {
-        $colarr[$col]['_'.$k] = strtolower($row[$col]);
+      foreach ($array as $k => $row) {
+        $colarr[$col]['_' . $k] = strtolower($row[$col]);
       }
     }
 
     $multi_params = array();
-    foreach ($sorts as $col => $order)
-    {
-      $multi_params[] = '$colarr[\'' . $col .'\']';
+    foreach ($sorts as $col => $order) {
+      $multi_params[] = '$colarr[\'' . $col . '\']';
       $multi_params[] = $order;
     }
 
-    $rum_params = implode(',',$multi_params);
+    $rum_params = implode(',', $multi_params);
     eval("array_multisort({$rum_params});");
 
 
     $sorted_array = array();
-    foreach ($colarr as $col => $arr)
-    {
-      foreach ($arr as $k => $v)
-      {
-        $k = substr($k,1);
-        if (!isset($sorted_array[$k]))
+    foreach ($colarr as $col => $arr) {
+      foreach ($arr as $k => $v) {
+        $k = substr($k, 1);
+        if (!isset($sorted_array[$k])) {
           $sorted_array[$k] = $array[$k];
+        }
         $sorted_array[$k][$col] = $array[$k][$col];
       }
     }

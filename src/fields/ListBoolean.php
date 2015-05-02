@@ -85,6 +85,12 @@ class ListBoolean extends ListField {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     if (is_string($values)) {
@@ -103,5 +109,52 @@ class ListBoolean extends ListField {
     }
 
     return array(TRUE, $input, "");
+  }
+
+  public static function compareValues($actual_values, $values) {
+    $actual_values = self::formatValuesForCompare($actual_values);
+    $values = self::formatValuesForCompare($values);
+
+    if (sizeof($actual_values) != sizeof($values)) {
+      return array(FALSE, "Number of values do not match.");
+    }
+
+    foreach ($values as $key => $value) {
+      if ($actual_values[$key] != $value) {
+        return array(FALSE, "Key $key does not match.");
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  public static function formatValuesForCompare($values) {
+    $output = array();
+
+    if (self::isValueValid($values)) {
+      $output[] = intval($values);
+    }
+    elseif (is_array($values)) {
+      foreach ($values as $key => $value) {
+        if (self::isValueValid($value)) {
+          $output[] = intval($value);
+        }
+        elseif (is_array($value) && array_key_exists(
+            'value',
+            $value
+          ) && self::isValueValid($value['value'])
+        ) {
+          $output[] = intval($value['value']);
+        }
+      }
+    }
+
+    return $output;
+  }
+
+  private static function isValueValid($value) {
+    return (!empty($values) && (is_string($values) || is_numeric(
+          $values
+        )) && intval($values) != 0);
   }
 }

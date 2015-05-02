@@ -13,10 +13,21 @@ use RedTest\core\Utils;
 
 class Email extends Field {
 
-  public static function fillDefaultValues(
-    Form $formObject,
-    $field_name
-  ) {
+  /**
+   * Fills email field with default values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether the field could be filled with provided values.
+   *   (2) $values: Values that were filled.
+   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   */
+  public static function fillDefaultValues(Form $formObject, $field_name) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -33,11 +44,28 @@ class Email extends Field {
     return $formObject->$function($values);
   }
 
-  public static function fillValues(
-    Form $formObject,
-    $field_name,
-    $values
-  ) {
+  /**
+   * Fill Email field with specified values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array|string $values
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether the field could be filled with provided values.
+   *   (2) $values: Values that were filled.
+   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   */
+  public static function fillValues(Form $formObject, $field_name, $values) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $values = self::normalizeInputForCompare($values);
@@ -57,13 +85,22 @@ class Email extends Field {
     return array(TRUE, Utils::normalize($input), "");
   }
 
+  /**
+   * Compares two arrays filled with email ids.
+   *
+   * @param string|array $actual_values
+   *   Actual values that are in the entity.
+   * @param string|array $values
+   *   Values to compare field values against.
+   *
+   * @return array
+   */
   public static function compareValues($actual_values, $values) {
     $field_class = get_called_class();
 
     $actual_values = $field_class::normalizeInputForCompare($actual_values);
     $values = $field_class::normalizeInputForCompare($values);
 
-    xdebug_break();
     if (sizeof($actual_values) != sizeof($values)) {
       return array(FALSE, "Number of values do not match.");
     }
@@ -77,14 +114,33 @@ class Email extends Field {
     return array(TRUE, "");
   }
 
+  /**
+   * Standardizes the values array so that they can be compared.
+   *
+   * @param string|array $values
+   *   Acceptable formats are:
+   *   (a) "john@doe.com"
+   *   (b) array("john@doe.com", "matt@doe.com")
+   *   (c) array(
+   *         array(
+   *           'email' => 'john@doe.com',
+   *         ),
+   *         array(
+   *           'email' => 'matt@doe.com',
+   *         ),
+   *       )
+   *
+   * @return array
+   *   An array of emails. Example is array("john@doe.com", "matt@doe.com")
+   */
   public static function normalizeInputForCompare($values) {
     $output = array();
-    if (!empty($values) && (is_string($values) || is_numeric($values))) {
+    if (!empty($values) && (is_string($values))) {
       $output[] = $values;
     }
     elseif (is_array($values)) {
       foreach ($values as $key => $value) {
-        if (!empty($values) && (is_string($value) || is_numeric($value))) {
+        if (!empty($values) && (is_string($value))) {
           $output[] = $value;
         }
         elseif (is_array($value) && array_key_exists('email', $value)) {

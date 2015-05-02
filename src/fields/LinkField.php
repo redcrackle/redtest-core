@@ -13,10 +13,13 @@ use RedTest\core\Utils;
 
 class LinkField extends Field {
 
-  public static function fillDefaultLinkFieldValues(
-    Form $formObject,
-    $field_name
-  ) {
+  public static function fillDefaultValues(Form $formObject, $field_name) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(TRUE, "", "");
+    }
+
     $num = 1;
     $show_url = 0;
     $show_title = 'required';
@@ -38,7 +41,7 @@ class LinkField extends Field {
     $values = array();
     for ($i = 0; $i < $num; $i++) {
       $value = array();
-      if ($show_url != 'optional' || Utils::getRandomBool()) {
+      if ($show_url !== 'optional' || Utils::getRandomBool()) {
         $value['url'] = Utils::getRandomUrl();
       }
       if ($show_title == 'required' || empty($value['url']) || ($show_title == 'optional' && Utils::getRandomBool())) {
@@ -62,21 +65,26 @@ class LinkField extends Field {
     return $formObject->$function($values);
   }
 
-  public static function fillLinkFieldValues(
-    Form $formObject,
-    $field_name,
-    $values
-  ) {
+  public static function fillValues(Form $formObject, $field_name, $values) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
-    $values = self::normalizeInput($values);
+    $values = self::denormalizeInput($values);
 
     $input = array();
     $index = 0;
     foreach ($values as $key => $value) {
+      if ($index >= 1) {
+        $triggering_element_name = self::getTriggeringElementName($field_name);
+        $formObject->addMore($field_name, $input, $triggering_element_name);
+      }
       $input[$index] = self::createInput($value);
-      $triggering_element_name = self::getTriggeringElementName($field_name);
-      $formObject->addMore($field_name, $input, $triggering_element_name);
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
       $index++;
     }
 
@@ -128,11 +136,85 @@ class LinkField extends Field {
    * @return array
    *   Standardized format: array of URLs.
    */
-  private static function normalizeInput($values) {
+  private static function denormalizeInput($values) {
     if (is_string($values)) {
       $values = array($values);
     }
 
     return $values;
+  }
+
+  public static function compareValues($actual_values, $values) {
+    $actual_values = self::formatValuesForCompare($actual_values);
+    $values = self::formatValuesForCompare($values);
+
+    if (sizeof($values) != sizeof($actual_values)) {
+      return array(FALSE, "Number of values do not match.");
+    }
+
+    foreach ($values as $index => $value_array) {
+      foreach ($value_array as $key => $value) {
+        if ($actual_values[$index][$key] != $value) {
+          return array(FALSE, "Key $key does not match for index $index.");
+        }
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  /**
+   * Format the value so that it can be compared.
+   *
+   * @param string|array $values
+   *   Acceptable formats are:
+   *   (a) 'http://redcrackle.com'
+   *   (b) array('http://redcrackle.com', 'http://www.google.com')
+   *   (c) array(
+   *         'url' => 'http://redcrackle.com',
+   *         'title' => 'Red Crackle',
+   *       )
+   *   (d) array(
+   *         array(
+   *           'url' => 'http://redcrackle.com',
+   *           'title' => 'Red Crackle',
+   *         ),
+   *         array(
+   *           'url' => 'http://www.google.com',
+   *           'title' => 'Google',
+   *         ),
+   *       )
+   *
+   * @return array
+   *   array(
+   *     array(
+   *       'url' => 'http://redcrackle.com',
+   *       'title' => 'Red Crackle',
+   *     ),
+   *     array(
+   *       'url' => 'http://www.google.com',
+   *       'title' => 'Google',
+   *     ),
+   *   )
+   */
+  private static function formatValuesForCompare($values) {
+    if (empty($values)) {
+      return array();
+    }
+
+    $output = array();
+    if (is_string($values)) {
+      $output[] = array('url' => $values);
+    }
+    elseif (is_array($values)) {
+      if (array_key_exists('url', $values) || array_key_exists('title', $values)) {
+        $output[] = $values;
+      }
+      else {
+        $output = $values;
+      }
+    }
+
+    return $output;
   }
 }

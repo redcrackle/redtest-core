@@ -146,14 +146,27 @@ class Form {
     return array(TRUE, "");
   }
 
+  /**
+   * Sets all checkboxes that have marked to have value as 0 in form_state to
+   * be NULL. If we keep them to be 0, then drupal_form_submit() will interpret
+   * it as selected.
+   *
+   * @param null|array $element
+   *   Form array or a subset of it from where to begin recursion.
+   */
   private function make_unchecked_checkboxes_null($element = NULL) {
     if (is_null($element)) {
       $element = $this->form;
     }
+
     if (!empty($element['#type']) && $element['#type'] == 'checkbox') {
       $key_exists = FALSE;
-      $value = drupal_array_get_nested_value($this->form_state['values'], $element['#parents'], $key_exists);
-      if ($key_exists && !is_null($value) && !$value) {
+      $value = drupal_array_get_nested_value(
+        $this->form_state['values'],
+        $element['#parents'],
+        $key_exists
+      );
+      if ($key_exists && !is_null($value) && !$value && !is_string($value)) {
         form_set_value($element, NULL, $this->form_state);
       }
     }
@@ -218,7 +231,7 @@ class Form {
    * @return null|mixed
    *   Value of the field set in form state array.
    */
-  protected function getValues($field_name) {
+  public function getValues($field_name) {
     return !empty($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
   }
 
@@ -247,6 +260,7 @@ class Form {
    *   Name of the Add More button.
    */
   public function addMore($field_name, $input, $triggering_element_name) {
+    $this->make_unchecked_checkboxes_null();
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
     // Get the form from the cache.
@@ -331,6 +345,7 @@ class Form {
       // "hasDeleteAccess" otherwise code execution would not have reached this
       // function. This means that we are checking if a field is accessible.
       $field_name = Utils::makeSnakeCase(substr($name, 3, -6));
+
       return $this->hasAccess($field_name);
     }
   }

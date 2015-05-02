@@ -38,6 +38,12 @@ class ListField extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     if (is_string($values) || is_numeric($values)) {
@@ -48,7 +54,9 @@ class ListField extends Field {
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
-          $input[$value] = $value;
+          // If value is 0, then make it a string otherwise it will be
+          // interpreted as not selected.
+          $input[$value] = ($value === 0 ? strval($value) : $value);
         }
       }
 
@@ -83,9 +91,15 @@ class ListField extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
-    if (is_string($values)) {
+    if (is_string($values) || is_numeric($values)) {
       $values = array($values);
     }
 
@@ -93,7 +107,9 @@ class ListField extends Field {
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
-          $input[$value] = $value;
+          // If value is 0, then make it a string otherwise it will be
+          // interpreted as not selected.
+          $input[$value] = ($value === 0 ? strval($value) : $value);
         }
       }
 
@@ -130,4 +146,67 @@ class ListField extends Field {
 
     return Utils::normalize($values);
   }
-} 
+
+  public static function compareValues($actual_values, $values) {
+    $field_class = get_called_class();
+
+    $actual_values = $field_class::formatValuesForCompare($actual_values);
+    $values = $field_class::formatValuesForCompare($values);
+
+    if (sizeof($actual_values) != sizeof($values)) {
+      return array(FALSE, "Number of values do not match.");
+    }
+
+    foreach ($values as $index => $value) {
+      if ($actual_values[$index] != $value) {
+        return array(FALSE, "Index $index does not match.");
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  /**
+   * Formats the values so that they can be compared.
+   *
+   * @param string|int|array $values
+   *   Following formats are acceptable:
+   *   (a) 12
+   *   (b) "red"
+   *   (a) array(12, "red")
+   *   (b) array(12 => 12, "red" => "red")
+   *   (c) array(
+   *         array(
+   *           'value' => 12,
+   *         ),
+   *         array(
+   *           'value' => 'red',
+   *         ),
+   *       )
+   *
+   * @return array
+   *   An array of list values: array(12, "red")
+   */
+  public static function formatValuesForCompare($values) {
+    if (empty($values)) {
+      return array();
+    }
+
+    $output = array();
+    if (is_string($values) || is_numeric($values)) {
+      $output[] = $values;
+    }
+    elseif (is_array($values)) {
+      foreach ($values as $index => $value) {
+        if (is_string($value) || is_numeric($value)) {
+          $output[] = $value;
+        }
+        elseif (is_array($value) && array_key_exists('value', $value)) {
+          $output[] = $value['value'];
+        }
+      }
+    }
+
+    return $output;
+  }
+}

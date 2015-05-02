@@ -102,7 +102,11 @@ class TextWithSummary extends Text {
     $summary = '',
     $format = ''
   ) {
-    $formObject->emptyField($field_name);
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
 
     $defaults = array();
     if (!empty($summary)) {
@@ -113,5 +117,17 @@ class TextWithSummary extends Text {
     }
 
     return self::fillTextValues($formObject, $field_name, $values, $defaults);
+  }
+
+  public static function getEmptyValue(Form $formObject, $field_name) {
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $display_summary = $instance['settings']['display_summary'];
+
+    $output = array('value' => '');
+    if ($display_summary) {
+      $output['summary'] = '';
+    }
+
+    return $output;
   }
 }

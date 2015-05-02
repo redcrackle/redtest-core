@@ -73,6 +73,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $vocabulary = NULL;
@@ -133,6 +139,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $vocabulary = NULL;
@@ -157,6 +169,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
+    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+    $access = $formObject->$access_function();
+    if (!$access) {
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $formObject->emptyField($field_name);
 
     $vocabulary = NULL;

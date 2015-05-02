@@ -204,7 +204,7 @@ class Field {
       $function = "get" . Utils::makeTitleCase($field_name) . "Values";
       $actual_values = $entityObject->$function();
 
-      return $field_class::compareValues($actual_values, $values);
+      return $field_class::compareValues($actual_values, $values, $field, $instance);
     }
   }
 
@@ -230,5 +230,9 @@ class Field {
     else {
       return $entityObject->getFieldItems($field_name);
     }
+  }
+
+  public static function getTriggeringElementName($field_name) {
+    return $field_name . '_add_more';
   }
 }
