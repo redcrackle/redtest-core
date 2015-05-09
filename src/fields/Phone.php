@@ -59,7 +59,7 @@ class Phone extends Field {
       $input[$index] = array('email' => $value);
       $triggering_element_name = $field_name . '_add_more';
       //$triggering_element_value = 'Add another item';
-      $formObject->addMore($field_name, $input, $triggering_element_name);
+      $formObject->pressButton($triggering_element_name);
       $index++;
     }
 

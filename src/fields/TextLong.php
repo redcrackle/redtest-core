@@ -39,7 +39,8 @@ class TextLong extends Text {
       $text_processing = $instance['settings']['text_processing'];
     }
 
-    $values = self::generateValues($num, $text_processing);
+    $field_class = get_called_class();
+    $values = $field_class::generateValues($num, $text_processing);
 
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
@@ -98,6 +99,7 @@ class TextLong extends Text {
       $defaults['format'] = $format;
     }
 
-    return self::fillTextValues($formObject, $field_name, $values, $defaults);
+    $field_class = get_called_class();
+    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
   }
 }

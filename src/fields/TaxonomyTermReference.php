@@ -88,7 +88,8 @@ class TaxonomyTermReference extends Field {
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
     }
 
-    $names = self::convertValues($values, $vocabulary, TRUE, FALSE);
+    $field_class = get_called_class();
+    $names = $field_class::convertValues($values, $vocabulary, TRUE, FALSE);
     $field_value = is_array($names) ? implode(",", $names) : $names;
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $field_value));
 
@@ -109,7 +110,8 @@ class TaxonomyTermReference extends Field {
     $function = "get" . Utils::makeTitleCase($field_name) . "Values";
     $actual_values = $entityObject->$function();
 
-    return self::compareValues($actual_values, $values);
+    $field_class = get_called_class();
+    return $field_class::compareValues($actual_values, $values);
   }
 
   public static function getValues(
@@ -123,8 +125,9 @@ class TaxonomyTermReference extends Field {
   }
 
   public static function compareValues($actual_values, $values) {
-    $actual_values = self::convertValues($actual_values, NULL);
-    $values = self::convertValues($values, NULL);
+    $field_class = get_called_class();
+    $actual_values = $field_class::convertValues($actual_values, NULL);
+    $values = $field_class::convertValues($values, NULL);
 
     if ($actual_values === $values) {
       return array(TRUE, "");
@@ -154,7 +157,8 @@ class TaxonomyTermReference extends Field {
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
     }
 
-    $tids = self::convertValues($values, $vocabulary);
+    $field_class = get_called_class();
+    $tids = $field_class::convertValues($values, $vocabulary);
     $formObject->setValues(
       $field_name,
       array(LANGUAGE_NONE => drupal_map_assoc($tids))
@@ -184,7 +188,8 @@ class TaxonomyTermReference extends Field {
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
     }
 
-    $tids = self::convertValues($values, NULL);
+    $field_class = get_called_class();
+    $tids = $field_class::convertValues($values, NULL);
     $formObject->setValues($field_name, array(LANGUAGE_NONE => $tids));
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
@@ -301,7 +306,8 @@ class TaxonomyTermReference extends Field {
   ) {
     $output = array();
     $function = $return_name ? "getLabel" : "getId";
-    if ($termObject = self::isTermObject($values, $vocabulary)) {
+    $field_class = get_called_class();
+    if ($termObject = $field_class::isTermObject($values, $vocabulary)) {
       $output[] = Utils::$function($termObject);
     }
     elseif (!$false_on_invalid && !is_array($values) && (is_numeric(
@@ -312,7 +318,7 @@ class TaxonomyTermReference extends Field {
     }
     elseif (is_array($values)) {
       foreach ($values as $key => $value) {
-        if ($termObject = self::isTermObject($value, $vocabulary)) {
+        if ($termObject = $field_class::isTermObject($value, $vocabulary)) {
           $output[] = Utils::$function($termObject);
         }
         elseif (!$false_on_invalid && !is_array($value) && (is_numeric(

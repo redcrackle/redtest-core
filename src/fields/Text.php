@@ -140,7 +140,6 @@ class Text extends Field {
   public static function compareValues($actual_values, $values) {
     $field_class = get_called_class();
 
-    xdebug_break();
     $actual_values = $field_class::convertValuesToInput(
       $actual_values,
       array()
@@ -348,7 +347,10 @@ class Text extends Field {
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
-    $return = $formObject->fillMultiValued($field_name, $values);
+    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values, 1);
+    if (!$success) {
+      return array(FALSE, Utils::normalize($return), $msg);
+    }
 
     return array(TRUE, Utils::normalize($return), "");
   }

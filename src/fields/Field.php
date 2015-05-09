@@ -232,7 +232,7 @@ class Field {
     }
   }
 
-  public static function getTriggeringElementName($field_name) {
+  public static function getTriggeringElementName($field_name, $index) {
     return $field_name . '_add_more';
   }
 }

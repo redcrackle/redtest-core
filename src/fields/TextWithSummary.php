@@ -42,7 +42,8 @@ class TextWithSummary extends Text {
       $text_processing = $instance['settings']['text_processing'];
     }
 
-    $values = self::generateValues(
+    $field_class = get_called_class();
+    $values = $field_class::generateValues(
       $num,
       $text_processing,
       $display_summary
@@ -116,9 +117,21 @@ class TextWithSummary extends Text {
       $defaults['format'] = $format;
     }
 
-    return self::fillTextValues($formObject, $field_name, $values, $defaults);
+    $field_class = get_called_class();
+    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
   }
 
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
   public static function getEmptyValue(Form $formObject, $field_name) {
     list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
     $display_summary = $instance['settings']['display_summary'];
