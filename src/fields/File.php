@@ -138,6 +138,14 @@ class File extends Field {
     $input = array();
     for ($i = 0; $i < sizeof($original_values); $i++) {
       if ($original_values[$i]['fid']) {
+        // Adjust weights of all the file elements.
+        $new_values = $formObject->getValues($field_name);
+        $new_values = $new_values[LANGUAGE_NONE];
+        foreach ($new_values as $k => $file_array) {
+          unset($new_values[$k]['_weight']);
+          //$new_values[$k]['_weight'] = $k;
+        }
+        $formObject->setValues($field_name, array(LANGUAGE_NONE => $new_values));
         list($success, $msg) = $formObject->pressButton($field_name . '_' . LANGUAGE_NONE . '_0_remove_button');
         if (!$success) {
           return array(FALSE, array(), $msg);

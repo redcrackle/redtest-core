@@ -116,7 +116,7 @@ abstract class EntityForm extends Form {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
     if (!is_null($field) && !is_null($instance)) {
       $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
       return $field_class::fillDefaultValues($this, $field_name);
     }
