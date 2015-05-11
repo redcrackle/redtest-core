@@ -72,23 +72,42 @@ class LinkField extends Field {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
 
-    $formObject->emptyField($field_name);
+    $field_class = get_called_class();
+    $values = $field_class::denormalizeInput($values);
 
-    $values = self::denormalizeInput($values);
-
-    $input = array();
-    $index = 0;
-    foreach ($values as $key => $value) {
-      if ($index >= 1) {
-        $triggering_element_name = self::getTriggeringElementName($field_name);
-        $formObject->addMore($field_name, $input, $triggering_element_name);
-      }
-      $input[$index] = self::createInput($value);
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $index++;
+    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values);
+    if (!$success) {
+      return array(FALSE, Utils::normalize($return), $msg);
     }
 
-    return array(TRUE, Utils::normalize($input), "");
+    return array(TRUE, Utils::normalize($return), "");
+  }
+
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
+  public static function getEmptyValue(Form $formObject, $field_name) {
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $show_title = $instance['settings']['title'];
+
+    $output = array(
+      'url' => '',
+      'attributes' => array(),
+    );
+
+    if ($show_title != 'none') {
+      $output['title'] = '';
+    }
+
+    return $output;
   }
 
   /**
@@ -100,7 +119,7 @@ class LinkField extends Field {
    * @return string
    *   Triggering element name.
    */
-  private static function getTriggeringElementName($field_name) {
+  public static function getTriggeringElementName($field_name, $index) {
     return $field_name . '_add_more';
   }
 
@@ -145,8 +164,10 @@ class LinkField extends Field {
   }
 
   public static function compareValues($actual_values, $values) {
-    $actual_values = self::formatValuesForCompare($actual_values);
-    $values = self::formatValuesForCompare($values);
+    $field_class = get_called_class();
+
+    $actual_values = $field_class::formatValuesForCompare($actual_values);
+    $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($values) != sizeof($actual_values)) {
       return array(FALSE, "Number of values do not match.");

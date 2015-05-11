@@ -25,10 +25,7 @@ class File extends Field {
    * @return mixed
    *   A path or an array of paths of images which are to be uploaded.
    */
-  public static function fillDefaultFileGenericValues(
-    Form $formObject,
-    $field_name
-  ) {
+  public static function fillDefaultValues(Form $formObject, $field_name) {
     $num = 1;
     $file_extensions = 'txt';
     $scheme = 'public';
@@ -119,18 +116,12 @@ class File extends Field {
    * @return mixed $image_paths
    *   A path or an array of paths of images which are to be uploaded.
    */
-  public static function fillFileGenericValues(
-    Form $formObject,
-    $field_name,
-    $file_info
-  ) {
+  public static function fillValues(Form $formObject, $field_name, $file_info) {
     $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
     $access = $formObject->$access_function();
     if (!$access) {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
-
-    $formObject->emptyField($field_name);
 
     $field_class = get_called_class();
 
@@ -143,7 +134,7 @@ class File extends Field {
     $original_values = $formObject->getValues($field_name);
     $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
 
-    $index = 0;
+    $return = array();
     $input = array();
     for ($i = 0; $i < sizeof($original_values); $i++) {
       if ($original_values[$i]['fid']) {
@@ -163,6 +154,8 @@ class File extends Field {
         list($success, $msg) = $formObject->pressButton(
           $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
         );
+        $formObject->setValues($field_name, array(LANGUAGE_NONE => $new_values));
+        list($success, $msg) = $formObject->pressButton($field_name . '_' . LANGUAGE_NONE . '_0_remove_button');
         if (!$success) {
           return array(FALSE, array(), $msg);
         }
@@ -175,11 +168,13 @@ class File extends Field {
       $return[$i]['uri'] = $file_temp->uri;
       $triggering_element_name = $field_class::getTriggeringElementName(
         $field_name,
-        $index
+        $i
       );
-      $formObject->addMore($field_name, $input, $triggering_element_name);
-
-      $index++;
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, $msg) = $formObject->pressButton($triggering_element_name);
+      if (!$success) {
+        return array(FALSE, Utils::normalize($return), $msg);
+      }
     }
 
     return array(TRUE, Utils::normalize($return), "");
@@ -330,12 +325,16 @@ class File extends Field {
    *   Triggering element name.
    */
   public static function getTriggeringElementName($field_name, $index) {
-    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . ($index - 1) . '_upload_button';
+    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . $index . '_upload_button';
 
     return $triggering_element_name;
   }
 
-  public static function getFileGenericValues(Entity $entityObject, $field_name, $post_process = FALSE) {
+  public static function getFileGenericValues(
+    Entity $entityObject,
+    $field_name,
+    $post_process = FALSE
+  ) {
     $field = $entityObject->getFieldItems($field_name);
     if (!$post_process) {
       return $field;
@@ -349,16 +348,23 @@ class File extends Field {
     return Utils::normalize($output);
   }
 
-  public static function checkFileGenericValues(Entity $entity, $field_name, $values) {
+  public static function checkFileGenericValues(
+    Entity $entity,
+    $field_name,
+    $values
+  ) {
     $function = "get" . Utils::makeTitleCase($field_name) . "Values";
     $actual_values = $entity->$function();
 
-    return self::compareFileGenericValues($actual_values, $values);
+    $field_class = get_called_class();
+
+    return $field_class::compareFileGenericValues($actual_values, $values);
   }
 
   public static function compareFileGenericValues($actual_values, $values) {
-    $values = self::normalizeInputForCompare($values);
-    $actual_values = self::normalizeInputForCompare($actual_values);
+    $field_class = get_called_class();
+    $values = $field_class::normalizeInputForCompare($values);
+    $actual_values = $field_class::normalizeInputForCompare($actual_values);
 
     if (sizeof($actual_values) != sizeof($values)) {
       return array(FALSE, "Number of values do not match.");

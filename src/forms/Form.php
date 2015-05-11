@@ -135,8 +135,13 @@ class Form {
     $this->form_state['rebuild'] = FALSE;
     $this->removeKey('input');
     $this->clearErrors();
-    $this->make_unchecked_checkboxes_null();
+    $this->makeUncheckedCheckboxesNull();
     drupal_form_submit($this->form_id, $this->form_state);
+
+    // Reset the static cache for validated forms otherwise form won't go
+    // through validation function again.
+    drupal_static_reset('drupal_validate_form');
+
     if ($errors = form_get_errors()) {
       $this->errors = $errors;
 
@@ -154,7 +159,7 @@ class Form {
    * @param null|array $element
    *   Form array or a subset of it from where to begin recursion.
    */
-  private function make_unchecked_checkboxes_null($element = NULL) {
+  private function makeUncheckedCheckboxesNull($element = NULL) {
     if (is_null($element)) {
       $element = $this->form;
     }
@@ -172,7 +177,7 @@ class Form {
     }
     else {
       foreach (element_children($element) as $key) {
-        $this->make_unchecked_checkboxes_null($element[$key]);
+        $this->makeUncheckedCheckboxesNull($element[$key]);
       }
     }
   }
@@ -252,28 +257,29 @@ class Form {
    * the form based on the specified inputs and updates the form with the new
    * values in the cache so that the form's submit button can work correctly.
    *
-   * @param string $field_name
-   *   Field whose Add More button is pressed.
-   * @param array $input
-   *   User supplied input in the field.
    * @param string $triggering_element_name
    *   Name of the Add More button.
+   *
+   * @return array
+   *   An array with two values:
+   *   (1) $success: Whether the action of pressing button worked.
+   *   (2) $msg: Error message if the action was unsuccessful.
    */
-  public function addMore($field_name, $input, $triggering_element_name) {
-    $this->make_unchecked_checkboxes_null();
+  public function pressButton($triggering_element_name) {
+    // Make sure that a button with provided name exists.
+    if (!$this->buttonExists($triggering_element_name)) {
+      return array(FALSE, "Button $triggering_element_name does not exist.");
+    }
+
+    $this->clearErrors();
+    $this->makeUncheckedCheckboxesNull();
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
     // Get the form from the cache.
     $this->form = form_get_cache($this->form['#build_id'], $this->form_state);
     $unprocessed_form = $this->form;
     $this->form_state['input'] = $old_form_state_values;
-    //$this->form_state['input'][$field_name][LANGUAGE_NONE] = $input;
-    /*$this->form_state['input']['form_build_id'] = $this->form['#build_id'];
-    $this->form_state['input']['form_id'] = $this->form['#form_id'];
-    $this->form_state['input']['form_token'] = $this->form['form_token']['#default_value'];*/
     $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
-    //$this->form_state['input']['_triggering_element_value'] = $triggering_element_value;
-    //$this->form_state['input']['_triggering_element_value'] = 'Upload';
     $this->form_state['no_redirect'] = TRUE;
     $this->form_state['method'] = 'post';
     $this->form_state['programmed'] = TRUE;
@@ -290,11 +296,16 @@ class Form {
     // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc
     // can add a default value at the end. Otherwise multi-valued submit fails.
     $this->form_state['programmed'] = FALSE;
-    $this->form = drupal_rebuild_form(
-      $this->form_id,
-      $this->form_state,
-      $this->form
-    );
+    if (($this->form_state['rebuild'] || !$this->form_state['executed']) && !form_get_errors(
+      )
+    ) {
+      $form_state['rebuild'] = TRUE;
+      $this->form = drupal_rebuild_form(
+        $this->form_id,
+        $this->form_state,
+        $this->form
+      );
+    }
     if (!$this->form_state['rebuild'] && $this->form_state['cache'] && empty($this->form_state['no_cache'])) {
       form_set_cache(
         $this->form['#build_id'],
@@ -304,6 +315,50 @@ class Form {
     }
 
     unset($this->form_state['values'][$triggering_element_name]);
+
+    // Reset the static cache for validated forms otherwise form won't go
+    // through validation function again.
+    drupal_static_reset('drupal_validate_form');
+
+    if ($errors = form_get_errors()) {
+      $this->errors = $errors;
+
+      return array(FALSE, implode(", ", $this->errors));
+    }
+
+    return array(TRUE, "");
+  }
+
+  /**
+   * Returns whether a button with provided name exists in the form. This name
+   * is searched recursively in the provided $element array.
+   *
+   * @param string $name
+   *   Button name.
+   * @param null|array $element
+   *   Sub-array of the form to be searched for. If this is NULL, then search
+   *   is started from the top-level form element.
+   *
+   * @return bool
+   *   TRUE if button with given name exists and FALSE otherwise.
+   */
+  private function buttonExists($name, $element = NULL) {
+    if (is_null($element)) {
+      $element = $this->form;
+    }
+
+    if (!empty($element['#type']) && ($element['#type'] == 'submit' || $element['#type'] == 'button') && !empty($element['#name']) && $element['#name'] == $name) {
+      return TRUE;
+    }
+
+    foreach (element_children($element) as $key) {
+      $button_exists = $this->buttonExists($name, $element[$key]);
+      if ($button_exists) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
   /**

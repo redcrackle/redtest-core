@@ -116,7 +116,7 @@ abstract class EntityForm extends Form {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
     if (!is_null($field) && !is_null($instance)) {
       $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
       return $field_class::fillDefaultValues($this, $field_name);
     }
@@ -291,32 +291,36 @@ abstract class EntityForm extends Form {
       ) - 6);
   }
 
-  public function fillMultiValued($field_name, $values) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
+  public function fillMultiValued($field_name, $values, $offset = 0) {
+    $field = $this->getFieldInfo($field_name);
     $short_field_class = Utils::makeTitleCase($field['type']);
     $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
 
     $original_values = $this->getValues($field_name);
     $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
     unset($original_values['add_more']);
-    $input_replace = array_slice($values, 0, sizeof($original_values), TRUE);
+    $threshold = sizeof($original_values) + $offset;
+    $input_replace = array_slice($values, 0, $threshold, TRUE);
     $input = $input_replace;
 
     $return = array();
-    if (sizeof($values) > sizeof($original_values)) {
+    if (sizeof($values) > $threshold) {
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $input_add = array_slice($values, sizeof($original_values), NULL, TRUE);
+      $input_add = array_slice($values, $threshold, NULL, TRUE);
       foreach ($input_add as $key => $value) {
         $triggering_element_name = $field_class::getTriggeringElementName($field_name, $key);
-        $this->addMore($field_name, $input, $triggering_element_name);
+        list($success, $msg) = $this->pressButton($triggering_element_name);
+        if (!$success) {
+          return array(FALSE, $input, $msg);
+        }
         $input[] = $value;
         $this->setValues($field_name, array(LANGUAGE_NONE => $input));
       }
       $return = $input;
     }
-    elseif (sizeof($input) < sizeof($original_values) - 1) {
+    elseif (sizeof($input) < $threshold - 1) {
       $return = $input;
-      for ($i = sizeof($input); $i < sizeof($original_values) - 1; $i++) {
+      for ($i = sizeof($input); $i < $threshold - 1; $i++) {
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
@@ -326,6 +330,6 @@ abstract class EntityForm extends Form {
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
     }
 
-    return $return;
+    return array(TRUE, $return, "");
   }
 }

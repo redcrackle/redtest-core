@@ -137,7 +137,6 @@ class Text extends Field {
   public static function compareValues($actual_values, $values) {
     $field_class = get_called_class();
 
-    xdebug_break();
     $actual_values = $field_class::convertValuesToInput(
       $actual_values,
       array()

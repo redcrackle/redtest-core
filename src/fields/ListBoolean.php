@@ -112,8 +112,9 @@ class ListBoolean extends ListField {
   }
 
   public static function compareValues($actual_values, $values) {
-    $actual_values = self::formatValuesForCompare($actual_values);
-    $values = self::formatValuesForCompare($values);
+    $field_class = get_called_class();
+    $actual_values = $field_class::formatValuesForCompare($actual_values);
+    $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($actual_values) != sizeof($values)) {
       return array(FALSE, "Number of values do not match.");
@@ -131,18 +132,19 @@ class ListBoolean extends ListField {
   public static function formatValuesForCompare($values) {
     $output = array();
 
-    if (self::isValueValid($values)) {
+    $field_class = get_called_class();
+    if ($field_class::isValueValid($values)) {
       $output[] = intval($values);
     }
     elseif (is_array($values)) {
       foreach ($values as $key => $value) {
-        if (self::isValueValid($value)) {
+        if ($field_class::isValueValid($value)) {
           $output[] = intval($value);
         }
         elseif (is_array($value) && array_key_exists(
             'value',
             $value
-          ) && self::isValueValid($value['value'])
+          ) && $field_class::isValueValid($value['value'])
         ) {
           $output[] = intval($value['value']);
         }
