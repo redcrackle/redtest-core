@@ -154,8 +154,13 @@ class File extends Field {
         list($success, $msg) = $formObject->pressButton(
           $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
         );
-        $formObject->setValues($field_name, array(LANGUAGE_NONE => $new_values));
-        list($success, $msg) = $formObject->pressButton($field_name . '_' . LANGUAGE_NONE . '_0_remove_button');
+        $formObject->setValues(
+          $field_name,
+          array(LANGUAGE_NONE => $new_values)
+        );
+        list($success, $msg) = $formObject->pressButton(
+          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
+        );
         if (!$success) {
           return array(FALSE, array(), $msg);
         }
