@@ -28,10 +28,7 @@ class Text extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(
-    Form $formObject,
-    $field_name
-  ) {
+  public static function fillDefaultValues(Form $formObject, $field_name) {
     $num = 1;
     $text_processing = FALSE;
     $max_length = 100;
@@ -348,7 +345,10 @@ class Text extends Field {
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
-    $return = $formObject->fillMultiValued($field_name, $values);
+    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values);
+    if (!$success) {
+      return array(FALSE, Utils::normalize($return), $msg);
+    }
 
     return array(TRUE, Utils::normalize($return), "");
   }

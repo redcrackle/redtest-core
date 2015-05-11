@@ -134,16 +134,45 @@ class File extends Field {
 
     $field_class = get_called_class();
 
-    $file_info = $field_class::normalizeInput($file_info);
+    $values = $field_class::normalizeInput($file_info);
+
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $short_field_class = Utils::makeTitleCase($field['type']);
+    $field_class = "RedTest\\core\\fields\\" . $short_field_class;
+
+    $original_values = $formObject->getValues($field_name);
+    $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
 
     $index = 0;
     $input = array();
-    $output = array();
-    foreach ($file_info as $image_path) {
-      $file_temp = $field_class::saveFile($image_path);
-      $input[$index] = $field_class::createInput($file_temp, $image_path);
-      $output[$index] = $input[$index];
-      $output[$index]['uri'] = $file_temp->uri;
+    for ($i = 0; $i < sizeof($original_values); $i++) {
+      if ($original_values[$i]['fid']) {
+        // Adjust weights of all the file elements. This is essential otherwise
+        // form validation will fail because of mismatch in input value and
+        // allowed values.
+        $new_values = $formObject->getValues($field_name);
+        $new_values = $new_values[LANGUAGE_NONE];
+        foreach ($new_values as $k => $file_array) {
+          unset($new_values[$k]['_weight']);
+          //$new_values[$k]['_weight'] = $k;
+        }
+        $formObject->setValues(
+          $field_name,
+          array(LANGUAGE_NONE => $new_values)
+        );
+        list($success, $msg) = $formObject->pressButton(
+          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
+        );
+        if (!$success) {
+          return array(FALSE, array(), $msg);
+        }
+      }
+    }
+    for ($i = 0; $i < sizeof($values); $i++) {
+      $file_temp = $field_class::saveFile($values[$i]);
+      $input[$i] = $field_class::createInput($file_temp, $values[$i]);
+      $return[$i] = $input[$i];
+      $return[$i]['uri'] = $file_temp->uri;
       $triggering_element_name = $field_class::getTriggeringElementName(
         $field_name,
         $index
@@ -153,7 +182,7 @@ class File extends Field {
       $index++;
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return array(TRUE, Utils::normalize($return), "");
   }
 
   /**

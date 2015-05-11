@@ -80,24 +80,42 @@ class TextLong extends Text {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillValues(
-    Form $formObject,
-    $field_name,
-    $values
-  ) {
+  public static function fillValues(Form $formObject, $field_name, $values) {
     $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
     $access = $formObject->$access_function();
     if (!$access) {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
 
-    $formObject->emptyField($field_name);
-
     $defaults = array();
     if (!empty($format)) {
       $defaults['format'] = $format;
     }
 
-    return self::fillTextValues($formObject, $field_name, $values, $defaults);
+    $field_class = get_called_class();
+    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
+  }
+
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
+  public static function getEmptyValue(Form $formObject, $field_name) {
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $text_processing = $instance['settings']['text_processing'];
+
+    $output = array('value' => '');
+    if ($text_processing) {
+      $output['format'] = 'plain_text';
+    }
+
+    return $output;
   }
 }

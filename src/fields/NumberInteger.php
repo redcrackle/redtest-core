@@ -77,20 +77,13 @@ class NumberInteger extends Field {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
 
-    $formObject->emptyField($field_name);
+    $field_class = get_called_class();
+    $values = $field_class::normalizeInput($values);
+    $input = $field_class::formatValuesForInput($values);
 
-    $values = self::normalizeInput($values);
-
-    $input = array();
-    $index = 0;
-    foreach ($values as $key => $value) {
-      if ($index >= 1) {
-        $triggering_element_name = $field_name . '_add_more';
-        $formObject->addMore($field_name, $input, $triggering_element_name);
-      }
-      $input[$index] = array('value' => $value);
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $index++;
+    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $input);
+    if (!$success) {
+      return array(FALSE, Utils::normalize($return), $msg);
     }
 
     return array(TRUE, Utils::normalize($values), "");
