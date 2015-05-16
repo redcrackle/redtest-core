@@ -80,7 +80,10 @@ class Utils {
       return NULL;
     }
 
-    if (class_exists('\Faker\Factory')) {
+    // Do not use Faker for generating a random string since it doesn't give
+    // enough unique values and keys are generally used as unique indexes, for
+    // e.g. in username.
+    /*if (class_exists('\Faker\Factory')) {
       $faker = \Faker\Factory::create();
 
       if ($num == 1) {
@@ -89,7 +92,7 @@ class Utils {
       else {
         return $faker->words($num);
       }
-    }
+    }*/
 
     $string_array = array();
     foreach (range(0, $num - 1) as $index) {
@@ -406,9 +409,9 @@ class Utils {
       }
     }
 
-    self::deleteEntities('node', 1);
+    /*self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1090);
+    self::deleteEntities('user', 1090);*/
   }
 
   /**

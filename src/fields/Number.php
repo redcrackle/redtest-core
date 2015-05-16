@@ -195,7 +195,7 @@ class Number extends Field {
    *   Whether the provided input is a valid decimal number or not.
    */
   protected static function isValidValue($value, $decimal_separator = NULL) {
-    if (!empty($value) && (is_string($value) || is_numeric($value))) {
+    if (isset($value) && (is_string($value) || is_numeric($value))) {
       $value = is_null($decimal_separator) ? $value : str_replace(
         $decimal_separator,
         '.',

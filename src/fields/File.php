@@ -281,9 +281,12 @@ class File extends Field {
     );
     $scheme = !empty($file_info['scheme']) ? $file_info['scheme'] : 'public';
     $file_temp = file_get_contents($file_info['uri']);
+    // We add a random string in front of the file name to avoid race condition
+    // in file upload with the same name in case we are running multiple
+    // concurrent PHPUnit processes.
     $file_temp = file_save_data(
       $file_temp,
-      $scheme . '://' . $filename,
+      $scheme . '://' . Utils::getRandomString(20) . '_' . $filename,
       FILE_EXISTS_RENAME
     );
     // Set file status to temporary otherwise there is validation error.

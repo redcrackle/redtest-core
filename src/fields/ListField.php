@@ -51,19 +51,25 @@ class ListField extends Field {
     }
 
     $input = array();
+    $output = array();
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
           // If value is 0, then make it a string otherwise it will be
           // interpreted as not selected.
+          $output[] = $value;
           $input[$value] = ($value === 0 ? strval($value) : $value);
         }
       }
 
       $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
     }
+    else {
+      // Input is empty.
+      $formObject->setValues($field_name, array(LANGUAGE_NONE => NULL));
+    }
 
-    return array(TRUE, $input, "");
+    return array(TRUE, Utils::normalize($output), "");
   }
 
   public static function fillDefaultOptionsSelectValues(

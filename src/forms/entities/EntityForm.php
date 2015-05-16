@@ -123,7 +123,8 @@ abstract class EntityForm extends Form {
 
     $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";
 
-    return $this->$function();
+    return parent::__call($function, "");
+    //return $this->$function();
   }
 
   /**
@@ -294,7 +295,7 @@ abstract class EntityForm extends Form {
   public function fillMultiValued($field_name, $values, $offset = 0) {
     $field = $this->getFieldInfo($field_name);
     $short_field_class = Utils::makeTitleCase($field['type']);
-    $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+    $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
     $original_values = $this->getValues($field_name);
     $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();

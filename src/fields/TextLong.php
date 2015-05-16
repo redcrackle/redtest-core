@@ -96,27 +96,4 @@ class TextLong extends Text {
     $field_class = get_called_class();
     return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
   }
-
-  /**
-   * Returns an empty field value.
-   *
-   * @param Form $formObject
-   *   Form object.
-   * @param $field_name
-   *   Field name.
-   *
-   * @return array
-   *   An empty field value array.
-   */
-  public static function getEmptyValue(Form $formObject, $field_name) {
-    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-    $text_processing = $instance['settings']['text_processing'];
-
-    $output = array('value' => '');
-    if ($text_processing) {
-      $output['format'] = 'plain_text';
-    }
-
-    return $output;
-  }
 }

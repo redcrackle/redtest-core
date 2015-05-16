@@ -32,11 +32,26 @@ class Text extends Field {
     $num = 1;
     $text_processing = FALSE;
     $max_length = 100;
+
+    $is_cck_field = FALSE;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
-      $text_processing = $instance['settings']['text_processing'];
-      $max_length = $field['settings']['max_length'];
+      list($field, $instance, $field_num) = $formObject->getFieldDetails($field_name);
+
+      if (!is_null($field) && !is_null($instance)) {
+        $text_processing = $instance['settings']['text_processing'];
+        $max_length = $field['settings']['max_length'];
+        $is_cck_field = TRUE;
+        $num = $field_num;
+      }
+    }
+
+    if (!$is_cck_field) {
+      $array = array($field_name);
+      $key_exists = NULL;
+      $form = $formObject->getForm();
+      $value = drupal_array_get_nested_value($form, $array, $key_exists);
+      $max_length = $value['#maxlength'];
     }
 
     $field_class = get_called_class();
@@ -99,15 +114,14 @@ class Text extends Field {
       return array(FALSE, "", "Field $field_name is not accessible.");
     }
 
-    $formObject->emptyField($field_name);
-
     $field_class = get_called_class();
 
     return $field_class::fillTextValues(
       $formObject,
       $field_name,
       $values,
-      array()
+      array(),
+      0
     );
   }
 
@@ -327,6 +341,8 @@ class Text extends Field {
    *   );
    * @param array $defaults
    *   Array of defaults.
+   * @param int $offset
+   *   Offset that is to be passed to fillMultiValued() function.
    *
    * @return array
    *   An array with 3 values:
@@ -338,17 +354,51 @@ class Text extends Field {
     Form $formObject,
     $field_name,
     $values,
-    $defaults
+    $defaults,
+    $offset = 0
   ) {
     $field_class = get_called_class();
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values);
+    $msg = '';
+    if (Field::isCckField($formObject, $field_name)) {
+      list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values, $offset);
+    }
+    else {
+      $values = $values[0]['value'];
+      $formObject->setValues($field_name, $values);
+      $success = TRUE;
+      $return = $values;
+    }
+
     if (!$success) {
       return array(FALSE, Utils::normalize($return), $msg);
     }
 
     return array(TRUE, Utils::normalize($return), "");
+  }
+
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
+  public static function getEmptyValue(Form $formObject, $field_name) {
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $text_processing = $instance['settings']['text_processing'];
+
+    $output = array('value' => '');
+    if ($text_processing) {
+      $output['format'] = 'plain_text';
+    }
+
+    return $output;
   }
 }

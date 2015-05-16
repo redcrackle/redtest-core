@@ -14,15 +14,12 @@ use RedTest\core\Utils;
 class NodeForm extends EntityForm {
 
   /**
-   * Default constructor of the node form. We want this to be protected so that
-   * no class other than child classes can call it directly. We expect the
-   * users to create a separate class for each content type and use its
-   * constructor.
+   * Default constructor of the node form.
    *
    * @param null|int $nid
    *   Node id if an existing node form is to be loaded.
    */
-  protected function __construct($nid = NULL) {
+  public function __construct($nid = NULL) {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();

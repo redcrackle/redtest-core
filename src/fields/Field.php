@@ -134,19 +134,18 @@ class Field {
    *   $success is TRUE.
    */
   public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    list($field_class, $widget_type) = Field::getFieldClass(
+      $formObject,
+      $field_name
+    );
 
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
-
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
+    if (!empty($field_class)) {
+      $function = 'fillDefault' . $widget_type . 'Values';
 
       return $field_class::$function($formObject, $field_name);
     }
+
+    return array(FALSE, "", "Field or property $field_name not found.");
   }
 
   /**
@@ -167,18 +166,96 @@ class Field {
    *   $success is TRUE.
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    list($field_class, $widget_type) = Field::getFieldClass(
+      $formObject,
+      $field_name
+    );
 
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
-
-      $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+    if (!empty($field_class)) {
       $function = 'fill' . $widget_type . 'Values';
 
       return $field_class::$function($formObject, $field_name, $values);
     }
+
+    return array(FALSE, "", "Field or property $field_name not found.");
+  }
+
+  /**
+   * Returns class and widget type of a field.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array with two values:
+   *   (a) Field class
+   *   (b) Widget type in Title Case.
+   */
+  public static function getFieldClass(Form $formObject, $field_name) {
+    $field_class = '';
+    $widget_type = '';
+
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+
+      if (!is_null($field) && !is_null($instance)) {
+        $short_field_class = Utils::makeTitleCase($field['type']);
+        $field_class = "RedTest\\core\\fields\\" . $short_field_class;
+
+        $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+
+        return array($field_class, $widget_type);
+      }
+    }
+
+    // Code execution came here that means that either the form is not an
+    // EntityForm or the field name is a property and is not really a field.
+    $array = array($field_name);
+    $key_exists = NULL;
+    $form = $formObject->getForm();
+    $value = drupal_array_get_nested_value($form, $array, $key_exists);
+    if ($key_exists) {
+      $type = $value['#type'];
+      switch ($type) {
+        case 'textfield':
+          $field_class = 'Text';
+          break;
+      }
+
+      if (!empty($field_class)) {
+        $field_class = "RedTest\\core\\fields\\" . $field_class;
+      }
+
+      return array($field_class, $widget_type);
+    }
+  }
+
+  /**
+   * Returns whether a field is a CCK field attached to an entity form.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return bool
+   *   TRUE if the field is a CCK field attached to an entity form, FALSE
+   *   otherwise.
+   */
+  public static function isCckField(Form $formObject, $field_name) {
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+
+      if (!is_null($field) && !is_null($instance)) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
   public static function checkValues(
@@ -204,7 +281,22 @@ class Field {
       $function = "get" . Utils::makeTitleCase($field_name) . "Values";
       $actual_values = $entityObject->$function();
 
-      return $field_class::compareValues($actual_values, $values, $field, $instance);
+      $function = "compare" . $widget_type . "Values";
+      if (method_exists($field_class, $function)) {
+        return $field_class::$function(
+          $actual_values,
+          $values,
+          $field,
+          $instance
+        );
+      }
+
+      return $field_class::compareValues(
+        $actual_values,
+        $values,
+        $field,
+        $instance
+      );
     }
   }
 

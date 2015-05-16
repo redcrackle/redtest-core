@@ -9,6 +9,7 @@
 namespace RedTest\core\forms;
 
 use RedTest\core\Utils;
+use RedTest\core\fields\Field;
 
 class Form {
 
@@ -23,7 +24,7 @@ class Form {
    * @param string $form_id
    *   Form id.
    */
-  protected function __construct($form_id) {
+  public function __construct($form_id) {
     $args = func_get_args();
     $this->form_id = $form_id;
     array_shift($args);
@@ -174,6 +175,13 @@ class Form {
       if ($key_exists && !is_null($value) && !$value && !is_string($value)) {
         form_set_value($element, NULL, $this->form_state);
       }
+      elseif ($key_exists && !is_null($value) && is_array($value) && sizeof(
+          $value
+        ) == 1 && $value[0] === 0
+      ) {
+        // Single checkbox returns array(0 => 0) instead of 0.
+        form_set_value($element, NULL, $this->form_state);
+      }
     }
     else {
       foreach (element_children($element) as $key) {
@@ -237,7 +245,7 @@ class Form {
    *   Value of the field set in form state array.
    */
   public function getValues($field_name) {
-    return !empty($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
+    return isset($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
   }
 
   /**
@@ -378,18 +386,83 @@ class Form {
     }
   }
 
+
+  public function fillMultiValued($field_name, $values, $offset = 0) {
+    // In custom form, fields are single-valued by default so we won't worry
+    // about multivalued submissions.
+    $this->setValues($field_name, $values);
+    return array(TRUE, Utils::normalize($values), "");
+  }
+
+  /*public function fillDefaultValues($skip = array()) {
+    $fields = array();
+    foreach (element_children($this->form) as $field_name) {
+      $field = $this->form[$field_name];
+      list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
+      if (!empty($field_class)) {
+        $function = 'fillDefault' . Utils::makeTitleCase($field_name) . 'Values';
+        list($success, $values, $msg) = $this->$function();
+        $fields[$field_name] = $values;
+        if (!$success) {
+          return array(FALSE, $fields, $msg);
+        }
+      }
+      else {
+        foreach (element_children($field) as $key) {
+
+        }
+      }
+    }
+
+    return array(TRUE, $fields, "");
+  }*/
+
+  /*private function fillNestedArray($element = NULL, $skip = array()) {
+    if (is_null($element)) {
+      $element = $this->form;
+    }
+
+    foreach (element_children($element) as $field_name) {
+      $field = $this->form[$field_name];
+      list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
+      if (!empty($field_class)) {
+        $function = 'fillDefault' . Utils::makeTitleCase($field_name) . 'Values';
+        list($success, $values, $msg) = $this->$function();
+        $fields[$field_name] = $values;
+        if (!$success) {
+          return array(FALSE, $fields, $msg);
+        }
+      }
+      else {
+        list($success, $this->fillNestedArray($field, $skip);
+      }
+    }
+  }*/
+
   /**
    * @param $name
    * @param $arguments
    */
   public function __call($name, $arguments) {
-    if (strpos($name, 'fill') === 0) {
-      // Function name starts with "get".
-      $field_name = Utils::makeSnakeCase(substr($name, 3));
-      $field = field_info_field($field_name);
-      if (is_null($field)) {
-        return;
-      }
+    if (strpos($name, 'fillDefault') === 0 && strrpos(
+        $name,
+        'Values'
+      ) == strlen($name) - 6
+    ) {
+      // Function name starts with "fillDefault" and ends with "Values".
+      $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
+
+      return Field::fillDefaultValues($this, $field_name);
+    }
+    elseif (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
+        $name
+      ) - 6
+    ) {
+      // Function name starts with "fill" and ends with "Values".
+      $field_name = Utils::makeSnakeCase(substr($name, 4, -6));
+      $arguments = array_shift($arguments);
+
+      return Field::fillValues($this, $field_name, $arguments);
     }
     elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
         $name
