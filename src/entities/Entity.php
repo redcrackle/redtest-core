@@ -1015,7 +1015,7 @@ abstract class Entity {
     list($field, $instance, $num) = Field::getFieldDetails($this, $field_name);
     if (!is_null($field) && !is_null($instance)) {
       $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
       return $field_class::checkValues($this, $field_name, $values);
     }
