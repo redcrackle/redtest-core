@@ -27,9 +27,17 @@ class Utils {
    *   String in title case format.
    */
   public static function makeTitleCase($input) {
+    static $map;
+
+    if (isset($map[$input])) {
+      return $map[$input];
+    }
+
     $output = str_replace("_", " ", strtolower($input));
     $output = ucwords($output);
     $output = str_replace(" ", "", $output);
+
+    $map[$input] = $output;
 
     return $output;
   }
@@ -45,20 +53,28 @@ class Utils {
    *   String in snake case format.
    */
   public static function makeSnakeCase($input) {
-    $input = strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
+    static $map;
+
+    if (isset($map[$input])) {
+      return $map[$input];
+    }
+
+    $input_mod = strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
 
     // Insert _ before and after a numeric string unless it's at the start or end.
     $output = '';
     $is_numeric = FALSE;
-    for ($pos = 0; $pos < strlen($input); $pos++) {
-      if (is_numeric($input[$pos]) && !$is_numeric) {
+    for ($pos = 0; $pos < strlen($input_mod); $pos++) {
+      if (is_numeric($input_mod[$pos]) && !$is_numeric) {
         $output .= '_';
       }
-      elseif (!is_numeric($input[$pos]) && $is_numeric) {
+      elseif (!is_numeric($input_mod[$pos]) && $is_numeric) {
         $output .= '_';
       }
-      $output .= $input[$pos];
+      $output .= $input_mod[$pos];
     }
+
+    $map[$input] = $output;
 
     return $output;
   }

@@ -292,7 +292,34 @@ abstract class EntityForm extends Form {
       ) - 6);
   }
 
+  /**
+   * Fill values in a multi-valued field.
+   *
+   * @param string $field_name
+   *   Field name.
+   * @param array $values
+   *   Field values array.
+   * @param int $offset
+   *   Offset for replacement. In some fields, an empty valued field has NULL
+   *   value in form_state. Use 1 for such a field. In other cases, an empty
+   *   multi-values field has one value which is empty. Use 0 in such a case.
+   *
+   * @return array
+   *   An array with the following values:
+   *   (a) $success: Whether multi-valued field could be filled.
+   *   (b) $return: The actual values filled.
+   *   (c) $msg: An error message if the values could not be filled, an empty
+   *   string otherwise.
+   */
   public function fillMultiValued($field_name, $values, $offset = 0) {
+    if (is_null($values)) {
+      $values = array();
+    }
+
+    if (is_string($values) || is_numeric($values)) {
+      $values = array($values);
+    }
+
     $field = $this->getFieldInfo($field_name);
     $short_field_class = Utils::makeTitleCase($field['type']);
     $field_class = "RedTest\\core\\fields\\" . $short_field_class;
@@ -309,7 +336,10 @@ abstract class EntityForm extends Form {
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
       $input_add = array_slice($values, $threshold, NULL, TRUE);
       foreach ($input_add as $key => $value) {
-        $triggering_element_name = $field_class::getTriggeringElementName($field_name, $key);
+        $triggering_element_name = $field_class::getTriggeringElementName(
+          $field_name,
+          $key
+        );
         list($success, $msg) = $this->pressButton($triggering_element_name);
         if (!$success) {
           return array(FALSE, $input, $msg);

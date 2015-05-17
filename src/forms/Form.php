@@ -135,8 +135,10 @@ class Form {
     // which submit handlers are not called. Hence we set it back to FALSE.
     $this->form_state['rebuild'] = FALSE;
     $this->removeKey('input');
+
     $this->clearErrors();
     $this->makeUncheckedCheckboxesNull();
+    $this->removeFileFieldWeights();
     drupal_form_submit($this->form_id, $this->form_state);
 
     // Reset the static cache for validated forms otherwise form won't go
@@ -150,6 +152,23 @@ class Form {
     }
 
     return array(TRUE, "");
+  }
+
+  private function removeFileFieldWeights($element = NULL) {
+    if (is_null($element)) {
+      $element = $this->form;
+    }
+
+    if (!empty($element['#type']) && $element['#type'] == 'managed_file') {
+      if (array_key_exists('_weight', $element)) {
+        form_set_value($element['_weight'], NULL, $this->form_state);
+      }
+    }
+    else {
+      foreach (element_children($element) as $key) {
+        $this->removeFileFieldWeights($element[$key]);
+      }
+    }
   }
 
   /**

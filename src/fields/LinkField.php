@@ -73,7 +73,7 @@ class LinkField extends Field {
     }
 
     $field_class = get_called_class();
-    $values = $field_class::denormalizeInput($values);
+    $values = $field_class::createInput($values);
 
     list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values);
     if (!$success) {
@@ -133,9 +133,9 @@ class LinkField extends Field {
    *   Input array that can be sent in form POST.
    */
   private static function createInput($value) {
-    if (is_string($value)) {
+    if (is_string($value) || is_numeric($value)) {
       $input = array(
-        'url' => $value
+        'url' => strval($value),
       );
     }
     else {
@@ -156,7 +156,7 @@ class LinkField extends Field {
    *   Standardized format: array of URLs.
    */
   private static function denormalizeInput($values) {
-    if (is_string($values)) {
+    if (is_string($values) || is_numeric($values)) {
       $values = array($values);
     }
 
