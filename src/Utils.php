@@ -237,7 +237,13 @@ class Utils {
       else {
         $paths = Utils::getRandomString(8, $parts);
       }
-      $urls[] = implode("/", $paths);
+
+      if (is_string($paths)) {
+        $urls[] = $paths;
+      }
+      elseif (is_array($paths)) {
+        $urls[] = implode("/", $paths);
+      }
     }
     else {
       foreach (range(0, $num - 1) as $index) {

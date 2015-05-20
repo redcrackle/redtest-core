@@ -29,7 +29,7 @@ class UserCancelConfirmForm extends Form {
       $this->account = $uid_or_account;
     }
 
-    module_load_include('inc', 'user', 'user.pages');
+    $this->includeFile('inc', 'user', 'user.pages');
     parent::__construct('user_cancel_confirm_form', $this->account);
   }
 
@@ -41,6 +41,7 @@ class UserCancelConfirmForm extends Form {
       )
     );
 
-    parent::submit($this->account);
+    $this->pressButton(NULL, $this->account);
+    //parent::submit($this->account);
   }
 }

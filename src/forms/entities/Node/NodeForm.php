@@ -66,9 +66,9 @@ class NodeForm extends EntityForm {
     $this->removeKey('validate_handlers');
     $this->removeKey('submit_handlers');
     $this->removeKey('clicked_button');
-    //module_load_include('inc', 'node', 'node.pages');
     $this->includeFile('inc', 'node', 'node.pages');
-    list($success, $errors) = parent::submit($this->getEntityObject()->getEntity());
+    list($success, $errors) = $this->pressButton(NULL, $this->getEntityObject()->getEntity());
+    //list($success, $errors) = parent::submit($this->getEntityObject()->getEntity());
 
     if ($success) {
       // Get the node from form_state.

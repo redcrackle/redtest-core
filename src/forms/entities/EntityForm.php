@@ -326,7 +326,10 @@ abstract class EntityForm extends Form {
 
     $original_values = $this->getValues($field_name);
     $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
-    unset($original_values['add_more']);
+    if (isset($original_values['add_more'])) {
+      $offset -= 1;
+    }
+    //unset($original_values['add_more']);
     $threshold = sizeof($original_values) + $offset;
     $input_replace = array_slice($values, 0, $threshold, TRUE);
     $input = $input_replace;

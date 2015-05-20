@@ -27,14 +27,27 @@ class UserLoginForm extends Form {
    */
   public function submit() {
     $this->fillValues(array('op' => t('Log In')));
-    $output = parent::submit();
-    if (is_array($output)) {
+    list($success, $msg) = $this->pressButton();
+    //$output = parent::submit();
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
+
+    // Get the user from form_state.
+    $form_state = $this->getFormState();
+    $uid = $form_state['user']->uid;
+    $userObject = new User($uid);
+    $this->setEntityObject($userObject);
+
+    return array(TRUE, $userObject, "");
+
+    /*if (is_array($output)) {
       // There was an error.
       return $output;
     }
     else {
       $form_state = $this->getFormState();
       return $form_state['uid'];
-    }
+    }*/
   }
 }

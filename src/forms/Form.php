@@ -32,17 +32,6 @@ class Form {
 
     $this->form = drupal_build_form($form_id, $this->form_state);
 
-    /*if (!empty($args)) {
-      //$this->form = call_user_func_array('drupal_get_form', $args);
-      $this->form_state['build_info']['args'] = array('test');
-      $this->form = drupal_build_form($form_id, $this->form_state);
-    }
-    else {
-      //$this->form = drupal_get_form($this->form_id);
-      $this->form_state['build_info']['args'] = array();
-      $this->form = drupal_build_form($form_id, $this->form_state);
-    }*/
-
     return $this->form;
   }
 
@@ -118,40 +107,6 @@ class Form {
         unset($this->errors[$name]);
       }
     }
-  }
-
-  /**
-   * Submit the form.
-   *
-   * @return mixed $output
-   *   True, if successful and array of errors, if not.
-   */
-  public function submit() {
-    $args = func_get_args();
-    $this->form_state['build_info']['args'] = $args;
-    $this->form_state['programmed_bypass_access_check'] = FALSE;
-    $this->form_state['values']['form_build_id'] = $this->form['#build_id'];
-    // Add more field button sets $form_state['rebuild'] to TRUE because of
-    // which submit handlers are not called. Hence we set it back to FALSE.
-    $this->form_state['rebuild'] = FALSE;
-    $this->removeKey('input');
-
-    $this->clearErrors();
-    $this->makeUncheckedCheckboxesNull();
-    $this->removeFileFieldWeights();
-    drupal_form_submit($this->form_id, $this->form_state);
-
-    // Reset the static cache for validated forms otherwise form won't go
-    // through validation function again.
-    drupal_static_reset('drupal_validate_form');
-
-    if ($errors = form_get_errors()) {
-      $this->errors = $errors;
-
-      return array(FALSE, implode(", ", $this->errors));
-    }
-
-    return array(TRUE, "");
   }
 
   private function removeFileFieldWeights($element = NULL) {
@@ -280,7 +235,7 @@ class Form {
   }
 
   /**
-   * Simulate action of pressing of an Add More button. This function processed
+   * Simulate action of pressing of an Add More button. This function processes
    * the form based on the specified inputs and updates the form with the new
    * values in the cache so that the form's submit button can work correctly.
    *
@@ -292,56 +247,42 @@ class Form {
    *   (1) $success: Whether the action of pressing button worked.
    *   (2) $msg: Error message if the action was unsuccessful.
    */
-  public function pressButton($triggering_element_name) {
+  public function pressButton($triggering_element_name = NULL) {
     // Make sure that a button with provided name exists.
-    if (!$this->buttonExists($triggering_element_name)) {
+    if (!is_null($triggering_element_name) && !$this->buttonExists($triggering_element_name)) {
       return array(FALSE, "Button $triggering_element_name does not exist.");
     }
 
     $this->clearErrors();
     $this->makeUncheckedCheckboxesNull();
+    $this->removeFileFieldWeights();
+
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
-    // Get the form from the cache.
-    $this->form = form_get_cache($this->form['#build_id'], $this->form_state);
-    $unprocessed_form = $this->form;
+
+    $args = func_get_args();
+    // Remove $triggering_element_name from the arguments.
+    array_shift($args);
+    $this->form_state['build_info']['args'] = $args;
+    $this->form_state['programmed_bypass_access_check'] = FALSE;
+    $this->form_state['values']['form_build_id'] = $this->form['#build_id'];
+    // Add more field button sets $form_state['rebuild'] to TRUE because of
+    // which submit handlers are not called. Hence we set it back to FALSE.
+    $this->removeKey('input');
+
     $this->form_state['input'] = $old_form_state_values;
-    $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
+    if (!is_null($triggering_element_name)) {
+      $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
+    }
     $this->form_state['no_redirect'] = TRUE;
     $this->form_state['method'] = 'post';
-    $this->form_state['programmed'] = TRUE;
+    //$this->form_state['programmed'] = TRUE;
 
-    drupal_process_form(
-      $this->form['#form_id'],
-      $this->form,
-      $this->form_state
-    );
+    $this->form = drupal_build_form($this->form_id, $this->form_state);
 
-    // Rebuild the form and set it in cache. This is the code at the end of
-    // drupal_process_form() after above code boils out at
-    // $form_state['programmed'] = TRUE.
-    // Set $form_state['programmed'] = FALSE so that Line 504 on file.field.inc
-    // can add a default value at the end. Otherwise multi-valued submit fails.
-    $this->form_state['programmed'] = FALSE;
-    if (($this->form_state['rebuild'] || !$this->form_state['executed']) && !form_get_errors(
-      )
-    ) {
-      $form_state['rebuild'] = TRUE;
-      $this->form = drupal_rebuild_form(
-        $this->form_id,
-        $this->form_state,
-        $this->form
-      );
+    if (!is_null($triggering_element_name)) {
+      unset($this->form_state['values'][$triggering_element_name]);
     }
-    if (!$this->form_state['rebuild'] && $this->form_state['cache'] && empty($this->form_state['no_cache'])) {
-      form_set_cache(
-        $this->form['#build_id'],
-        $unprocessed_form,
-        $this->form_state
-      );
-    }
-
-    unset($this->form_state['values'][$triggering_element_name]);
 
     // Reset the static cache for validated forms otherwise form won't go
     // through validation function again.

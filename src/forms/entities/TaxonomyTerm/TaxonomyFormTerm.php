@@ -103,7 +103,11 @@ class TaxonomyFormTerm extends EntityForm {
     if (empty($weight)) {
       $this->fillValues(array('weight' => 0));
     }
-    $output = parent::submit(array(), $this->vocabulary);
+    list($success, $msg) = $this->pressButton(NULL, array(), $this->vocabulary);
+    //$output = parent::submit(array(), $this->vocabulary);
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
 
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
@@ -116,7 +120,7 @@ class TaxonomyFormTerm extends EntityForm {
     $this->setEntityObject($termObject);
     $this->getEntityObject()->reload();
 
-    return $output;
+    return array(TRUE, $termObject, "");
   }
 
   /**
