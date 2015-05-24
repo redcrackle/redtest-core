@@ -44,4 +44,11 @@ class Node extends Entity {
       parent::__construct($node);
     }
   }
+
+  /**
+   * Delete the node programmatically.
+   */
+  public function deleteProgrammatically() {
+    node_delete($this->getId());
+  }
 }

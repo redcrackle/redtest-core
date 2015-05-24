@@ -65,13 +65,20 @@ class User extends Entity {
    * @param string $password
    *   Password.
    * @param array $roles
-   *   An array of roles that are to be added to the user in addition to the default role(s) that the user gets on registering. You can either pass in role id or role string.
+   *   An array of roles that are to be added to the user in addition to the
+   *   default role(s) that the user gets on registering. You can either pass
+   *   in role id or role string.
    *
    * @return mixed $user
    *   User object if the user logged in successfully and an array of errors,
    *   otherwise.
    */
-  public static function registerUser($username, $email, $password, $roles = array()) {
+  public static function registerUser(
+    $username,
+    $email,
+    $password,
+    $roles = array()
+  ) {
     $userRegisterForm = new UserForms\UserRegisterForm();
     $userRegisterForm->fillValues(
       array(
@@ -114,10 +121,12 @@ class User extends Entity {
   }
 
   /**
-   * Converts an array of role ids or role names to an array of role_id => role_name key/paid values.
+   * Converts an array of role ids or role names to an array of role_id =>
+   * role_name key/paid values.
    *
    * @param array $roles
    *   An array of role ids or role names.
+   *
    * @return array
    *   An associative array with role id as key and role name as value.
    *
@@ -156,6 +165,13 @@ class User extends Entity {
   }
 
   /**
+   * Delete the user programmatically.
+   */
+  public function deleteProgrammatically() {
+    user_delete($this->getId());
+  }
+
+  /**
    * Log the currently logged in user out and load the anonymous user.
    */
   public function logout() {
@@ -175,8 +191,12 @@ class User extends Entity {
    * @param string|int $uid_or_username
    *   Uid or Username.
    *
-   * @return object $user
-   *   User object.
+   * @return array
+   *   An array with three values:
+   *   (1) $success: Whether user could log in successfully.
+   *   (2) $userObject: User object if the user could log in.
+   *   (3) $msg: An error message if user could not log in. If the login was
+   *   successful, then this will be empty.
    */
   public static function loginProgrammatically($uid_or_username) {
     global $user;
@@ -186,17 +206,49 @@ class User extends Entity {
     elseif ($user = user_load_by_name($uid_or_username)) {
       $login_array = array('name' => $uid_or_username);
     }
+    else {
+      return array(
+        FALSE,
+        NULL,
+        "User with uid or username $uid_or_username not found."
+      );
+    }
     user_login_finalize($login_array);
 
-    return new User($user->uid);
+    $userObject = new User($user->uid);
+
+    return array(TRUE, $userObject, "");
   }
 
-  public static function createDefault($num = 1, $skip = array(), $roles = array()) {
-    global $entities;
+  /**
+   * Create new users with default field values.
+   *
+   * @param int $num
+   *   Number of entities to create.
+   * @param boolean $required_fields_only
+   *   Whether only required fields are to be filled while creating the entity.
+   * @param array $skip
+   *   An array of fields that need to be skipped while creating the entities.
+   * @param array $data
+   *   Roles that the user needs to be assigned.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether entity creation succeeded.
+   *   (2) $entities: An array of created entities. If there is only one entity
+   *   to be created, then it returns the entity itself and not the array.
+   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   */
+  public static function createDefault(
+    $num = 1,
+    $required_fields_only = TRUE,
+    $skip = array(),
+    $data = array()
+  ) {
+    $data += array('roles' => array());
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
-      $username = '';
       do {
         $username = Utils::getRandomString(20);
         $a = user_validate_name($username);
@@ -206,7 +258,6 @@ class User extends Entity {
           $username
         ));
 
-      $email = '';
       do {
         $email = $username . '@' . Utils::getRandomString(20) . '.com';
       } while (!is_null(user_validate_mail($email)) || user_load_by_mail(
@@ -214,15 +265,36 @@ class User extends Entity {
         ));
 
       $password = Utils::getRandomString();
-      list($success, $object, $msg) = User::registerUser($username, $email, $password, $roles);
+      list($success, $object, $msg) = User::registerUser(
+        $username,
+        $email,
+        $password,
+        $data['roles']
+      );
       if (!$success) {
         return array(FALSE, $output, $msg);
       }
 
       $output[] = $object;
-      $entities['user'][$object->getId()] = $object;
     }
 
     return array(TRUE, Utils::normalize($output), "");
+  }
+
+  public static function masquerade($uid) {
+    global $user;
+    $original_user_object = new User($user->uid);
+    $old_state = drupal_save_session();
+    drupal_save_session(FALSE);
+    $user = user_load($uid);
+    $user_object = new User($uid);
+
+    return array($user_object, $original_user_object, $old_state);
+  }
+
+  public static function unmasquerade(User $original_user_object, $old_state) {
+    global $user;
+    $user = $original_user_object->getEntity();
+    drupal_save_session($old_state);
   }
 }

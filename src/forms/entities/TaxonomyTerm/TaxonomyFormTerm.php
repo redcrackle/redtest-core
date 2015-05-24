@@ -120,6 +120,10 @@ class TaxonomyFormTerm extends EntityForm {
     $this->setEntityObject($termObject);
     $this->getEntityObject()->reload();
 
+    // Store the created user in $entities so that it can later be deleted.
+    global $entities;
+    $entities['taxonomy_term'][$termObject->getId()] = $termObject;
+
     return array(TRUE, $termObject, "");
   }
 

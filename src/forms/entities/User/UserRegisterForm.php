@@ -51,6 +51,10 @@ class UserRegisterForm extends EntityForm {
     $userObject = new User($uid);
     $this->setEntityObject($userObject);
 
+    // Store the created user in $entities so that it can later be deleted.
+    global $entities;
+    $entities['user'][$uid] = $userObject;
+
     return array(TRUE, $userObject, "");
   }
 } 

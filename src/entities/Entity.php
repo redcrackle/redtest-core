@@ -269,13 +269,26 @@ abstract class Entity {
     )) {
       entity_get_controller($this->entity_type)->save($this->entity);
     }
+    elseif ($this->entity_type == 'node') {
+      node_save($this->entity);
+    }
+    elseif ($this->entity_type == 'user') {
+      user_save($this->entity);
+    }
+    elseif ($this->entity_type == 'taxonomy_term') {
+      taxonomy_term_save($this->entity);
+    }
   }
 
   /**
    * Deletes the entity from database. This is copied from the entity_delete()
    * function since entity module may not be installed.
    */
-  public function delete() {
+  public function deleteProgrammatically() {
+    $entity_class = "RedTest\\core\\entities\\" . Utils::makeTitleCase(
+        $this->entity_type
+      );
+
     $info = entity_get_info($this->entity_type);
     if (isset($info['deletion callback'])) {
       $info['deletion callback']($this->getId());
@@ -291,6 +304,17 @@ abstract class Entity {
     }
   }
 
+  /**
+   * Whether user has access for the "create" operation. This function is
+   * called from static method "hasAccess".
+   *
+   * @param string $op
+   *   This has to be "create" since this is the only operation that can be
+   *   called statically.
+   *
+   * @return bool
+   *   TRUE if user has access and FALSE otherwise.
+   */
   public static function hasClassAccess($op) {
     if ($op !== 'create') {
       return FALSE;
@@ -304,15 +328,32 @@ abstract class Entity {
     elseif ($entity_type == 'node') {
       $class = new \ReflectionClass($entity_class);
       $bundle = Utils::makeSnakeCase($class->getShortName());
+
       return node_access($op, $bundle);
     }
-    elseif (($info = entity_get_info()) && isset($info[$entity_type]['access callback'])) {
-      return $info[$entity_type]['access callback']($op, NULL, NULL, $entity_type);
+    elseif (($info = entity_get_info(
+      )) && isset($info[$entity_type]['access callback'])
+    ) {
+      return $info[$entity_type]['access callback'](
+        $op,
+        NULL,
+        NULL,
+        $entity_type
+      );
     }
 
     return FALSE;
   }
 
+  /**
+   * Whether user has access to update, view or delete the entity.
+   *
+   * @param string $op
+   *   This can either be "update", "view" or "delete".
+   *
+   * @return bool
+   *   TRUE if user has access and FALSE otherwise.
+   */
   public function hasObjectAccess($op) {
     if (!in_array($op, array('update', 'view', 'delete'))) {
       return FALSE;
@@ -325,8 +366,15 @@ abstract class Entity {
     elseif ($entity_type == 'node') {
       return node_access($op, $this->getEntity());
     }
-    elseif (($info = entity_get_info()) && isset($info[$entity_type]['access callback'])) {
-      return $info[$entity_type]['access callback']($op, $this->getEntity(), NULL, $entity_type);
+    elseif (($info = entity_get_info(
+      )) && isset($info[$entity_type]['access callback'])
+    ) {
+      return $info[$entity_type]['access callback'](
+        $op,
+        $this->getEntity(),
+        NULL,
+        $entity_type
+      );
     }
 
     return FALSE;
@@ -340,6 +388,7 @@ abstract class Entity {
    */
   public static function hasCreateAccess() {
     $entity_class = get_called_class();
+
     return $entity_class::hasAccess('create');
   }
 
@@ -534,6 +583,12 @@ abstract class Entity {
     return $output;
   }
 
+  /**
+   * @param $field_name
+   * @param bool $post_process
+   *
+   * @return array|bool
+   */
   public function getFile($field_name, $post_process = TRUE) {
     $field = $this->getFieldItems($field_name);
     if (!$post_process) {
@@ -804,6 +859,7 @@ abstract class Entity {
     }
     elseif ($name == 'hasAccess') {
       $class = get_called_class();
+
       return call_user_func_array(array($class, 'hasClassAccess'), $arguments);
     }
   }
@@ -856,7 +912,10 @@ abstract class Entity {
         return $this->hasFieldAccess($field_name, $op);
       }
     }
-    elseif (strpos($name, 'get') === 0 && strrpos($name, 'Values') == strlen($name) - 6) {
+    elseif (strpos($name, 'get') === 0 && strrpos($name, 'Values') == strlen(
+        $name
+      ) - 6
+    ) {
       // Function name starts with "get". This means that we need to return
       // value of a field.
       array_unshift(
@@ -1548,8 +1607,13 @@ abstract class Entity {
    *
    * @param int $num
    *   Number of entities to create.
+   * @param boolean $required_fields_only
+   *   Whether only required fields are to be filled while creating the entity.
    * @param array $skip
    *   An array of fields that need to be skipped while creating the entities.
+   * @param array $data
+   *   An array of other key value pairs that are specific to the entity
+   *   creation.
    *
    * @return array
    *   An array with 3 values:
@@ -1558,9 +1622,12 @@ abstract class Entity {
    *   to be created, then it returns the entity itself and not the array.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function createDefault($num = 1, $skip = array()) {
-    global $entities;
-
+  public static function createDefault(
+    $num = 1,
+    $required_fields_only = TRUE,
+    $skip = array(),
+    $data = array()
+  ) {
     $output = array();
     for ($i = 0; $i < $num; $i++) {
 
@@ -1576,7 +1643,11 @@ abstract class Entity {
       $classForm = new $formClass();
 
       // Fill default values in the form.
-      list($success, $fields, $msg) = $classForm->fillDefaultValues($skip);
+      list($success, $fields, $msg) = $classForm->fillDefaultValues(
+        $required_fields_only,
+        $skip,
+        $data
+      );
       if (!$success) {
         return array(FALSE, $output, $msg);
       }
@@ -1593,15 +1664,16 @@ abstract class Entity {
 
       // Make sure that there is an id.
       if (!$object->getId()) {
-        return array(FALSE, $output, "Could not create $original_class entity: " . $msg);
+        return array(
+          FALSE,
+          $output,
+          "Could not create $original_class entity: " . $msg
+        );
       }
 
       // Store the created entity in the output array.
       //$object = $classForm->getEntityObject();
       $output[] = $object;
-
-      // Store the created entity in $entities so that it can later be deleted.
-      $entities[$entity_type][$object->getId()] = $object;
     }
 
     return array(TRUE, Utils::normalize($output), "");

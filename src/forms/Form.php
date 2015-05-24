@@ -249,7 +249,10 @@ class Form {
    */
   public function pressButton($triggering_element_name = NULL) {
     // Make sure that a button with provided name exists.
-    if (!is_null($triggering_element_name) && !$this->buttonExists($triggering_element_name)) {
+    if (!is_null($triggering_element_name) && !$this->buttonExists(
+        $triggering_element_name
+      )
+    ) {
       return array(FALSE, "Button $triggering_element_name does not exist.");
     }
 
@@ -351,6 +354,7 @@ class Form {
     // In custom form, fields are single-valued by default so we won't worry
     // about multivalued submissions.
     $this->setValues($field_name, $values);
+
     return array(TRUE, Utils::normalize($values), "");
   }
 
@@ -436,10 +440,57 @@ class Form {
 
       return $this->hasAccess($field_name);
     }
+    elseif (strpos($name, 'is') === 0 && strrpos($name, 'Required') == strlen(
+        $name
+      ) - 8
+    ) {
+      // Function name starts with "is" and ends with "Required". We are
+      // checking if a field is required or not.
+      $field_name = Utils::makeSnakeCase(substr($name, 2, -8));
+
+      return $this->isRequired($field_name);
+    }
   }
 
-  public function hasAccess($field_name) {
-    $parents = explode('][', $field_name);
+  /**
+   * Returns whether a field is required.
+   *
+   * @param string|array $parents
+   *   Field name or an array of parents along with the field name.
+   *
+   * @return boolean
+   *   TRUE if the field is required and FALSE otherwise.
+   */
+  public function isRequired($parents) {
+    if (is_string($parents) || is_numeric($parents)) {
+      $parents = array($parents);
+    }
+
+    $key_exists = NULL;
+    $value = drupal_array_get_nested_value($this->form, $parents, $key_exists);
+    if ($key_exists) {
+      return (isset($value['#required']) && $value['#required']);
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Returns whether user has access to the field.
+   *
+   * @param string|array $parents
+   *   Field name or an array of parents along with the field name.
+   *
+   * @return bool
+   *   TRUE if user has access to the field and FALSE otherwise.
+   *
+   * @throws \Exception
+   */
+  public function hasAccess($parents) {
+    if (is_string($parents) || is_numeric($parents)) {
+      $parents = array($parents);
+    }
+
     $element = $this->getForm();
     if (array_key_exists('#access', $element) && !$element['#access']) {
       return FALSE;

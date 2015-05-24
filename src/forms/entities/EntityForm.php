@@ -124,16 +124,20 @@ abstract class EntityForm extends Form {
     $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";
 
     return parent::__call($function, "");
-    //return $this->$function();
   }
 
   /**
    * Fills default values in all the fields except that are asked to be
    * skipped.
    *
+   * @param boolean $required_fields_only
+   *   Whether only required fields are to be filled.
    * @param array $skip
    *   An array of field names which are not supposed to be filled by default
    *   values.
+   * @param array $data
+   *   This parameter is just to make all the fillDefaultValues() functions
+   *   uniform and is not used here.
    *
    * @return array
    *   An array with the following values:
@@ -144,7 +148,11 @@ abstract class EntityForm extends Form {
    *   (3) $msg: An error message if there was an error filling fields with
    *   default values and an empty string otherwise.
    */
-  public function fillDefaultValues($skip = array()) {
+  public function fillDefaultValues(
+    $required_fields_only = TRUE,
+    $skip = array(),
+    $data = array()
+  ) {
     // First get all field instances.
     $field_instances = $this->entityObject->getFieldInstances();
 
@@ -152,15 +160,28 @@ abstract class EntityForm extends Form {
     // fill default values for them.
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
-      if (!in_array($field_name, $skip)) {
-        $function = "fillDefault" . Utils::makeTitleCase(
-            $field_name
-          ) . "Values";
-        list($success, $values, $msg) = $this->$function();
-        $fields[$field_name] = $values;
-        if (!$success) {
-          return array(FALSE, $fields, $msg);
-        }
+      $required_function_name = 'is' . Utils::makeTitleCase(
+          $field_name
+        ) . 'Required';
+      if ($required_fields_only && !$this->$required_function_name()) {
+        // Check if the field is required. We use '#required' key in form array
+        // since it can be set or unset using custom code.
+        // Field is not required. There is no need to fill this field.
+        continue;
+      }
+
+      if (in_array($field_name, $skip)) {
+        // Field needs to be skipped.
+        continue;
+      }
+
+      $function = "fillDefault" . Utils::makeTitleCase(
+          $field_name
+        ) . "Values";
+      list($success, $values, $msg) = $this->$function();
+      $fields[$field_name] = $values;
+      if (!$success) {
+        return array(FALSE, $fields, $msg);
       }
     }
 
@@ -327,16 +348,26 @@ abstract class EntityForm extends Form {
     $original_values = $this->getValues($field_name);
     $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
     if (isset($original_values['add_more'])) {
+      // If the form has an "add_more" key, that means that there is one less
+      // field that is available to us for filling without pressing "Add More" button.
       $offset -= 1;
     }
-    //unset($original_values['add_more']);
     $threshold = sizeof($original_values) + $offset;
+    // $input_replace is an array of input values that can be replaced into
+    // existing fields without pressing "Add More" button.
     $input_replace = array_slice($values, 0, $threshold, TRUE);
     $input = $input_replace;
 
     $return = array();
     if (sizeof($values) > $threshold) {
+      // Number of input values is more than the number of fields available
+      // without pressing Add More button. We fill the available fields with the
+      // input values and for each remaining input value, we need to press "Add
+      // More" button.
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+
+      // $input_add is the remaining input values for which we need to press
+      // "Add More" button.
       $input_add = array_slice($values, $threshold, NULL, TRUE);
       foreach ($input_add as $key => $value) {
         $triggering_element_name = $field_class::getTriggeringElementName(
@@ -353,6 +384,9 @@ abstract class EntityForm extends Form {
       $return = $input;
     }
     elseif (sizeof($input) < $threshold - 1) {
+      // Number of input values is less than the number of fields available
+      // without pressing Add More button. We clear out all the available fields
+      // and fill them with the new values.
       $return = $input;
       for ($i = sizeof($input); $i < $threshold - 1; $i++) {
         $input[] = $field_class::getEmptyValue($this, $field_name);

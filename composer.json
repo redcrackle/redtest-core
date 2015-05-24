@@ -2,7 +2,7 @@
     "name": "redcrackle/redtest-core",
     "type": "library",
     "description": "Core libray of Red Test framework, an integration testing framework for Drupal based on PHPUnit",
-    "keywords": ["phpunit", "drupal", "integration testing"],
+    "keywords": ["phpunit", "drupal", "integration testing", "test driven development", "tdd"],
     "license": "GPLv3",
     "authors": [
         {

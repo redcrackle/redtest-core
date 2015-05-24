@@ -155,7 +155,7 @@ class Utils {
       else {
         $text_array[] = substr(
           str_shuffle(
-            " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "          0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
           ),
           0,
           $length
@@ -426,7 +426,7 @@ class Utils {
     if (!empty($entities)) {
       foreach ($entities as $key => $val) {
         foreach ($val as $entity_id => $object) {
-          $object->delete();
+          $object->deleteProgrammatically();
         }
       }
     }
@@ -447,8 +447,13 @@ class Utils {
    *   First value of the input array or the full input array.
    */
   public static function normalize($input) {
-    if (is_array($input) && sizeof($input) == 1) {
-      return array_shift($input);
+    if (is_array($input)) {
+      if (sizeof($input) === 0) {
+        return '';
+      }
+      elseif (sizeof($input) == 1) {
+        return array_shift($input);
+      }
     }
 
     return $input;
@@ -701,5 +706,20 @@ class Utils {
     }
 
     return array_values($sorted_array);
+  }
+
+  public static function formatDate($date, $format) {
+    if (is_null($date)) {
+      return NULL;
+    }
+
+    if (is_string($date)) {
+      $date = strtotime($date);
+    }
+    if ($format != 'integer' && is_numeric($date)) {
+      $date = format_date($date, 'custom', $format);
+    }
+
+    return $date;
   }
 }
