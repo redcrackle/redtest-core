@@ -426,7 +426,9 @@ class Utils {
     if (!empty($entities)) {
       foreach ($entities as $key => $val) {
         foreach ($val as $entity_id => $object) {
-          $object->deleteProgrammatically();
+          if ($object->deleteProgrammatically()) {
+            unset($entities[$key][$entity_id]);
+          }
         }
       }
     }

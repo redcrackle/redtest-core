@@ -43,6 +43,7 @@ class TaxonomyTerm extends Entity {
 
   public function deleteProgrammatically() {
     taxonomy_term_delete($this->getId());
+    return TRUE;
   }
 
   /**

@@ -130,8 +130,6 @@ abstract class EntityForm extends Form {
    * Fills default values in all the fields except that are asked to be
    * skipped.
    *
-   * @param boolean $required_fields_only
-   *   Whether only required fields are to be filled.
    * @param array $skip
    *   An array of field names which are not supposed to be filled by default
    *   values.
@@ -148,11 +146,9 @@ abstract class EntityForm extends Form {
    *   (3) $msg: An error message if there was an error filling fields with
    *   default values and an empty string otherwise.
    */
-  public function fillDefaultValues(
-    $required_fields_only = TRUE,
-    $skip = array(),
-    $data = array()
-  ) {
+  public function fillDefaultValues($skip = array(), $data = array()) {
+    $data += array('required_fields_only' => TRUE);
+
     // First get all field instances.
     $field_instances = $this->entityObject->getFieldInstances();
 
@@ -163,7 +159,7 @@ abstract class EntityForm extends Form {
       $required_function_name = 'is' . Utils::makeTitleCase(
           $field_name
         ) . 'Required';
-      if ($required_fields_only && !$this->$required_function_name()) {
+      if ($data['required_fields_only'] && !$this->$required_function_name()) {
         // Check if the field is required. We use '#required' key in form array
         // since it can be set or unset using custom code.
         // Field is not required. There is no need to fill this field.
@@ -395,6 +391,10 @@ abstract class EntityForm extends Form {
     }
     else {
       $return = $input;
+      if (is_array($input) && !sizeof($input)) {
+        // $input is an empty array, which means we need to make it empty.
+        $input[] = $field_class::getEmptyValue($this, $field_name);
+      }
       $this->setValues($field_name, array(LANGUAGE_NONE => $input));
     }
 

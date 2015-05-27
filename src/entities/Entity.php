@@ -292,12 +292,14 @@ abstract class Entity {
     $info = entity_get_info($this->entity_type);
     if (isset($info['deletion callback'])) {
       $info['deletion callback']($this->getId());
+      return TRUE;
     }
     elseif (in_array(
       'EntityAPIControllerInterface',
       class_implements($info['controller class'])
     )) {
       entity_get_controller($this->entity_type)->delete(array($this->getId()));
+      return TRUE;
     }
     else {
       return FALSE;
@@ -1607,8 +1609,6 @@ abstract class Entity {
    *
    * @param int $num
    *   Number of entities to create.
-   * @param boolean $required_fields_only
-   *   Whether only required fields are to be filled while creating the entity.
    * @param array $skip
    *   An array of fields that need to be skipped while creating the entities.
    * @param array $data
@@ -1624,10 +1624,11 @@ abstract class Entity {
    */
   public static function createDefault(
     $num = 1,
-    $required_fields_only = TRUE,
     $skip = array(),
     $data = array()
   ) {
+    $data += array('required_fields_only' => TRUE);
+
     $output = array();
     for ($i = 0; $i < $num; $i++) {
 
@@ -1644,7 +1645,6 @@ abstract class Entity {
 
       // Fill default values in the form.
       list($success, $fields, $msg) = $classForm->fillDefaultValues(
-        $required_fields_only,
         $skip,
         $data
       );

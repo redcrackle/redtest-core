@@ -169,18 +169,45 @@ class User extends Entity {
    */
   public function deleteProgrammatically() {
     user_delete($this->getId());
+    return TRUE;
   }
 
   /**
    * Log the currently logged in user out and load the anonymous user.
    */
-  public function logout() {
+  public static function logoutFunction() {
     global $user;
+    if ($user->uid === 0) {
+      // User is already anonymous.
+      return;
+    }
+
     module_invoke_all('user_logout', $user);
     // Destroy the current session, and reset $user to the anonymous user.
     session_destroy();
     // Load Anonymous user object
     $user = user_load(0);
+
+    // Reset the static variables that can get affected when a user logs in.
+    drupal_static_reset('menu_get_item');
+    drupal_static_reset('menu_tree');
+    drupal_static_reset('menu_tree_page_data');
+    drupal_static_reset('menu_tree_set_path');
+  }
+
+  public static function __callStatic($name, $arguments) {
+    if ($name == 'logout') {
+      static::logoutFunction();
+    }
+  }
+
+  public function __call($name, $arguments) {
+    if ($name == 'logout') {
+      static::logoutFunction();
+    }
+    else {
+      return parent::__call($name, $arguments);
+    }
   }
 
   /**
@@ -217,6 +244,13 @@ class User extends Entity {
 
     $userObject = new User($user->uid);
 
+    // Reset the static variables that can get affected when a user logs in.
+    drupal_static_reset('menu_get_item');
+    drupal_static_reset('menu_tree');
+    drupal_static_reset('menu_tree_page_data');
+    drupal_static_reset('menu_tree_set_path');
+    drupal_static_reset('Menu::getBlocks');
+
     return array(TRUE, $userObject, "");
   }
 
@@ -225,8 +259,6 @@ class User extends Entity {
    *
    * @param int $num
    *   Number of entities to create.
-   * @param boolean $required_fields_only
-   *   Whether only required fields are to be filled while creating the entity.
    * @param array $skip
    *   An array of fields that need to be skipped while creating the entities.
    * @param array $data
@@ -241,11 +273,13 @@ class User extends Entity {
    */
   public static function createDefault(
     $num = 1,
-    $required_fields_only = TRUE,
     $skip = array(),
     $data = array()
   ) {
-    $data += array('roles' => array());
+    $data += array(
+      'roles' => array(),
+      'required_fields_only' => TRUE,
+    );
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {

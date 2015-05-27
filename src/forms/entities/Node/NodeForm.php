@@ -98,8 +98,6 @@ class NodeForm extends EntityForm {
    * this function and are different from Drupal's default values for the
    * fields.
    *
-   * @param boolean $required_fields_only
-   *   Whether only required fields are to be filled.
    * @param array $skip
    *   An array of field or property names that should not be filled with
    *   default values.
@@ -117,12 +115,12 @@ class NodeForm extends EntityForm {
    *   default values and an empty string otherwise.
    */
   public function fillDefaultValues(
-    $required_fields_only = TRUE,
     $skip = array(),
     $data = array()
   ) {
+    $data += array('required_fields_only' => TRUE);
+
     list($success, $fields, $msg) = parent::fillDefaultValues(
-      $required_fields_only,
       $skip,
       $data
     );
@@ -130,7 +128,8 @@ class NodeForm extends EntityForm {
       return array(FALSE, $fields, $msg);
     }
 
-    if ((!$required_fields_only || $this->isTitleRequired()) && !in_array(
+    if ((!$data['required_fields_only'] || $this->isTitleRequired(
+        )) && !in_array(
         'title',
         $skip
       )
@@ -209,7 +208,10 @@ class NodeForm extends EntityForm {
       }
     }
 
-    if ($this->hasAccess(array('author', 'name')) && isset($data['change_author']) && $data['change_author']) {
+    if ($this->hasAccess(
+        array('author', 'name')
+      ) && isset($data['change_author']) && $data['change_author']
+    ) {
       // We'll need to create new author first.
       // Masquerade as user 1.
       list($superAdmin, $originalUser, $originalState) = User::masquerade(1);

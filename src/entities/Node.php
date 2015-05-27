@@ -50,5 +50,6 @@ class Node extends Entity {
    */
   public function deleteProgrammatically() {
     node_delete($this->getId());
+    return TRUE;
   }
 }
