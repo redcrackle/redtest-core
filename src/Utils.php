@@ -436,9 +436,9 @@ class Utils {
       }
     }
 
-    self::deleteEntities('node', 1);
+    /*self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1090);
+    self::deleteEntities('user', 1090);*/
   }
 
   /**

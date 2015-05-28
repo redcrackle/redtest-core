@@ -64,30 +64,37 @@ class TaxonomyFormTerm extends EntityForm {
    * this function and are different from Drupal's default values for the
    * fields.
    *
-   * @param array $skip
-   *   An array of field or property names that should not be filled with
-   *   default values.
-   * @param array $data
-   *   An array of other key value pairs.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
    *
    * @return array
-   *   An array consisting of three values: TRUE (which means that the function
-   *   executed without any error), an array of fields which were modified and
-   *   an empty message.
+   *   An array with the following values:
+   *   (1) $success: TRUE if fields were filled successfully and FALSE
+   *   otherwise.
+   *   (2) $fields: An associative array of field values that are to be filled
+   *   keyed by field name.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
    */
-  public function fillDefaultValues($skip = array(), $data = array()) {
-    $data += array('required_fields_only' => TRUE);
+  public function fillDefaultValues($options = array()) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
 
-    list($success, $fields, $msg) = parent::fillDefaultValues($skip, $data);
+    list($success, $fields, $msg) = parent::fillDefaultValues($options);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
-    if (!$data['required_fields_only'] || $this->isDescriptionRequired()) {
+    if (!$options['required_fields_only'] || $this->isDescriptionRequired()) {
       // Check if the field is required. We use '#required' key in form array
       // since it can be set or unset using custom code.
       // Field is required or we need to fill all fields.
-      if (!in_array('description', $skip)) {
+      if (!in_array('description', $options['skip'])) {
         $description = array(
           'value' => Utils::getRandomText(100),
           'format' => 'plain_text',
@@ -100,7 +107,7 @@ class TaxonomyFormTerm extends EntityForm {
 
     // Fill name at the end so that there is less chance of getting non-unique
     // value in the database.
-    if (!in_array('name', $skip)) {
+    if (!in_array('name', $options['skip'])) {
       // Make sure that taxonomy term name is not repeated so that deleting
       // entities at the end is easier.
       $name = TaxonomyTerm::getUniqueName($this->vocabulary->machine_name);
@@ -128,10 +135,18 @@ class TaxonomyFormTerm extends EntityForm {
     }
 
     if (is_null($this->getEntityObject()->getId())) {
-      list($success, $msg) = $this->pressButton(NULL, array(), $this->vocabulary);
+      list($success, $msg) = $this->pressButton(
+        NULL,
+        array(),
+        $this->vocabulary
+      );
     }
     else {
-      list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+      list($success, $msg) = $this->pressButton(
+        NULL,
+        $this->getEntityObject()->getEntity(),
+        NULL
+      );
     }
 
     //$output = parent::submit(array(), $this->vocabulary);
@@ -179,11 +194,19 @@ class TaxonomyFormTerm extends EntityForm {
 
   public function delete() {
     $this->fillOpValues(t('Delete'));
-    list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+    list($success, $msg) = $this->pressButton(
+      NULL,
+      $this->getEntityObject()->getEntity(),
+      NULL
+    );
 
     $this->fillOpValues(t('Delete'));
     $this->fillConfirmValues("1");
-    list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+    list($success, $msg) = $this->pressButton(
+      NULL,
+      $this->getEntityObject()->getEntity(),
+      NULL
+    );
     if (!$success) {
       return array(FALSE, $msg);
     }

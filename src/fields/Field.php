@@ -125,6 +125,8 @@ class Field {
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -133,7 +135,7 @@ class Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     list($field_class, $widget_type) = Field::getFieldClass(
       $formObject,
       $field_name
@@ -142,7 +144,7 @@ class Field {
     if (!empty($field_class)) {
       $function = 'fillDefault' . $widget_type . 'Values';
 
-      return $field_class::$function($formObject, $field_name);
+      return $field_class::$function($formObject, $field_name, $options);
     }
 
     return array(FALSE, "", "Field or property $field_name not found.");

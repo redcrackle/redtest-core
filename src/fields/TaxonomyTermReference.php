@@ -15,38 +15,76 @@ use RedTest\core\entities\TaxonomyTerm;
 
 class TaxonomyTermReference extends Field {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(
+    Form $formObject,
+    $field_name,
+    $options
+  ) {
     $num = 1;
-    $vocabulary = '';
+    //$vocabulary = '';
     $widget_type = '';
+    $references = array();
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
       $widget_type = $instance['widget']['type'];
+
+      if (isset($options['references']['taxonomy_terms'])) {
+        foreach ($options['references']['taxonomy_terms'] as $term) {
+          if ($termObject = static::isTermObject($term, $vocabulary)) {
+            $references[] = $termObject;
+          }
+        }
+      }
+      $num = min($num, sizeof($references));
+      shuffle($references);
+      $references = array_slice($references, 0, $num);
     }
 
     // Create new taxonomy terms in the specified vocabulary.
-    $vocabulary_class = Utils::makeTitleCase($vocabulary);
-    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . $vocabulary_class;
+    /*$vocabulary_class = Utils::makeTitleCase($vocabulary);
+    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . $vocabulary_class;*/
 
     $termObjects = array();
+
     for ($i = 0; $i < $num; $i++) {
-      if ($widget_type == 'taxonomy_autocomplete' && Utils::getRandomBool()) {
-        // Instead of creating a new term, we just pass its name so that Drupal
-        // creates a new one automatically.
-        $termObjects[] = Utils::getRandomText(10);
+      if ($widget_type == 'taxonomy_autocomplete') {
+        if (sizeof($references)) {
+          // Use taxonomy terms that are provided.
+          $termObjects[] = Utils::getLabel($references[$i]);
+        }
+        else {
+          // Instead of creating a new term, we just pass its name so that
+          // Drupal creates a new one automatically.
+          $termObjects[] = Utils::getRandomText(20);
+        }
       }
-      else {
-        list($success, $termObject, $msg) = $vocabulary_class::createDefault();
+      elseif (sizeof($references)) {
+        // For select lists and radio buttons, we can not create a new term
+        // here. The reason is that if the form has an AJAX-based Add More
+        // button, then it will be cached. So all the options in the select or
+        // checkbox/radio list will be the original options even though new
+        // taxonomy terms are created later. It's like creating a new taxonomy
+        // term after a form with taxonomy term is already opened in another
+        // tab.
+        /*list($success, $termObject, $msg) = $vocabulary_class::createDefault();
         if (!$success) {
           return array(
             FALSE,
             $termObjects,
             "Could not create taxonomy terms for the field " . $field_name . ": " . $msg
           );
-        }
-        $termObjects[] = $termObject;
+        }*/
+        $termObjects[] = Utils::getLabel($references[$i]);
+      }
+      else {
+        // $references is an empty array.
+        return array(
+          FALSE,
+          NULL,
+          "Could not find any existing taxonomy term that can be referenced by $field_name."
+        );
       }
     }
 

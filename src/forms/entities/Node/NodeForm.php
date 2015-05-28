@@ -98,40 +98,38 @@ class NodeForm extends EntityForm {
    * this function and are different from Drupal's default values for the
    * fields.
    *
-   * @param array $skip
-   *   An array of field or property names that should not be filled with
-   *   default values.
-   * @param array $data
-   *   This parameter is just to make all the fillDefaultValues() functions
-   *   uniform and is not used here.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
    *
    * @return array
    *   An array with the following values:
-   *   (1) $success: TRUE if all the fields except the ones to be skipped could
-   *   be filled and FALSE otherwise.
-   *   (2) $fields: An associative array of field values that were filled keyed
-   *   by the field name.
-   *   (3) $msg: An error message if there was an error filling fields with
-   *   default values and an empty string otherwise.
+   *   (1) $success: TRUE if fields were filled successfully and FALSE
+   *   otherwise.
+   *   (2) $fields: An associative array of field values that are to be filled
+   *   keyed by field name.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
    */
-  public function fillDefaultValues(
-    $skip = array(),
-    $data = array()
-  ) {
-    $data += array('required_fields_only' => TRUE);
+  public function fillDefaultValues($options = array()) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+      );
 
     list($success, $fields, $msg) = parent::fillDefaultValues(
-      $skip,
-      $data
+      $options
     );
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
-    if ((!$data['required_fields_only'] || $this->isTitleRequired(
+    if ((!$options['required_fields_only'] || $this->isTitleRequired(
         )) && !in_array(
         'title',
-        $skip
+        $options['skip']
       )
     ) {
       // Check if the field is required. We use '#required' key in form array
@@ -143,10 +141,10 @@ class NodeForm extends EntityForm {
 
     if ($this->hasAccess(
         array('options', 'status')
-      ) && isset($data['status'])
+      ) && isset($options['status'])
     ) {
       $status = NULL;
-      switch ($data['status']) {
+      switch ($options['status']) {
         case 'random':
           $status = Utils::getRandomBool();
           break;
@@ -165,11 +163,11 @@ class NodeForm extends EntityForm {
 
     if ($this->hasAccess(
         array('revision_information', 'revision')
-      ) && isset($data['revision'])
+      ) && isset($options['revision'])
     ) {
       $revision = NULL;
       $revision_log = NULL;
-      switch ($data['revision']) {
+      switch ($options['revision']) {
         case 'random':
           $revision = Utils::getRandomBool();
           break;
@@ -185,9 +183,9 @@ class NodeForm extends EntityForm {
         $fields['revision'] = $revision;
         if ($revision && $this->hasAccess(
             array('revision_information', 'log')
-          ) && isset($data['revision_log'])
+          ) && isset($options['revision_log'])
         ) {
-          switch ($data['revision_log']) {
+          switch ($options['revision_log']) {
             case 'random':
               $revision_log = Utils::getRandomBool() ? Utils::getRandomText(
                 25
@@ -210,7 +208,7 @@ class NodeForm extends EntityForm {
 
     if ($this->hasAccess(
         array('author', 'name')
-      ) && isset($data['change_author']) && $data['change_author']
+      ) && isset($options['change_author']) && $options['change_author']
     ) {
       // We'll need to create new author first.
       // Masquerade as user 1.
@@ -230,15 +228,15 @@ class NodeForm extends EntityForm {
 
     if ($this->hasAccess(
         array('author', 'date')
-      ) && isset($data['change_published_date']) && $data['change_published_date']
+      ) && isset($options['change_published_date']) && $options['change_published_date']
     ) {
       $now = time();
-      $start = isset($data['start_published_date']) ? Utils::formatDate(
-        $data['start_published_date'],
+      $start = isset($options['start_published_date']) ? Utils::formatDate(
+        $options['start_published_date'],
         'integer'
       ) : $now - (3 * 365 * 24 * 60 * 60);
-      $end = isset($data['end_published_date']) ? Utils::formatDate(
-        $data['end_published_date'],
+      $end = isset($options['end_published_date']) ? Utils::formatDate(
+        $options['end_published_date'],
         'integer'
       ) : $now + (3 * 365 * 24 * 60 * 60);
 

@@ -260,24 +260,22 @@ class User extends Entity {
    *
    * @param int $num
    *   Number of entities to create.
-   * @param array $skip
-   *   An array of fields that need to be skipped while creating the entities.
-   * @param array $data
+   * @param array $options
    *   Roles that the user needs to be assigned.
    *
-   * @return array
-   *   An array with 3 values:
-   *   (1) $success: Whether entity creation succeeded.
-   *   (2) $entities: An array of created entities. If there is only one entity
-   *   to be created, then it returns the entity itself and not the array.
-   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   * @return array An array with 3 values:
+   * An array with 3 values:
+   * (1) $success: Whether entity creation succeeded.
+   * (2) $entities: An array of created entities. If there is only one entity
+   * to be created, then it returns the entity itself and not the array.
+   * (3) $msg: Error message if $success is FALSE and empty otherwise.
+   * @internal param array $skip An array of fields that need to be skipped while creating the entities.*   An array of fields that need to be skipped while creating the entities.
    */
   public static function createDefault(
     $num = 1,
-    $skip = array(),
-    $data = array()
+    $options = array()
   ) {
-    $data += array(
+    $options += array(
       'roles' => array(),
       'required_fields_only' => TRUE,
     );
@@ -304,7 +302,7 @@ class User extends Entity {
         $username,
         $email,
         $password,
-        $data['roles']
+        $options['roles']
       );
       if (!$success) {
         return array(FALSE, $output, $msg);

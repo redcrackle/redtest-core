@@ -151,7 +151,7 @@ class Form {
       }
       elseif ($key_exists && !is_null($value) && is_array($value) && sizeof(
           $value
-        ) == 1 && $value[0] === 0
+        ) == 1 && isset($value[0]) && $value[0] === 0
       ) {
         // Single checkbox returns array(0 => 0) instead of 0.
         form_set_value($element, NULL, $this->form_state);

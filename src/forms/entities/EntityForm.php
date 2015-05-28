@@ -56,8 +56,12 @@ abstract class EntityForm extends Form {
   public function __call($name, $arguments) {
     if ($this->isFillDefaultFieldValuesFunction($name)) {
       $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
+      array_unshift($arguments, $field_name);
 
-      return $this->fillDefaultFieldValues($field_name);
+      return call_user_func_array(
+        array($this, 'fillDefaultFieldValues'),
+        $arguments
+      );
     }
     elseif ($this->isFillFieldValuesFunction($name)) {
       $field_name = Utils::makeSnakeCase(substr($name, 4, -6));
@@ -105,68 +109,72 @@ abstract class EntityForm extends Form {
    *
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
    *   (1) $success: Whether the field could be filled with provided values.
    *   (2) $values: Values that were actually filled in $form_state.
-   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   *   (3) $msg: Error message if $success is FALSE and empty string otherwise.
    */
-  public function fillDefaultFieldValues($field_name) {
+  public function fillDefaultFieldValues($field_name, $options = array()) {
     list($field, $instance, $num) = $this->getFieldDetails($field_name);
     if (!is_null($field) && !is_null($instance)) {
       $short_field_class = Utils::makeTitleCase($field['type']);
       $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
-      return $field_class::fillDefaultValues($this, $field_name);
+      return $field_class::fillDefaultValues($this, $field_name, $options);
     }
 
     $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";
 
-    return parent::__call($function, "");
+    return parent::__call($function, array($options));
   }
 
   /**
-   * Fills default values in all the fields except that are asked to be
-   * skipped.
+   * Fills default values in fields.
    *
-   * @param array $skip
-   *   An array of field names which are not supposed to be filled by default
-   *   values.
-   * @param array $data
-   *   This parameter is just to make all the fillDefaultValues() functions
-   *   uniform and is not used here.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
    *
    * @return array
    *   An array with the following values:
-   *   (1) $success: TRUE if all the fields except the ones to be skipped could
-   *   be filled and FALSE otherwise.
-   *   (2) $fields: An associative array of field values that were filled keyed
-   *   by the field name.
-   *   (3) $msg: An error message if there was an error filling fields with
-   *   default values and an empty string otherwise.
+   *   (1) $success: TRUE if fields were filled successfully and FALSE
+   *   otherwise.
+   *   (2) $fields: An associative array of field values that are to be filled
+   *   keyed by field name.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
    */
-  public function fillDefaultValues($skip = array(), $data = array()) {
-    $data += array('required_fields_only' => TRUE);
+  public function fillDefaultValues($options = array()) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
 
     // First get all field instances.
     $field_instances = $this->entityObject->getFieldInstances();
 
-    // Iterate over all the field instances and unless they are in $skip array,
-    // fill default values for them.
+    // Iterate over all the field instances and unless they are in
+    // $options['skip'] array, fill default values for them.
     $fields = array();
     foreach ($field_instances as $field_name => $field_instance) {
       $required_function_name = 'is' . Utils::makeTitleCase(
           $field_name
         ) . 'Required';
-      if ($data['required_fields_only'] && !$this->$required_function_name()) {
+      if ($options['required_fields_only'] && !$this->$required_function_name()
+      ) {
         // Check if the field is required. We use '#required' key in form array
         // since it can be set or unset using custom code.
         // Field is not required. There is no need to fill this field.
         continue;
       }
 
-      if (in_array($field_name, $skip)) {
+      if (in_array($field_name, $options['skip'])) {
         // Field needs to be skipped.
         continue;
       }
@@ -174,7 +182,7 @@ abstract class EntityForm extends Form {
       $function = "fillDefault" . Utils::makeTitleCase(
           $field_name
         ) . "Values";
-      list($success, $values, $msg) = $this->$function();
+      list($success, $values, $msg) = $this->$function($options);
       $fields[$field_name] = $values;
       if (!$success) {
         return array(FALSE, $fields, $msg);

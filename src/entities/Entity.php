@@ -1609,26 +1609,22 @@ abstract class Entity {
    *
    * @param int $num
    *   Number of entities to create.
-   * @param array $skip
-   *   An array of fields that need to be skipped while creating the entities.
-   * @param array $data
-   *   An array of other key value pairs that are specific to the entity
-   *   creation.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
    *
    * @return array
-   *   An array with 3 values:
-   *   (1) $success: Whether entity creation succeeded.
-   *   (2) $entities: An array of created entities. If there is only one entity
-   *   to be created, then it returns the entity itself and not the array.
-   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
+   *   An array with the following values:
+   *   (1) $success: TRUE if entities were created successfully and FALSE
+   *   otherwise.
+   *   (2) $objects: A single entity object or an associative array of entity
+   *   objects that are created.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
    */
-  public static function createDefault(
-    $num = 1,
-    $skip = array(),
-    $data = array()
-  ) {
-    $data += array('required_fields_only' => TRUE);
-
+  public static function createDefault($num = 1, $options = array()) {
     $output = array();
     for ($i = 0; $i < $num; $i++) {
 
@@ -1644,10 +1640,7 @@ abstract class Entity {
       $classForm = new $formClass();
 
       // Fill default values in the form.
-      list($success, $fields, $msg) = $classForm->fillDefaultValues(
-        $skip,
-        $data
-      );
+      list($success, $fields, $msg) = $classForm->fillDefaultValues($options);
       if (!$success) {
         return array(FALSE, $output, $msg);
       }
