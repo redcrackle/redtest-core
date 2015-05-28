@@ -100,7 +100,11 @@ class TaxonomyTerm extends Entity {
    *
    * @return array
    */
-  public static function createTermObjectsFromTids($tids, $vocabulary = NULL, $false_on_invalid = TRUE) {
+  public static function createTermObjectsFromTids(
+    $tids,
+    $vocabulary = NULL,
+    $false_on_invalid = TRUE
+  ) {
     $terms = taxonomy_term_load_multiple($tids);
 
     $termObjects = array();
@@ -125,7 +129,11 @@ class TaxonomyTerm extends Entity {
     return $termObjects;
   }
 
-  public static function createTermObjectsFromNames($names, $vocabulary = NULL, $false_on_invalid = TRUE) {
+  public static function createTermObjectsFromNames(
+    $names,
+    $vocabulary = NULL,
+    $false_on_invalid = TRUE
+  ) {
     $termObjects = array();
     foreach ($names as $name) {
       if ($termObject = TaxonomyTerm::termExistsForName($name, $vocabulary)) {
@@ -140,5 +148,25 @@ class TaxonomyTerm extends Entity {
     }
 
     return $termObjects;
+  }
+
+  /**
+   * Returns a unique term name that doesn't already exist.
+   *
+   * @param null|string $vocabulary_machine_name
+   *   Vocabulary machine name if the term name is supposed to be unique in
+   *   that vocabulary or NULL if the term name is supposed to be unique across
+   *   all the vocabularies.
+   *
+   * @return string
+   *   Unique term name.
+   */
+  public static function getUniqueName($vocabulary_machine_name = NULL) {
+    do {
+      $name = Utils::getRandomText(20);
+      $terms = taxonomy_get_term_by_name($name, $vocabulary_machine_name);
+    } while (sizeof($terms));
+
+    return $name;
   }
 }

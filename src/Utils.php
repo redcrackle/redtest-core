@@ -152,14 +152,17 @@ class Utils {
       if (!is_null($faker)) {
         $text_array[] = $faker->text($length);
       }
+      elseif ($length <= 2) {
+        $text_array[] = static::getRandomString($length);
+      }
       else {
-        $text_array[] = substr(
-          str_shuffle(
-            "          0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-          ),
-          0,
-          $length
-        );
+        $text_array[] = static::getRandomString(1) . substr(
+            str_shuffle(
+              "          0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            ),
+            0,
+            $length - 2
+          ) . static::getRandomString(1);
       }
     }
 
@@ -433,9 +436,9 @@ class Utils {
       }
     }
 
-    /*self::deleteEntities('node', 1);
+    self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1090);*/
+    self::deleteEntities('user', 1090);
   }
 
   /**

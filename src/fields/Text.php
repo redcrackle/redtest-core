@@ -66,6 +66,10 @@ class Text extends Field {
 
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
+    if (!$is_cck_field) {
+      return $formObject->$function($values['value']);
+    }
+
     return $formObject->$function($values);
   }
 

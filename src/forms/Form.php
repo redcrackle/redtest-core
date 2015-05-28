@@ -268,12 +268,13 @@ class Form {
     array_shift($args);
     $this->form_state['build_info']['args'] = $args;
     $this->form_state['programmed_bypass_access_check'] = FALSE;
-    $this->form_state['values']['form_build_id'] = $this->form['#build_id'];
+    //$this->form_state['values']['form_build_id'] = $this->form['#build_id'];
     // Add more field button sets $form_state['rebuild'] to TRUE because of
     // which submit handlers are not called. Hence we set it back to FALSE.
     $this->removeKey('input');
 
     $this->form_state['input'] = $old_form_state_values;
+    $this->form_state['input']['form_build_id'] = $this->form['#build_id'];
     if (!is_null($triggering_element_name)) {
       $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
     }

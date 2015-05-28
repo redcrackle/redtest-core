@@ -193,6 +193,7 @@ class User extends Entity {
     drupal_static_reset('menu_tree');
     drupal_static_reset('menu_tree_page_data');
     drupal_static_reset('menu_tree_set_path');
+    drupal_static_reset('Menu::getBlocks');
   }
 
   public static function __callStatic($name, $arguments) {

@@ -99,7 +99,7 @@ class TaxonomyTermReference extends Field {
       FALSE
     );
 
-    return array(TRUE, $termObjects, "");
+    return array(TRUE, Utils::normalize($termObjects), "");
   }
 
   public static function checkValues(
@@ -125,9 +125,18 @@ class TaxonomyTermReference extends Field {
   }
 
   public static function compareValues($actual_values, $values) {
+    if (!$actual_values && !$values) {
+      // both values are empty or FALSE.
+      return array(TRUE, "");
+    }
+
     $field_class = get_called_class();
     $actual_values = $field_class::convertValues($actual_values, NULL);
     $values = $field_class::convertValues($values, NULL);
+    if (sizeof($values) == 1 && !$values[0]) {
+      // Converted $values is FALSE which means that term could not be found.
+      return array(FALSE, "");
+    }
 
     if ($actual_values === $values) {
       return array(TRUE, "");

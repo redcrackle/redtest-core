@@ -8,6 +8,7 @@
 
 namespace RedTest\core\forms\entities\TaxonomyTerm;
 
+use RedTest\core\entities\TaxonomyTerm;
 use RedTest\core\forms\entities\EntityForm;
 use RedTest\core\Utils;
 
@@ -30,8 +31,11 @@ class TaxonomyFormTerm extends EntityForm {
         $this->vocabulary = taxonomy_vocabulary_machine_name_load(
           $vocabulary_name
         );
-        $this->setEntityObject($term);
-        module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+        $base_path = "RedTest\\entities\\TaxonomyTerm\\";
+        $class_fullname = $base_path . substr($class_shortname, 0, -4);
+        $termObject = new $class_fullname($tid);
+        $this->setEntityObject($termObject);
+        $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
         parent::__construct('taxonomy_form_term', $term, $this->vocabulary);
 
         return;
@@ -51,7 +55,7 @@ class TaxonomyFormTerm extends EntityForm {
 
     // tid is not provided or is not numeric.
     $this->vocabulary = taxonomy_vocabulary_machine_name_load($vocabulary_name);
-    module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+    $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
     parent::__construct('taxonomy_form_term', array(), $this->vocabulary);
   }
 
@@ -63,30 +67,45 @@ class TaxonomyFormTerm extends EntityForm {
    * @param array $skip
    *   An array of field or property names that should not be filled with
    *   default values.
+   * @param array $data
+   *   An array of other key value pairs.
    *
-   * @internal param array $entities An array of entities passed by reference.*
-   *     An array of entities passed by reference.
    * @return array
    *   An array consisting of three values: TRUE (which means that the function
    *   executed without any error), an array of fields which were modified and
    *   an empty message.
    */
-  public function fillDefaultValues($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
+  public function fillDefaultValues($skip = array(), $data = array()) {
+    $data += array('required_fields_only' => TRUE);
+
+    list($success, $fields, $msg) = parent::fillDefaultValues($skip, $data);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
-    if (!in_array('name', $skip)) {
-      $name = Utils::getRandomText(10);
-      $this->fillNameValues($name);
-      $fields['name'] = $name;
+    if (!$data['required_fields_only'] || $this->isDescriptionRequired()) {
+      // Check if the field is required. We use '#required' key in form array
+      // since it can be set or unset using custom code.
+      // Field is required or we need to fill all fields.
+      if (!in_array('description', $skip)) {
+        $description = array(
+          'value' => Utils::getRandomText(100),
+          'format' => 'plain_text',
+        );
+        $this->fillDescriptionValues($description);
+        $fields['description'] = $description['value'];
+        $fields['format'] = $description['format'];
+      }
     }
 
-    if (!in_array('description', $skip)) {
-      $description = Utils::getRandomText(100);
-      $this->fillDescriptionValues($description);
-      $fields['description'] = $description;
+    // Fill name at the end so that there is less chance of getting non-unique
+    // value in the database.
+    if (!in_array('name', $skip)) {
+      // Make sure that taxonomy term name is not repeated so that deleting
+      // entities at the end is easier.
+      $name = TaxonomyTerm::getUniqueName($this->vocabulary->machine_name);
+      $this->fillNameValues($name);
+      $fields['name'] = $name;
     }
 
     return array(TRUE, $fields, "");
@@ -95,7 +114,7 @@ class TaxonomyFormTerm extends EntityForm {
   /**
    * This function is used for submit Taxonomy form.
    *
-   * @return this will return $form_state is success else error if not   *
+   * @return array
    */
   public function submit() {
     $this->fillValues(array('op' => t('Save')));
@@ -103,7 +122,18 @@ class TaxonomyFormTerm extends EntityForm {
     if (empty($weight)) {
       $this->fillValues(array('weight' => 0));
     }
-    list($success, $msg) = $this->pressButton(NULL, array(), $this->vocabulary);
+    $parent = $this->getValues('parent');
+    if (empty($parent)) {
+      $this->fillParentValues(array(0 => "0"));
+    }
+
+    if (is_null($this->getEntityObject()->getId())) {
+      list($success, $msg) = $this->pressButton(NULL, array(), $this->vocabulary);
+    }
+    else {
+      list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+    }
+
     //$output = parent::submit(array(), $this->vocabulary);
     if (!$success) {
       return array(FALSE, NULL, $msg);
@@ -146,4 +176,20 @@ class TaxonomyFormTerm extends EntityForm {
   public function fillTermVocabVidField($value) {
     $this->fillTermVocabVidWidgetField($value);
   }
-} 
+
+  public function delete() {
+    $this->fillOpValues(t('Delete'));
+    list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+
+    $this->fillOpValues(t('Delete'));
+    $this->fillConfirmValues("1");
+    list($success, $msg) = $this->pressButton(NULL, $this->getEntityObject()->getEntity(), NULL);
+    if (!$success) {
+      return array(FALSE, $msg);
+    }
+
+    global $entities;
+    unset($entities['taxonomy_term'][$this->getEntityObject()->getId()]);
+    return array(TRUE, $msg);
+  }
+}

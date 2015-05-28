@@ -39,7 +39,10 @@ class Menu {
    */
   public static function getPageArguments($path) {
     if ($router_item = self::getItem($path)) {
-      return $router_item['page_arguments'];
+      if (is_array($router_item['page_arguments'])) {
+        return $router_item['page_arguments'];
+      }
+      return unserialize($router_item['page_arguments']);
     }
 
     return array();

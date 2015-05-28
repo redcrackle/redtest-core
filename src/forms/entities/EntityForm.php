@@ -94,7 +94,7 @@ abstract class EntityForm extends Form {
     }
 
     // $field_name is a property.
-    $values = Utils::normalize($values);
+    //$values = Utils::normalize($values);
     $this->fillValues(array($field_name => $values));
 
     return array(TRUE, $values, "");
