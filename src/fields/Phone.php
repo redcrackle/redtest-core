@@ -13,9 +13,26 @@ use RedTest\core\Utils;
 
 class Phone extends Field {
 
+  /**
+   * Fill random phone number values in the phone field.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
   public static function fillDefaultPhoneTextfieldValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {

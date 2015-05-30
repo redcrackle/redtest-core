@@ -14,12 +14,14 @@ use RedTest\core\Utils;
 class Email extends Field {
 
   /**
-   * Fills email field with default values.
+   * Fill email field with random values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -27,7 +29,7 @@ class Email extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.

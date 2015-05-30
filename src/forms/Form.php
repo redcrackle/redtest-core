@@ -31,10 +31,19 @@ class Form {
     $this->form_state['build_info']['args'] = $args;
 
     $this->form = drupal_build_form($form_id, $this->form_state);
-
-    return $this->form;
   }
 
+  /**
+   * Include the file. Internally this uses file_load_include() function.
+   *
+   * @param string $type
+   *   Type of file. This is usually the file extension.
+   * @param string $module
+   *   Module name where the file is present.
+   * @param null|string $name
+   *   Base file name without the extension. If this is omitted, then $module
+   *   is used instead.
+   */
   public function includeFile($type, $module, $name = NULL) {
     form_load_include($this->form_state, $type, $module, $name);
   }
@@ -272,6 +281,10 @@ class Form {
     // Add more field button sets $form_state['rebuild'] to TRUE because of
     // which submit handlers are not called. Hence we set it back to FALSE.
     $this->removeKey('input');
+    $this->removeKey('triggering_element');
+    $this->removeKey('validate_handlers');
+    $this->removeKey('submit_handlers');
+    $this->removeKey('clicked_button');
 
     $this->form_state['input'] = $old_form_state_values;
     $this->form_state['input']['form_build_id'] = $this->form['#build_id'];

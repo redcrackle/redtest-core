@@ -727,4 +727,36 @@ class Utils {
 
     return $date;
   }
+
+  /**
+   * Whether string starts with a pattern.
+   *
+   * @param string $haystack
+   *   String to be matched.
+   * @param string $needle
+   *   Pattern.
+   *
+   * @return bool
+   *   TRUE if string starts with the pattern and FALSE otherwise.
+   */
+  public static function startsWith($haystack, $needle) {
+    return (strpos($haystack, $needle) === 0);
+  }
+
+  /**
+   * Whether string ends with a pattern.
+   *
+   * @param string $haystack
+   *   String to be matched.
+   * @param string $needle
+   *   Pattern.
+   *
+   * @return bool
+   *   TRUE if string ends with the pattern and FALSE otherwise.
+   */
+  public static function endsWith($haystack, $needle) {
+    return (strrpos($haystack, $needle) == (strlen($haystack) - strlen(
+          $needle
+        )));
+  }
 }

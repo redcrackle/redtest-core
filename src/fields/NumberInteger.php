@@ -14,12 +14,14 @@ use RedTest\core\Utils;
 class NumberInteger extends Number {
 
   /**
-   * Fill random integer values in the provided field.
+   * Fill random integer values in the integer field.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -28,7 +30,7 @@ class NumberInteger extends Number {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     $min = -255;
     $max = 255;

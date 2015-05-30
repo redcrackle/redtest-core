@@ -14,19 +14,21 @@ use RedTest\core\Utils;
 class Entityreference extends Field {
 
   /**
-   * Fill generic file. Upload images.
+   * Fill autocomplete taxonomy term reference fields with random values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return mixed
    *   A path or an array of paths of images which are to be uploaded.
    */
   public static function fillDefaultTaxonomyAutocompleteValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     $vocabulary = '';

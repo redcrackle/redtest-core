@@ -117,6 +117,104 @@ class Field {
     }
   }
 
+  public static function processBeforeCreateRandom(
+    Form $formObject,
+    $field_name,
+    &$options
+  ) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'BeforeCreateRandom';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function(
+        $formObject,
+        $field_name,
+        $options
+      );
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
+  public static function processBeforeSubmit(Form $formObject, $field_name) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'BeforeSubmit';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function($formObject, $field_name);
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
+  /**
+   * @param \RedTest\core\forms\Form $formObject
+   * @param $field_name
+   *
+   * @return array
+   */
+  public static function processAfterSubmit(Form $formObject, $field_name) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'AfterSubmit';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function($formObject, $field_name);
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
+  /**
+   * Returns whether the provided field needs to be filled in the form. If the
+   * field is in skip array, then this function returns FALSE. If the field is
+   * not required and required_fields_only is set to TRUE, then this function
+   * returns FALSE. Otherwise the function returns TRUE.
+   *
+   * @param \RedTest\core\forms\Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array. The only 2 keys that are used here are
+   *   "required_fields_only" and "skip".
+   *
+   * @return bool
+   *   TRUE if the field needs to be filled and FALSE otherwise.
+   */
+  public static function isToBeFilled(Form $formObject, $field_name, $options) {
+    $required_function_name = 'is' . Utils::makeTitleCase(
+        $field_name
+      ) . 'Required';
+    if ($options['required_fields_only'] && !$formObject->$required_function_name(
+      )
+    ) {
+      // Check if the field is required. We use '#required' key in form array
+      // since it can be set or unset using custom code.
+      // Field is not required. There is no need to fill this field.
+      return FALSE;
+    }
+
+    $options += array('skip' => array());
+    if (in_array($field_name, $options['skip'])) {
+      // Field needs to be skipped.
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
   /**
    * Fills in default values in the specified field. Internally it calls the
    * class of the individual field type to fill the default values.
@@ -135,7 +233,11 @@ class Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillDefaultValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     list($field_class, $widget_type) = Field::getFieldClass(
       $formObject,
       $field_name

@@ -15,12 +15,15 @@ use RedTest\core\entities\Entity;
 class TextWithSummary extends Text {
 
   /**
-   * Fills text area with summary field with default values.
+   * Fill text area with summary field with random long text with summary
+   * values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -30,7 +33,8 @@ class TextWithSummary extends Text {
    */
   public static function fillDefaultValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $display_summary = TRUE;
@@ -118,7 +122,12 @@ class TextWithSummary extends Text {
     }
 
     $field_class = get_called_class();
-    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
+    return $field_class::fillTextValues(
+      $formObject,
+      $field_name,
+      $values,
+      $defaults
+    );
   }
 
   /**

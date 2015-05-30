@@ -18,9 +18,10 @@ class NodeForm extends EntityForm {
    * Default constructor of the node form.
    *
    * @param null|int $nid
-   *   Node id if an existing node form is to be loaded.
+   *   Node id if an existing node form is to be loaded. If a new node form is
+   *   to be created, then keep it empty.
    */
-  public function __construct($nid = NULL) {
+  protected function __construct($nid = NULL) {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
@@ -36,7 +37,6 @@ class NodeForm extends EntityForm {
 
     if (!is_null($this->getEntityObject()->getEntity())) {
       $this->includeFile('inc', 'node', 'node.pages');
-      //module_load_include('inc', 'node', 'node.pages');
       parent::__construct(
         $type . '_node_form',
         $this->getEntityObject()->getEntity()
@@ -63,16 +63,16 @@ class NodeForm extends EntityForm {
    */
   public function submit() {
     $this->fillValues(array('op' => t('Save')));
-    $this->removeKey('triggering_element');
-    $this->removeKey('validate_handlers');
-    $this->removeKey('submit_handlers');
-    $this->removeKey('clicked_button');
     $this->includeFile('inc', 'node', 'node.pages');
-    list($success, $errors) = $this->pressButton(
+
+    $this->processBeforeSubmit();
+
+    list($success, $msg) = $this->pressButton(
       NULL,
       $this->getEntityObject()->getEntity()
     );
 
+    $nodeObject = NULL;
     if ($success) {
       // Get the node from form_state.
       $form_state = $this->getFormState();
@@ -86,11 +86,11 @@ class NodeForm extends EntityForm {
       // Store the created node in $entities so that it can later be deleted.
       global $entities;
       $entities['node'][$node->nid] = $nodeObject;
-
-      return array(TRUE, $nodeObject, array());
     }
 
-    return array(FALSE, NULL, $errors);
+    $this->processAfterSubmit();
+
+    return array($success, $nodeObject, $msg);
   }
 
   /**
@@ -117,7 +117,7 @@ class NodeForm extends EntityForm {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
-      );
+    );
 
     list($success, $fields, $msg) = parent::fillDefaultValues(
       $options

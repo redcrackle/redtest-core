@@ -115,47 +115,6 @@ abstract class Entity {
   }
 
   /**
-   * Returns the entity type.
-   *
-   * @return bool|string $entity_type
-   *   Entity type if one exists, FALSE otherwise.
-   */
-  /*public function getEntityType() {
-    // Check if this function is being called from static context. This usually happens when calling hasCreateAccess() function.
-    $static = !(isset($this) && get_class($this) == __CLASS__);
-    // If the function is being called from static context and $this->entity_type is defined, then return it.
-    if (!$static && !is_null($this->entity_type)) {
-      return $this->entity_type;
-    }
-
-    $classes = class_parents(get_called_class());
-    if (sizeof($classes) >= 2) {
-      // If there are at least 2 parent classes, such as Entity and Node.
-      $classnames = array_values($classes);
-      $classname = $classnames[sizeof($classes) - 2];
-      $class = new \ReflectionClass($classname);
-      $entity_type = Utils::makeSnakeCase(
-        $class->getShortName()
-      );
-
-      return $entity_type;
-    }
-    elseif (sizeof($classes) == 1) {
-      // If an entity such as User is calling the class directly, then entity type will be User itself.
-      $classname = get_called_class();
-      $class = new \ReflectionClass($classname);
-      $entity_type = Utils::makeSnakeCase(
-        $class->getShortName()
-      );
-
-      return $entity_type;
-    }
-    else {
-      return FALSE;
-    }
-  }*/
-
-  /**
    * Reloads the entity from database.
    */
   public function reload() {
@@ -255,7 +214,7 @@ abstract class Entity {
    * Saves the entity to database. This is copied from entity_save() function
    * since entity module may not be installed.
    */
-  public function save() {
+  public function saveProgrammatically() {
     $info = entity_get_info($this->entity_type);
     if (method_exists($this->entity, 'save')) {
       $this->entity->save();
@@ -585,30 +544,6 @@ abstract class Entity {
     return $output;
   }
 
-  /**
-   * @param $field_name
-   * @param bool $post_process
-   *
-   * @return array|bool
-   */
-  public function getFile($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $fid => $file) {
-      $output[] = $fid;
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
   public function viewFile(
     $field_name,
     $view_mode = 'full',
@@ -886,10 +821,7 @@ abstract class Entity {
     elseif ($name == 'hasAccess') {
       return call_user_func_array(array($this, 'hasObjectAccess'), $arguments);
     }
-    elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
-        $name
-      ) - 6
-    ) {
+    elseif ($this->isHasFieldAccessFunction($name)) {
       // Function name starts with "has" and ends with "Access". Function name
       // is not one of "hasCreateAccess", "hasUpdateAccess", "hasViewAccess" or
       // "hasDeleteAccess" otherwise code execution would not have reached this
@@ -897,13 +829,13 @@ abstract class Entity {
       $name = substr($name, 3, -6);
       $op = '';
       $field_name = '';
-      if (strrpos($name, 'View') == strlen($name) - 4) {
+      if (Utils::endsWith($name, 'View')) {
         $op = 'view';
         $field_name = Utils::makeSnakeCase(
           substr($name, 0, -4)
         );
       }
-      elseif (strrpos($name, 'Update') == strlen($name) - 6) {
+      elseif (Utils::endsWith($name, 'Update')) {
         $op = 'edit';
         $field_name = Utils::makeSnakeCase(
           substr($name, 0, -6)
@@ -914,12 +846,9 @@ abstract class Entity {
         return $this->hasFieldAccess($field_name, $op);
       }
     }
-    elseif (strpos($name, 'get') === 0 && strrpos($name, 'Values') == strlen(
-        $name
-      ) - 6
-    ) {
-      // Function name starts with "get". This means that we need to return
-      // value of a field.
+    elseif ($this->isGetFieldValuesFunction($name)) {
+      // Function name starts with "get" and ends with "Values". This means that
+      // we need to return value of a field.
       array_unshift(
         $arguments,
         Utils::makeSnakeCase(substr($name, 3, -6))
@@ -936,9 +865,7 @@ abstract class Entity {
 
       return call_user_func_array(array($this, 'viewField'), $arguments);
     }
-    elseif (strpos($name, "check") === 0 && strrpos($name, 'Values') == strlen(
-        $name
-      ) - 6
+    elseif ($this->isCheckFieldValuesFunction($name)
     ) {
       // Function name starts with "check" and ends with "Values".
       $field_name = Utils::makeSnakeCase(substr($name, 5, -6));
@@ -946,22 +873,6 @@ abstract class Entity {
 
       return call_user_func_array(array($this, 'checkFieldValues'), $arguments);
     }
-    /*elseif (strpos($name, "compare") === 0 && strrpos(
-        $name,
-        'Values'
-      ) == strlen(
-        $name
-      ) - 6
-    ) {
-      // Function name starts with "compare" and ends with "Values".
-      $field_name = Utils::makeSnakeCase(substr($name, 7, -6));
-      array_unshift($arguments, $field_name);
-
-      return call_user_func_array(
-        array($this, 'compareFieldValues'),
-        $arguments
-      );
-    }*/
     elseif (strpos($name, "check") === 0 && strrpos($name, 'Views') == strlen(
         $name
       ) - 5
@@ -1092,153 +1003,6 @@ abstract class Entity {
     }
 
     return array(TRUE, "");
-  }
-
-  public function getText($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      if (!empty($val['safe_value'])) {
-        $output[] = $val['safe_value'];
-      }
-      else {
-        $output[] = $val['value'];
-      }
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
-  public function getDatetime($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      $output[] = $val['value'];
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
-  public function getTextTextareaWithSummary(
-    $field_name,
-    $post_process = TRUE
-  ) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      if (!empty($val['safe_value'])) {
-        $output[] = $val['safe_value'];
-      }
-      else {
-        $output[] = $val['value'];
-      }
-    }
-
-    return $output;
-  }
-
-  public function getTextLong($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      if (!empty($val['safe_value'])) {
-        $output[] = $val['safe_value'];
-      }
-      else {
-        $output[] = $val['value'];
-      }
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
-  public function getEntityreferenceViewWidget(
-    $field_name,
-    $post_process = TRUE
-  ) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      $output[] = $val['target_id'];
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
-  public function getAutocompleteDeluxeTaxonomy(
-    $field_name,
-    $post_process = TRUE
-  ) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      $term = taxonomy_term_load($val['tid']);
-      $output[$key] = $term->name;
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
-  public function getTaxonomyTermReference($field_name, $post_process = TRUE) {
-    $field = field_get_items($this->entity_type, $this->entity, $field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      $output[] = $val['tid'];
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
   }
 
   public function checkTaxonomyTermReferenceItems(
@@ -1382,15 +1146,6 @@ abstract class Entity {
     }
   }
 
-  public function getListBoolean($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    return $field[0]['value'];
-  }
-
   public function viewListBoolean(
     $field_name,
     $view_mode = 'full',
@@ -1504,24 +1259,6 @@ abstract class Entity {
     return $output;
   }
 
-  public function getNumberInteger($field_name, $post_process = TRUE) {
-    $field = $this->getFieldItems($field_name);
-    if (!$post_process) {
-      return $field;
-    }
-
-    $output = array();
-    foreach ($field as $key => $val) {
-      $output[] = $val['value'];
-    }
-
-    if (sizeof($output) == 1) {
-      return $output[0];
-    }
-
-    return $output;
-  }
-
   /**
    * Get value of a field.
    *
@@ -1600,8 +1337,73 @@ abstract class Entity {
     return field_info_field($field_name);
   }
 
+  /**
+   * Get field items.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array of field items.
+   */
   public function getFieldItems($field_name) {
     return field_get_items($this->entity_type, $this->entity, $field_name);
+  }
+
+  /**
+   * Get the class name of the form for the current entity along with full path.
+   *
+   * @return string
+   *   Class name of the form.
+   */
+  public static function getFormClassName() {
+    // Get the form class based on the entity that needs to be created.
+    $entity_type = self::getEntityType();
+    $original_class = get_called_class();
+    $class = new \ReflectionClass($original_class);
+    $formClass = "RedTest\\forms\\entities\\" . Utils::makeTitleCase(
+        $entity_type
+      ) . "\\" . $class->getShortName() . 'Form';
+
+    return $formClass;
+  }
+
+  /**
+   * Process the form and options array before random entities are created. The
+   * main purpose here is for taxonomy term reference and entity reference
+   * fields to create entities that can be attached to fields.
+   *
+   * @param array $options
+   *   Options array.
+   */
+  protected static function processBeforeCreateRandom(&$options) {
+    // We need to use "static" here and not "self" since "getFormClass" needs to
+    // be called from individual Entity class to get the correct value.
+    $formClass = static::getFormClassName();
+
+    // Instantiate the form class.
+    $classForm = new $formClass();
+
+    // First get all field instances.
+    $field_instances = $classForm->getEntityObject()->getFieldInstances();
+
+    // Iterate over all the field instances and if the field is to be filled,
+    // then process it.
+    foreach ($field_instances as $field_name => $field_instance) {
+      if (Field::isToBeFilled($classForm, $field_name, $options)) {
+        // Check if the field is a taxonomy term field or an entity reference field.
+        list($field_class, $widget_type) = Field::getFieldClass(
+          $classForm,
+          $field_name
+        );
+
+        $field_class::processBeforeCreateRandom(
+          $classForm,
+          $field_name,
+          $options
+        );
+      }
+    }
   }
 
   /**
@@ -1625,21 +1427,22 @@ abstract class Entity {
    *   otherwise.
    */
   public static function createDefault($num = 1, $options = array()) {
+    // First get the references that need to be created.
+    static::processBeforeCreateRandom($options);
+
+    // We need to use "static" here and not "self" since "getFormClass" needs to
+    // be called from individual Entity class to get the correct value.
+    $formClass = static::getFormClassName();
+
     $output = array();
     for ($i = 0; $i < $num; $i++) {
-
-      // Get the form class based on the entity that needs to be created.
-      $entity_type = self::getEntityType();
-      $original_class = get_called_class();
-      $class = new \ReflectionClass($original_class);
-      $formClass = "RedTest\\forms\\entities\\" . Utils::makeTitleCase(
-          $entity_type
-        ) . "\\" . $class->getShortName() . 'Form';
-
       // Instantiate the form class.
       $classForm = new $formClass();
 
-      // Fill default values in the form.
+      // Fill default values in the form. We don't check whether the created
+      // entity has the correct field since some custom function could be
+      // changing the field values on creation. For checking field values on
+      // entity creation, a form needs to be initialized in the test.
       list($success, $fields, $msg) = $classForm->fillDefaultValues($options);
       if (!$success) {
         return array(FALSE, $output, $msg);
@@ -1651,7 +1454,7 @@ abstract class Entity {
         return array(
           FALSE,
           $output,
-          "Could not create $original_class entity: " . $msg
+          "Could not create " . get_called_class() . " entity: " . $msg
         );
       }
 
@@ -1660,12 +1463,12 @@ abstract class Entity {
         return array(
           FALSE,
           $output,
-          "Could not create $original_class entity: " . $msg
+          "Could not get Id of the created " . get_called_class(
+          ) . " entity: " . $msg
         );
       }
 
       // Store the created entity in the output array.
-      //$object = $classForm->getEntityObject();
       $output[] = $object;
     }
 
@@ -1843,5 +1646,56 @@ abstract class Entity {
         );
       }
     }
+  }
+
+  /**
+   * Whether the function name matches the pattern for determining whether user
+   * has access to a particular field.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE otherwise.
+   */
+  private function isHasFieldAccessFunction($name) {
+    return (Utils::startsWith($name, 'has') && Utils::endsWith(
+        $name,
+        'Access'
+      ));
+  }
+
+  /**
+   * Whether the function name matches the pattern for determining whether
+   * field values need to be returned.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE otherwise.
+   */
+  private function isGetFieldValuesFunction($name) {
+    return (Utils::startsWith($name, 'get') && Utils::endsWith(
+        $name,
+        'Values'
+      ));
+  }
+
+  /**
+   * Whether the function name matches the pattern for determining whether
+   * field values need to be checked.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE otherwise.
+   */
+  private function isCheckFieldValuesFunction($name) {
+    return (Utils::startsWith($name, 'check') && Utils::endsWith(
+        $name,
+        'Values'
+      ));
   }
 }

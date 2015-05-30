@@ -15,12 +15,14 @@ use RedTest\core\entities\Entity;
 class TextLong extends Text {
 
   /**
-   * Fills text area field with default values.
+   * Fill text area field with random long text values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -30,7 +32,7 @@ class TextLong extends Text {
    */
   public static function fillDefaultValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {

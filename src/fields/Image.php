@@ -14,7 +14,24 @@ use RedTest\core\entities\Entity;
 
 class Image extends File {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  /**
+   * Fill image field with random images.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     $show_title = FALSE;
     $show_alt = FALSE;

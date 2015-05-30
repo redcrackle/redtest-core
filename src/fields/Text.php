@@ -15,12 +15,14 @@ use RedTest\core\entities\Entity;
 class Text extends Field {
 
   /**
-   * Fills a textfield in the form with default values.
+   * Fill textfield in the form with random text values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -28,7 +30,7 @@ class Text extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     $text_processing = FALSE;
     $max_length = 100;

@@ -15,17 +15,23 @@ use RedTest\core\entities\Entity;
 class File extends Field {
 
   /**
-   * Fill generic file. Upload images.
+   * Fill generic file field with random files.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
-   * @return mixed
-   *   A path or an array of paths of images which are to be uploaded.
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     $file_extensions = 'txt';
     $scheme = 'public';

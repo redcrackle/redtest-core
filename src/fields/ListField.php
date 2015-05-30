@@ -13,9 +13,26 @@ use RedTest\core\Utils;
 
 class ListField extends Field {
 
+  /**
+   * Fill checkboxes field with random values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
   public static function fillDefaultOptionsButtonsValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     $allowed_values = array();

@@ -15,10 +15,29 @@ use RedTest\core\entities\TaxonomyTerm;
 
 class TaxonomyTermReference extends Field {
 
+  private static $termNames;
+
+  /**
+   * Fill random taxonomy term values in the taxonomy term reference field.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
   public static function fillDefaultValues(
     Form $formObject,
     $field_name,
-    $options
+    $options = array()
   ) {
     $num = 1;
     //$vocabulary = '';
@@ -30,8 +49,8 @@ class TaxonomyTermReference extends Field {
       $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
       $widget_type = $instance['widget']['type'];
 
-      if (isset($options['references']['taxonomy_terms'])) {
-        foreach ($options['references']['taxonomy_terms'] as $term) {
+      if (isset($options['references']['taxonomy_terms'][$vocabulary])) {
+        foreach ($options['references']['taxonomy_terms'][$vocabulary] as $term) {
           if ($termObject = static::isTermObject($term, $vocabulary)) {
             $references[] = $termObject;
           }
@@ -386,6 +405,14 @@ class TaxonomyTermReference extends Field {
     return $output;
   }
 
+  /**
+   * Whether the provided value is a term object.
+   *
+   * @param $value
+   * @param $vocabulary
+   *
+   * @return bool|object
+   */
   private static function isTermObject($value, $vocabulary) {
     if ($termObject = TaxonomyTerm::termExistsForTid($value, $vocabulary)) {
       // $values follows acceptable format (a).
@@ -458,5 +485,154 @@ class TaxonomyTermReference extends Field {
         return $termObject;
       }
     }
+  }
+
+  /**
+   * This function is called before an EntityForm is submitted. If the field
+   * value is a string, then parse it and figure out which strings don't have
+   * corresponding taxonomy terms. Store those term names in static
+   * $termNames variable.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array with 2 values:
+   *   (1) $success: TRUE.
+   *   (2) $msg: An empty string.
+   */
+  public static function processBeforeSubmit(Form $formObject, $field_name) {
+    if (self::isCckField($formObject, $field_name)) {
+      $form_state = $formObject->getFormState();
+      $values = $form_state['values'][$field_name][LANGUAGE_NONE];
+      if (is_string($values)) {
+        $term_names = explode(',', $values);
+        $field_info = Field::getFieldInfo($field_name);
+        $vocabulary = $field_info['settings']['allowed_values'][0]['vocabulary'];
+        // Check if terms already exist.
+        foreach ($term_names as $term_name) {
+          $terms = taxonomy_get_term_by_name($term_name, $vocabulary);
+          // We are assuming that there will be only one term with the same name
+          // in a given vocabulary.
+          if (!sizeof($terms)) {
+            if (!in_array($term_name, self::$termNames)) {
+              $termNames[] = $term_name;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * This function is called after an EntityForm is submitted. Iterate over
+   * $termNames variable and see which ones have taxonomy terms. These taxonomy
+   * terms are created during form submission. Add these to global $entities
+   * object so that they can be deleted later.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An array with 2 values:
+   *   (1) $success: TRUE.
+   *   (2) $msg: An empty string.
+   */
+  public static function processAfterSubmit(Form $formObject, $field_name) {
+    if (self::isCckField($formObject, $field_name)) {
+      $field_info = Field::getFieldInfo($field_name);
+      $vocabulary = $field_info['settings']['allowed_values'][0]['vocabulary'];
+      $class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+          $vocabulary
+        );
+      if (sizeof(self::$termNames)) {
+        global $entities;
+        foreach (self::$termNames as $termName) {
+          $terms = taxonomy_get_term_by_name($termName, $vocabulary);
+          foreach ($terms as $tid => $term) {
+            // We are assuming that there will be only one term with the same
+            // name in a given vocabulary.
+            $entities['taxonomy_term'][$tid] = new $class($tid);
+            unset(self::$termNames[$termName]);
+          }
+        }
+      }
+    }
+
+    return array(TRUE, "");
+  }
+
+  /**
+   * Create taxonomy terms before a new entity form is invoked.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array. "references" key is used here.
+   *
+   * @return array
+   *   An array with two values:
+   *   (1) $success: Whether the function executed successfully.
+   *   (2) $msg: A message if $success is FALSE.
+   */
+  public static function processBeforeCreateRandom(
+    Form $formObject,
+    $field_name,
+    &$options
+  ) {
+    $field_info = self::getFieldInfo($field_name);
+    $vocabulary = $field_info['settings']['allowed_values'][0]['vocabulary'];
+    $cardinality = $field_info['cardinality'];
+    $num = 1;
+    if ($cardinality == -1) {
+      // -1 denotes that cardinality is unlimited.
+      $num = 5;
+    }
+    else {
+      $num = intval($cardinality);
+    }
+
+    // Check if $references has these terms already.
+    $options += array('references' => array());
+    $references = &$options['references'];
+    if (isset($references['taxonomy_terms'][$vocabulary])) {
+      if (sizeof($references['taxonomy_terms'][$vocabulary]) < $num) {
+        $num -= sizeof($references['taxonomy_terms'][$vocabulary]);
+      }
+      else {
+        $num = 0;
+      }
+    }
+    else {
+      $references['taxonomy_terms'][$vocabulary] = array();
+    }
+
+    if ($num) {
+      $base_path = "RedTest\\entities\\TaxonomyTerm\\";
+      $class = $base_path . Utils::makeTitleCase($vocabulary);
+      list($success, $termObjects, $msg) = $class::createDefault($num);
+      if (!$success) {
+        return array(
+          FALSE,
+          NULL,
+          "Could not create terms of vocabulary $vocabulary attached to $field_name: " . $msg
+        );
+      }
+      if (is_object($termObjects)) {
+        $termObjects = array($termObjects);
+      }
+      $references['taxonomy_terms'][$vocabulary] = array_merge(
+        $references['taxonomy_terms'][$vocabulary],
+        $termObjects
+      );
+    }
+
+    return array(TRUE, "");
   }
 }

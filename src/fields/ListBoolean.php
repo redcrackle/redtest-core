@@ -20,12 +20,14 @@ use RedTest\core\fields\Field;
 class ListBoolean extends ListField {
 
   /**
-   * Fill checkbox field with default values.
+   * Fill checkbox field with random values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -36,7 +38,7 @@ class ListBoolean extends ListField {
    */
   public static function fillDefaultOptionsButtonsValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     $required = FALSE;
