@@ -15,13 +15,16 @@ use RedTest\core\entities\User;
 class NodeForm extends EntityForm {
 
   /**
-   * Default constructor of the node form.
+   * Default constructor of the node form. You should not be invoking NodeForm
+   * directly. Create a form for your content type that extends NodeForm and
+   * invoke that. The access level has to be kept public here because access
+   * level of parent class has to be match that of child class.
    *
    * @param null|int $nid
    *   Node id if an existing node form is to be loaded. If a new node form is
    *   to be created, then keep it empty.
    */
-  protected function __construct($nid = NULL) {
+  public function __construct($nid = NULL) {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
@@ -45,30 +48,17 @@ class NodeForm extends EntityForm {
   }
 
   /**
-   * Set author name.
-   *
-   * @param string $username
-   *   Username of the author.
-   */
-  private function setAuthorname($username) {
-    $this->fillValues(
-      array(
-        'name' => $username,
-      )
-    );
-  }
-
-  /**
    * This function is used for node form submit.
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Save')));
+    //$this->fillValues(array('op' => t('Save')));
     $this->includeFile('inc', 'node', 'node.pages');
 
     $this->processBeforeSubmit();
 
     list($success, $msg) = $this->pressButton(
-      NULL,
+      t('Save'),
+      array(),
       $this->getEntityObject()->getEntity()
     );
 

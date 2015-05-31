@@ -249,20 +249,36 @@ class Form {
    * values in the cache so that the form's submit button can work correctly.
    *
    * @param string $triggering_element_name
-   *   Name of the Add More button.
+   *   Name of the Add More button or value of Op key.
+   * @param array $options
+   *   Options array. If key "ajax" is set to TRUE, then
+   *   $triggering_element_name is assumed to be name of the Add More button
+   *   otherwise it is taken to be the value of Op key.
    *
    * @return array
    *   An array with two values:
    *   (1) $success: Whether the action of pressing button worked.
    *   (2) $msg: Error message if the action was unsuccessful.
    */
-  public function pressButton($triggering_element_name = NULL) {
+  public function pressButton(
+    $triggering_element_name = NULL,
+    $options = array()
+  ) {
+    $options += array('ajax' => FALSE);
+    $ajax = $options['ajax'];
+
     // Make sure that a button with provided name exists.
-    if (!is_null($triggering_element_name) && !$this->buttonExists(
+    if ($ajax && !is_null($triggering_element_name) && !$this->buttonExists(
         $triggering_element_name
       )
     ) {
       return array(FALSE, "Button $triggering_element_name does not exist.");
+    }
+
+    if (!$ajax) {
+      // If this is not an AJAX request, then the supplied name is the value of
+      // Op parameter.
+      $this->fillOpValues($triggering_element_name);
     }
 
     $this->clearErrors();
@@ -274,6 +290,8 @@ class Form {
 
     $args = func_get_args();
     // Remove $triggering_element_name from the arguments.
+    array_shift($args);
+    // Remove $options from the arguments.
     array_shift($args);
     $this->form_state['build_info']['args'] = $args;
     $this->form_state['programmed_bypass_access_check'] = FALSE;
@@ -297,7 +315,7 @@ class Form {
 
     $this->form = drupal_build_form($this->form_id, $this->form_state);
 
-    if (!is_null($triggering_element_name)) {
+    if ($ajax && !is_null($triggering_element_name)) {
       unset($this->form_state['values'][$triggering_element_name]);
     }
 

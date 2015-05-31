@@ -12,6 +12,11 @@ use RedTest\core\forms\entities\User as UserForms;
 use RedTest\core\Utils;
 
 
+/**
+ * Class User
+ *
+ * @package RedTest\core\entities
+ */
 class User extends Entity {
 
   /**
@@ -39,6 +44,11 @@ class User extends Entity {
    *   otherwise.
    */
   public static function login($username, $password) {
+    global $user;
+    if ($user->uid) {
+      return array(FALSE, NULL, "User is already logged in.");
+    }
+
     $userLoginForm = new UserForms\UserLoginForm();
     $userLoginForm->fillValues(
       array(
@@ -46,13 +56,13 @@ class User extends Entity {
         'pass' => $password,
       )
     );
-    $uid = $userLoginForm->submit();
-    if (is_array($uid)) {
+    return $userLoginForm->submit();
+    /*if (is_array($uid)) {
       return $uid;
     }
     else {
       return new User($uid);
-    }
+    }*/
   }
 
   /**
@@ -116,6 +126,11 @@ class User extends Entity {
 
       $userObject = new User(Utils::getId($userObject));
     }
+
+    // Add password key so that it can be used later to log in.
+    $account = $userObject->getEntity();
+    $account->password = $password;
+    $userObject->setEntity($account);
 
     return array(TRUE, $userObject, "");
   }
@@ -196,12 +211,34 @@ class User extends Entity {
     drupal_static_reset('Menu::getBlocks');
   }
 
+  /**
+   * Magic method.
+   *
+   * @param string $name
+   *   Function name that is called.
+   * @param array $arguments
+   *   An array of arguments.
+   *
+   * @return mixed
+   *   Depends on which function is invoked.
+   */
   public static function __callStatic($name, $arguments) {
     if ($name == 'logout') {
       static::logoutFunction();
     }
   }
 
+  /**
+   * Magic method.
+   *
+   * @param string $name
+   *   Function name that is called.
+   * @param array $arguments
+   *   An array of arguments.
+   *
+   * @return mixed
+   *   Depends on which function is invoked.
+   */
   public function __call($name, $arguments) {
     if ($name == 'logout') {
       static::logoutFunction();
@@ -261,7 +298,8 @@ class User extends Entity {
    * @param int $num
    *   Number of entities to create.
    * @param array $options
-   *   Roles that the user needs to be assigned.
+   *   Options array. This array can have "roles" key that provides an array of
+   *   role names that the newly created user will need to be assigned.
    *
    * @return array An array with 3 values:
    * An array with 3 values:
@@ -269,12 +307,8 @@ class User extends Entity {
    * (2) $entities: An array of created entities. If there is only one entity
    * to be created, then it returns the entity itself and not the array.
    * (3) $msg: Error message if $success is FALSE and empty otherwise.
-   * @internal param array $skip An array of fields that need to be skipped while creating the entities.*   An array of fields that need to be skipped while creating the entities.
    */
-  public static function createDefault(
-    $num = 1,
-    $options = array()
-  ) {
+  public static function createDefault($num = 1, $options = array()) {
     $options += array(
       'roles' => array(),
       'required_fields_only' => TRUE,
@@ -282,21 +316,21 @@ class User extends Entity {
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
+      // Get a random username.
       do {
         $username = Utils::getRandomString(20);
-        $a = user_validate_name($username);
-        $b = user_load_by_name($username);
-        $c = !$a || $b;
       } while (!is_null(user_validate_name($username)) || user_load_by_name(
           $username
         ));
 
+      // Get a random email address.
       do {
         $email = $username . '@' . Utils::getRandomString(20) . '.com';
       } while (!is_null(user_validate_mail($email)) || user_load_by_mail(
           $email
         ));
 
+      // Get a random password.
       $password = Utils::getRandomString();
       list($success, $object, $msg) = User::registerUser(
         $username,
@@ -314,6 +348,18 @@ class User extends Entity {
     return array(TRUE, Utils::normalize($output), "");
   }
 
+  /**
+   * Masquerade a user.
+   *
+   * @param int $uid
+   *   Uid of the user that needs to be switched to.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $user_object: new user object.
+   *   (2) $original_user_object: old user object.
+   *   (3) $old_state: old SESSION values.
+   */
   public static function masquerade($uid) {
     global $user;
     $original_user_object = new User($user->uid);
@@ -325,6 +371,14 @@ class User extends Entity {
     return array($user_object, $original_user_object, $old_state);
   }
 
+  /**
+   * Switch the user back to the original user.
+   *
+   * @param User $original_user_object
+   *   Original user object.
+   * @param array $old_state
+   *   SESSION values of original user.
+   */
   public static function unmasquerade(User $original_user_object, $old_state) {
     global $user;
     $user = $original_user_object->getEntity();

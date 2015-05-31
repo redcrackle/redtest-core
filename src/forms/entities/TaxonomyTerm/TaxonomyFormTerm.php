@@ -12,11 +12,27 @@ use RedTest\core\entities\TaxonomyTerm;
 use RedTest\core\forms\entities\EntityForm;
 use RedTest\core\Utils;
 
+/**
+ * Class TaxonomyFormTerm
+ *
+ * @package RedTest\core\forms\entities\TaxonomyTerm
+ */
 class TaxonomyFormTerm extends EntityForm {
 
   private $vocabulary;
 
-  function __construct($tid = NULL) {
+  /**
+   * Default constructor of the taxonomy term form. You should not be invoking
+   * TaxonomyFormTerm directly. Create a form for your vocabulary that extends
+   * TaxonomyFormTerm and invoke that. The access level has to be kept public
+   * here because access level of parent class has to be match that of child
+   * class.
+   *
+   * @param null|int $tid
+   *   Taxonomy term id if a taxonomy term edit form is to be loaded. If a
+   *   taxonomy term add form is to be created, then keep it empty.
+   */
+  public function __construct($tid = NULL) {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
@@ -119,12 +135,12 @@ class TaxonomyFormTerm extends EntityForm {
   }
 
   /**
-   * This function is used for submit Taxonomy form.
+   * This function is used to submit Taxonomy form.
    *
    * @return array
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Save')));
+    //$this->fillValues(array('op' => t('Save')));
     $weight = $this->getValues('weight');
     if (empty($weight)) {
       $this->fillValues(array('weight' => 0));
@@ -136,14 +152,16 @@ class TaxonomyFormTerm extends EntityForm {
 
     if (is_null($this->getEntityObject()->getId())) {
       list($success, $msg) = $this->pressButton(
-        NULL,
+        t('Save'),
+        array(),
         array(),
         $this->vocabulary
       );
     }
     else {
       list($success, $msg) = $this->pressButton(
-        NULL,
+        t('Save'),
+        array(),
         $this->getEntityObject()->getEntity(),
         NULL
       );
@@ -192,18 +210,32 @@ class TaxonomyFormTerm extends EntityForm {
     $this->fillTermVocabVidWidgetField($value);
   }
 
+  /**
+   * Delete the taxonomy term. This is a multi-step form. This action involves
+   * first pressing the delete button and then confirming the action.
+   *
+   * @return array
+   *   An array with two values:
+   *   (1) bool $success: TRUE if deletion was successful and FALSE otherwise.
+   *   (2) string $msg: An error message if deletion failed.
+   */
   public function delete() {
-    $this->fillOpValues(t('Delete'));
+    //$this->fillOpValues(t('Delete'));
     list($success, $msg) = $this->pressButton(
-      NULL,
+      t('Delete'),
+      array(),
       $this->getEntityObject()->getEntity(),
       NULL
     );
+    if (!$success) {
+      return array(FALSE, $msg);
+    }
 
-    $this->fillOpValues(t('Delete'));
+    //$this->fillOpValues(t('Delete'));
     $this->fillConfirmValues("1");
     list($success, $msg) = $this->pressButton(
-      NULL,
+      t('Delete'),
+      array(),
       $this->getEntityObject()->getEntity(),
       NULL
     );
@@ -213,6 +245,7 @@ class TaxonomyFormTerm extends EntityForm {
 
     global $entities;
     unset($entities['taxonomy_term'][$this->getEntityObject()->getId()]);
+
     return array(TRUE, $msg);
   }
 }

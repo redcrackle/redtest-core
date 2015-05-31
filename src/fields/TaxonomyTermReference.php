@@ -12,6 +12,7 @@ use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 use RedTest\core\entities\TaxonomyTerm;
+use RedTest\core\entities\User;
 
 class TaxonomyTermReference extends Field {
 
@@ -616,6 +617,10 @@ class TaxonomyTermReference extends Field {
     if ($num) {
       $base_path = "RedTest\\entities\\TaxonomyTerm\\";
       $class = $base_path . Utils::makeTitleCase($vocabulary);
+
+      // Masquerade as user 1 so that there is no access problem.
+      list($superUserObject, $userObject, $old_state) = User::masquerade(1);
+
       list($success, $termObjects, $msg) = $class::createDefault($num);
       if (!$success) {
         return array(
@@ -624,6 +629,9 @@ class TaxonomyTermReference extends Field {
           "Could not create terms of vocabulary $vocabulary attached to $field_name: " . $msg
         );
       }
+
+      User::unmasquerade($userObject, $old_state);
+
       if (is_object($termObjects)) {
         $termObjects = array($termObjects);
       }

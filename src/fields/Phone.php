@@ -32,7 +32,8 @@ class Phone extends Field {
    */
   public static function fillDefaultPhoneTextfieldValues(
     Form $formObject,
-    $field_name, $options = array()
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
@@ -76,7 +77,7 @@ class Phone extends Field {
       $input[$index] = array('email' => $value);
       $triggering_element_name = $field_name . '_add_more';
       //$triggering_element_value = 'Add another item';
-      $formObject->pressButton($triggering_element_name);
+      $formObject->pressButton($triggering_element_name, array('ajax' => TRUE));
       $index++;
     }
 

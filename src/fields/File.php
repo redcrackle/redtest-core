@@ -31,7 +31,11 @@ class File extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillDefaultValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     $file_extensions = 'txt';
     $scheme = 'public';
@@ -158,14 +162,16 @@ class File extends Field {
           array(LANGUAGE_NONE => $new_values)
         );
         list($success, $msg) = $formObject->pressButton(
-          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
+          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button',
+          array('ajax' => TRUE)
         );
         $formObject->setValues(
           $field_name,
           array(LANGUAGE_NONE => $new_values)
         );
         list($success, $msg) = $formObject->pressButton(
-          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button'
+          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button',
+          array('ajax' => TRUE)
         );
         if (!$success) {
           return array(FALSE, array(), $msg);
@@ -182,7 +188,10 @@ class File extends Field {
         $i
       );
       $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      list($success, $msg) = $formObject->pressButton($triggering_element_name);
+      list($success, $msg) = $formObject->pressButton(
+        $triggering_element_name,
+        array('ajax' => TRUE)
+      );
       if (!$success) {
         return array(FALSE, Utils::normalize($return), $msg);
       }

@@ -379,7 +379,10 @@ abstract class EntityForm extends Form {
           $field_name,
           $key
         );
-        list($success, $msg) = $this->pressButton($triggering_element_name);
+        list($success, $msg) = $this->pressButton(
+          $triggering_element_name,
+          array('ajax' => TRUE)
+        );
         if (!$success) {
           return array(FALSE, $input, $msg);
         }
