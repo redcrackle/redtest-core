@@ -52,6 +52,23 @@ class Block {
   }
 
   /**
+   * Confirms whether block is not present on the provided URL.
+   *
+   * @param null|string $path
+   *   URL of the page where block needs to be searched. If this is NULL, then
+   *   homepage is assumed.
+   * @param null|string $region
+   *   Region of the page where the block needs to be searched. If this is
+   *   NULL, then all the regions are searched.
+   *
+   * @return bool
+   *   TRUE if block is not present and FALSE otherwise.
+   */
+  public function isNotPresent($path = NULL, $region = NULL) {
+    return is_null($this->getInfo($path, $region));
+  }
+
+  /**
    * Returns the block array.
    *
    * @param null|string $path

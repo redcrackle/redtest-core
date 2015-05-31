@@ -177,18 +177,25 @@ class Menu {
 
       // This is a hack that needed to be done otherwise function
       // menu_tree_page_data() in menu.inc file calls menu_get_item() with NULL
-      // argument. This means that menu_get_item() takes path as $_GET['q']. There
-      // doesn't seem to be any other way to solve this.
+      // argument. This means that menu_get_item() takes path as $_GET['q'].
+      // There doesn't seem to be any other way to solve this.
       $original_query_param = $_GET['q'];
       $_GET['q'] = $path;
 
       block_page_build($pages[$path]);
 
       $_GET['q'] = $original_query_param;
+
+      // Function menu_tree() in menu.inc caches the blocks by page. So its
+      // static cache needs to be reset before going to any other page.
+      drupal_static_reset('menu_tree');
     }
 
     if (!is_null($region)) {
-      return array_key_exists($region, $pages[$path]) ? $pages[$path]['region'] : array();
+      return array_key_exists(
+        $region,
+        $pages[$path]
+      ) ? $pages[$path]['region'] : array();
     }
 
     return $pages[$path];

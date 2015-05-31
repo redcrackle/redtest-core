@@ -281,7 +281,10 @@ class Field {
       return $field_class::$function($formObject, $field_name, $values);
     }
 
-    return array(FALSE, "", "Field or property $field_name not found.");
+    // $field_name is a property.
+    $formObject->setValues($field_name, $values);
+
+    return array(TRUE, $values, "");
   }
 
   /**

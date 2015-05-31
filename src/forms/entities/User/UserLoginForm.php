@@ -28,6 +28,14 @@ class UserLoginForm extends Form {
    */
   public function submit() {
     list($success, $msg) = $this->pressButton(t('Log In'));
+
+    // Reset the static variables that can get affected when a user logs in.
+    drupal_static_reset('menu_get_item');
+    drupal_static_reset('menu_tree');
+    drupal_static_reset('menu_tree_page_data');
+    drupal_static_reset('menu_tree_set_path');
+    drupal_static_reset('Menu::getBlocks');
+
     if (!$success) {
       return array(FALSE, NULL, $msg);
     }

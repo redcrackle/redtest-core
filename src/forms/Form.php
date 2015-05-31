@@ -278,7 +278,10 @@ class Form {
     if (!$ajax) {
       // If this is not an AJAX request, then the supplied name is the value of
       // Op parameter.
-      $this->fillOpValues($triggering_element_name);
+      list($success, $values, $msg) = $this->fillOpValues($triggering_element_name);
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
     }
 
     $this->clearErrors();

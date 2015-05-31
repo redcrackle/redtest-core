@@ -10,6 +10,7 @@ namespace RedTest\core;
 
 
 use RedTest\core\Utils;
+use RedTest\core\entities\User;
 
 
 if (!defined('DRUPAL_ROOT')) {
@@ -56,6 +57,7 @@ class RedTest_Framework_TestCase extends \PHPUnit_Framework_TestCase {
   protected static $deleteCreatedEntities = TRUE;
 
   public static function tearDownAfterClass() {
+    User::logout();
     if (static::$deleteCreatedEntities) {
       Utils::deleteCreatedEntities();
     }

@@ -39,7 +39,7 @@ class UserRegisterForm extends EntityForm {
    */
   public function submit() {
     $this->fillValues(array('op' => t('Create new account')));
-    list($success, $msg) = $this->pressButton();
+    list($success, $msg) = $this->pressButton(t('Create new account'));
     //list($success, $msg) = parent::submit();
     if (!$success) {
       return array(FALSE, NULL, $msg);

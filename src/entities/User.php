@@ -56,13 +56,8 @@ class User extends Entity {
         'pass' => $password,
       )
     );
+
     return $userLoginForm->submit();
-    /*if (is_array($uid)) {
-      return $uid;
-    }
-    else {
-      return new User($uid);
-    }*/
   }
 
   /**
@@ -128,8 +123,9 @@ class User extends Entity {
     }
 
     // Add password key so that it can be used later to log in.
+    $form_state = $userRegisterForm->getFormState();
     $account = $userObject->getEntity();
-    $account->password = $password;
+    $account->password = $form_state['user']->password;
     $userObject->setEntity($account);
 
     return array(TRUE, $userObject, "");
