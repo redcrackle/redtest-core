@@ -278,7 +278,9 @@ class Form {
     if (!$ajax) {
       // If this is not an AJAX request, then the supplied name is the value of
       // Op parameter.
-      list($success, $values, $msg) = $this->fillOpValues($triggering_element_name);
+      list($success, $values, $msg) = $this->fillOpValues(
+        $triggering_element_name
+      );
       if (!$success) {
         return array(FALSE, $msg);
       }
@@ -333,6 +335,16 @@ class Form {
     }
 
     return array(TRUE, "");
+  }
+
+  /**
+   * Set errors array. This is needed is a field wants to set an error.
+   *
+   * @param array $errors
+   *   An array of errors.
+   */
+  public function setErrors($errors) {
+    $this->errors = $errors;
   }
 
   /**

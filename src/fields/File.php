@@ -179,7 +179,15 @@ class File extends Field {
       }
     }
     for ($i = 0; $i < sizeof($values); $i++) {
+      unset($_SESSION['messages']['error']);
       $file_temp = $field_class::saveFile($values[$i]);
+      if (!$file_temp) {
+        $errors = $_SESSION['messages']['error'];
+        $errors[] = 'Make sure that the destination directory, i.e. sites/default/files, is writable by PHP CLI.';
+        $formObject->setErrors($errors);
+        return array(FALSE, $return, implode(", ", $formObject->getErrors()));
+      }
+
       $input[$i] = $field_class::createInput($file_temp, $values[$i]);
       $return[$i] = $input[$i];
       $return[$i]['uri'] = $file_temp->uri;
@@ -304,6 +312,11 @@ class File extends Field {
       $scheme . '://' . Utils::getRandomString(20) . '_' . $filename,
       FILE_EXISTS_RENAME
     );
+
+    if (!$file_temp) {
+      return FALSE;
+    }
+
     // Set file status to temporary otherwise there is validation error.
     $file_temp->status = 0;
     file_save($file_temp);
