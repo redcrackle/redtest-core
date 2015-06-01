@@ -519,7 +519,7 @@ class TaxonomyTermReference extends Field {
           // in a given vocabulary.
           if (!sizeof($terms)) {
             if (!in_array($term_name, self::$termNames)) {
-              $termNames[] = $term_name;
+              self::$termNames[] = $term_name;
             }
           }
         }
