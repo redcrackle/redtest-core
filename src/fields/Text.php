@@ -19,8 +19,9 @@ class Text extends Field {
    *
    * @param Form $formObject
    *   Form object.
-   * @param string $field_name
-   *   Field name.
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
    * @param array $options
    *   Options array.
    *
@@ -49,7 +50,7 @@ class Text extends Field {
     }
 
     if (!$is_cck_field) {
-      $array = array($field_name);
+      $array = is_array($field_name) ? $field_name : array($field_name);
       $key_exists = NULL;
       $form = $formObject->getForm();
       $value = drupal_array_get_nested_value($form, $array, $key_exists);
@@ -69,10 +70,19 @@ class Text extends Field {
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
     if (!$is_cck_field) {
-      return $formObject->$function($values['value']);
+      if (is_array($field_name)) {
+        return $formObject->fillFieldValues($field_name, $values['value']);
+      }
+      else {
+        return $formObject->$function($values['value']);
+      }
     }
-
-    return $formObject->$function($values);
+    elseif (is_array($field_name)) {
+      return $formObject->fillFieldValues($field_name, $values);
+    }
+    else {
+      return $formObject->$function($values);
+    }
   }
 
   /**

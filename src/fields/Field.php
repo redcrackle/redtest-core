@@ -221,8 +221,9 @@ class Field {
    *
    * @param Form $formObject
    *   Form object.
-   * @param string $field_name
-   *   Field name.
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
    * @param array $options
    *   Options array.
    *
@@ -249,6 +250,9 @@ class Field {
       return $field_class::$function($formObject, $field_name, $options);
     }
 
+    if (is_string($field_name)) {
+      $field_name = array_pop($field_name);
+    }
     return array(FALSE, "", "Field or property $field_name not found.");
   }
 
@@ -292,8 +296,9 @@ class Field {
    *
    * @param Form $formObject
    *   Form object.
-   * @param string $field_name
-   *   Field name.
+   * @param string|array $field_name
+   *   Field name if the field is at top level of the form, otherwise an array
+   *   with parents and field name.
    *
    * @return array
    *   An array with two values:
@@ -304,7 +309,11 @@ class Field {
     $field_class = '';
     $widget_type = '';
 
-    if (method_exists($formObject, 'getEntityObject')) {
+    if (is_string($field_name) && method_exists(
+        $formObject,
+        'getEntityObject'
+      )
+    ) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
 
@@ -320,7 +329,7 @@ class Field {
 
     // Code execution came here that means that either the form is not an
     // EntityForm or the field name is a property and is not really a field.
-    $array = array($field_name);
+    $array = is_array($field_name) ? $field_name : array($field_name);
     $key_exists = NULL;
     $form = $formObject->getForm();
     $value = drupal_array_get_nested_value($form, $array, $key_exists);

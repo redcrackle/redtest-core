@@ -18,7 +18,7 @@ class TaxonomyTerm extends Entity {
    * @param int $tid
    *   TaxonomyTerm id if an existing term is to be loaded.
    */
-  protected function __construct($tid = NULL) {
+  public function __construct($tid = NULL) {
     $class = new \ReflectionClass(get_called_class());
     $vocabulary_name = Utils::makeSnakeCase($class->getShortName());
 

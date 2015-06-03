@@ -57,7 +57,10 @@ class TaxonomyTermReference extends Field {
           }
         }
       }
-      $num = min($num, sizeof($references));
+
+      if (sizeof($references)) {
+        $num = min($num, sizeof($references));
+      }
       shuffle($references);
       $references = array_slice($references, 0, $num);
     }
@@ -519,7 +522,7 @@ class TaxonomyTermReference extends Field {
           // in a given vocabulary.
           if (!sizeof($terms)) {
             if (!in_array($term_name, self::$termNames)) {
-              $termNames[] = $term_name;
+              static::$termNames[] = $term_name;
             }
           }
         }

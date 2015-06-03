@@ -12,7 +12,7 @@ use RedTest\core\forms\Form;
 
 class TaxonomyFormVocabulary extends Form {
 
-  function __construct() {
+  public function __construct() {
 	parent::__construct('taxonomy_form_vocabulary');
   }
   

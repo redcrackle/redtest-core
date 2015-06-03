@@ -78,8 +78,9 @@ abstract class EntityForm extends Form {
   /**
    * Fill specified field with the provided values.
    *
-   * @param string $field_name
-   *   Field name.
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
    * @param string|int|array $values
    *   Value that needs to be filled.
    *
@@ -98,8 +99,7 @@ abstract class EntityForm extends Form {
       return $field_class::fillValues($this, $field_name, $values);
     }
 
-    // $field_name is a property.
-    //$values = Utils::normalize($values);
+    // $field_name is a property or is a field but is not a CCK field.
     $this->fillValues(array($field_name => $values));
 
     return array(TRUE, $values, "");
@@ -233,7 +233,7 @@ abstract class EntityForm extends Form {
    * @return array
    *   Field instance array.
    */
-  private function getFieldInstance($field_name) {
+  protected function getFieldInstance($field_name) {
     list(, , $bundle) = entity_extract_ids(
       $this->entityObject->getEntityType(),
       $this->entityObject->getEntity()
