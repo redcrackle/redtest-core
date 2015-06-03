@@ -250,7 +250,7 @@ class Field {
       return $field_class::$function($formObject, $field_name, $options);
     }
 
-    if (is_string($field_name)) {
+    if (is_array($field_name)) {
       $field_name = array_pop($field_name);
     }
     return array(FALSE, "", "Field or property $field_name not found.");
