@@ -38,7 +38,6 @@ class UserRegisterForm extends EntityForm {
    *   ID of the new user if registration was successful, an array of errors if not.
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Create new account')));
     list($success, $msg) = $this->pressButton(t('Create new account'));
     //list($success, $msg) = parent::submit();
     if (!$success) {

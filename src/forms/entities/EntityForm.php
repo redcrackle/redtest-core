@@ -100,7 +100,8 @@ abstract class EntityForm extends Form {
     }
 
     // $field_name is a property or is a field but is not a CCK field.
-    $this->fillValues(array($field_name => $values));
+    $this->fillValues($field_name, $values);
+    //$this->fillValues(, array($field_name => $values));
 
     return array(TRUE, $values, "");
   }

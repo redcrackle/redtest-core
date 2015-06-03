@@ -50,12 +50,15 @@ class User extends Entity {
     }
 
     $userLoginForm = new UserForms\UserLoginForm();
-    $userLoginForm->fillValues(
+    $userLoginForm->fillNameValues($username);
+    $userLoginForm->fillPassValues($password);
+    /*$userLoginForm->fillValues(
+      ,
       array(
         'name' => $username,
         'pass' => $password,
       )
-    );
+    );*/
 
     return $userLoginForm->submit();
   }
@@ -85,7 +88,12 @@ class User extends Entity {
     $roles = array()
   ) {
     $userRegisterForm = new UserForms\UserRegisterForm();
-    $userRegisterForm->fillValues(
+    $userRegisterForm->fillNameValues($username);
+    $userRegisterForm->fillMailValues($email);
+    $userRegisterForm->fillValues(array('pass', 'pass1'), $password);
+    $userRegisterForm->fillValues(array('pass', 'pass2'), $password);
+    /*$userRegisterForm->fillValues(
+      ,
       array(
         'name' => $username,
         'mail' => $email,
@@ -94,7 +102,7 @@ class User extends Entity {
           'pass2' => $password,
         ),
       )
-    );
+    );*/
 
     list($success, $userObject, $msg) = $userRegisterForm->submit();
     if (!$success) {

@@ -176,13 +176,12 @@ class Form {
   /**
    * Fill value in any field of the form.
    *
+   * @param $field_name
    * @param array $values
    *   An associative array with field name and its values.
    */
-  public function fillValues($values) {
-    foreach ($values as $key => $value) {
-      $this->form_state['values'][$key] = $value;
-    }
+  public function fillValues($field_name, $values) {
+    $this->form_state['values'][$field_name] = $values;
   }
 
   /**

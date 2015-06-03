@@ -23,7 +23,8 @@ class NodeDeleteConfirm extends Form {
   }
 
   public function submit() {
-    $this->fillValues(array('confirm' => TRUE));
+    $this->fillConfirmValues(TRUE);
+    //$this->fillValues(, array('confirm' => TRUE));
     return $this->pressButton(NULL, array(), $this->node);
     //return parent::submit($this->node);
   }

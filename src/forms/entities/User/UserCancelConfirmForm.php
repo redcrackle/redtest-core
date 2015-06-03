@@ -34,12 +34,15 @@ class UserCancelConfirmForm extends Form {
   }
 
   function submit() {
-    $this->fillValues(
+    $this->fillUserCancelMethodValues('user_cancel_delete');
+    $this->fillValues('_account', $this->account);
+    /*$this->fillValues(
+      ,
       array(
         'user_cancel_method' => 'user_cancel_delete',
         '_account' => $this->account,
       )
-    );
+    );*/
 
     $this->pressButton(NULL, $this->account);
     //parent::submit($this->account);

@@ -143,7 +143,8 @@ class TaxonomyFormTerm extends EntityForm {
     //$this->fillValues(array('op' => t('Save')));
     $weight = $this->getValues('weight');
     if (empty($weight)) {
-      $this->fillValues(array('weight' => 0));
+      $this->fillWeightValues(0);
+      //$this->fillValues(, array('weight' => 0));
     }
     $parent = $this->getValues('parent');
     if (empty($parent)) {
