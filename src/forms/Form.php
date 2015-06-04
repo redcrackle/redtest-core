@@ -118,6 +118,9 @@ class Form {
     }
   }
 
+  /**
+   * @param null $element
+   */
   private function removeFileFieldWeights($element = NULL) {
     if (is_null($element)) {
       $element = $this->form;
@@ -181,7 +184,88 @@ class Form {
    *   An associative array with field name and its values.
    */
   public function fillValues($field_name, $values) {
-    $this->form_state['values'][$field_name] = $values;
+    //$this->form_state['values'][$field_name] = $values;
+    if (is_string($field_name)) {
+      $field_name = array($field_name);
+    }
+
+    $element['#parents'] = $field_name;
+    form_set_value($element, $values, $this->form_state);
+
+    return array(TRUE, $values, "");
+  }
+
+  /**
+   * Fill specified field with the provided values.
+   *
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
+   * @param string|int|array $values
+   *   Value that needs to be filled.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) bool $success: Whether the field could be filled with provided
+   *   values.
+   *   (2) string|int|array $values: Values that were actually filled in
+   *   $form_state.
+   *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
+   */
+  public function fillFieldValues($field_name, $values) {
+    // This function is called means that the field is not a CCK field.
+    if (is_string($field_name)) {
+      $field_name = array($field_name);
+    }
+
+    list($success, $element['#parents'], $msg) = $this->getTreeKeys(
+      $field_name
+    );
+
+    return $this->fillValues($field_name, $values);
+    /*if (!$success) {
+      $this->fillValues($field_name, $values);
+      return array()
+    }
+
+    form_set_value($element, $values, $this->form_state);
+    return array(TRUE, $values, "");*/
+  }
+
+  /**
+   * Get the array of keys based on #tree property. Output array is what goes
+   * in $form_state['values'].
+   *
+   * @param array $input
+   *   Array of keys.
+   *
+   * @return array
+   *   Array of keys based on #tree.
+   */
+  protected function getTreeKeys($input) {
+    $parents = array();
+    foreach ($input as $key) {
+      $parents[] = $key;
+      $key_exists = NULL;
+      $value = drupal_array_get_nested_value(
+        $this->form,
+        $parents,
+        $key_exists
+      );
+      if (!$key_exists) {
+        $last_key = array_pop($parents);
+        return array(
+          FALSE,
+          array(),
+          "Key $last_key doesn't exist in the form."
+        );
+      }
+
+      if (!isset($value['#tree']) || $value['#tree']) {
+        $parents = array($key);
+      }
+    }
+    return array(TRUE, $parents, "");
   }
 
   /**
@@ -238,9 +322,9 @@ class Form {
    * @param mixed $values
    *   Value to be set in form state array for a field.
    */
-  public function setValues($field_name, $values) {
+  /*public function setValues($field_name, $values) {
     $this->form_state['values'][$field_name] = $values;
-  }
+  }*/
 
   /**
    * Simulate action of pressing of an Add More button. This function processes
@@ -396,12 +480,19 @@ class Form {
   }
 
 
+  /**
+   * @param $field_name
+   * @param $values
+   * @param int $offset
+   *
+   * @return array
+   */
   public function fillMultiValued($field_name, $values, $offset = 0) {
     // In custom form, fields are single-valued by default so we won't worry
     // about multivalued submissions.
-    $this->setValues($field_name, $values);
+    return $this->fillValues($field_name, $values);
 
-    return array(TRUE, Utils::normalize($values), "");
+    //return array(TRUE, Utils::normalize($values), "");
   }
 
   /*public function fillDefaultValues($skip = array()) {
@@ -472,7 +563,8 @@ class Form {
       $field_name = Utils::makeSnakeCase(substr($name, 4, -6));
       $arguments = array_shift($arguments);
 
-      return Field::fillValues($this, $field_name, $arguments);
+      return $this->fillFieldValues($field_name, $arguments);
+      //return Field::fillValues($this, $field_name, $arguments);
     }
     elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
         $name

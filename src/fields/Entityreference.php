@@ -182,9 +182,9 @@ class Entityreference extends Field {
       $termObjects[] = new $term_class($tid);
     }
 
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => drupal_map_assoc($tids)));
+    return $formObject->fillValues($field_name, array(LANGUAGE_NONE => drupal_map_assoc($tids)));
 
-    return array(TRUE, $termObjects, "");
+    //return array(TRUE, $termObjects, "");
   }
 
   public static function fillDefaultOptionsSelectValues(Form $formObject, $field_name) {
@@ -308,8 +308,8 @@ class Entityreference extends Field {
       $termObjects[] = new $term_class($tid);
     }
 
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => $tids));
+    return $formObject->fillValues($field_name, array(LANGUAGE_NONE => $tids));
 
-    return array(TRUE, $termObjects, "");
+    //return array(TRUE, $termObjects, "");
   }
 }

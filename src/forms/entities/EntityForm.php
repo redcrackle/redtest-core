@@ -100,10 +100,11 @@ abstract class EntityForm extends Form {
     }
 
     // $field_name is a property or is a field but is not a CCK field.
-    $this->fillValues($field_name, $values);
+    return parent::fillFieldValues($field_name, $values);
+    //$this->fillValues($field_name, $values);
     //$this->fillValues(, array($field_name => $values));
 
-    return array(TRUE, $values, "");
+    //return array(TRUE, $values, "");
   }
 
   /**
@@ -370,7 +371,10 @@ abstract class EntityForm extends Form {
       // without pressing Add More button. We fill the available fields with the
       // input values and for each remaining input value, we need to press "Add
       // More" button.
-      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      if (!$success) {
+        return array(FALSE, $input, $msg);
+      }
 
       // $input_add is the remaining input values for which we need to press
       // "Add More" button.
@@ -388,7 +392,10 @@ abstract class EntityForm extends Form {
           return array(FALSE, $input, $msg);
         }
         $input[] = $value;
-        $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+        list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+        if (!$success) {
+          return array(FALSE, $input, $msg);
+        }
       }
       $return = $input;
     }
@@ -400,7 +407,7 @@ abstract class EntityForm extends Form {
       for ($i = sizeof($input); $i < $threshold - 1; $i++) {
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
     }
     else {
       $return = $input;
@@ -408,10 +415,12 @@ abstract class EntityForm extends Form {
         // $input is an empty array, which means we need to make it empty.
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      $this->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
     }
 
-    return array(TRUE, $return, "");
+    return array($success, $return, $msg);
+
+    //return array(TRUE, $return, "");
   }
 
   public function processBeforeSubmit() {

@@ -38,7 +38,8 @@ class ListBoolean extends ListField {
    */
   public static function fillDefaultOptionsButtonsValues(
     Form $formObject,
-    $field_name, $options = array()
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $required = FALSE;
@@ -171,7 +172,13 @@ class ListBoolean extends ListField {
         }
       }
 
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
+      if (!$success) {
+        return array(FALSE, Utils::normalize($output), $msg);
+      }
     }
 
     return array(TRUE, Utils::normalize($output), "");

@@ -152,7 +152,10 @@ class TaxonomyTermReference extends Field {
     $field_class = get_called_class();
     $names = $field_class::convertValues($values, $vocabulary, TRUE, FALSE);
     $field_value = is_array($names) ? implode(",", $names) : $names;
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => $field_value));
+    list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $field_value));
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
 
     $termObjects = TaxonomyTerm::createTermObjectsFromNames(
       $names,
@@ -229,10 +232,14 @@ class TaxonomyTermReference extends Field {
 
     $field_class = get_called_class();
     $tids = $field_class::convertValues($values, $vocabulary);
-    $formObject->setValues(
+    list($success, , $msg) = $formObject->fillValues(
       $field_name,
       array(LANGUAGE_NONE => drupal_map_assoc($tids))
     );
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
+
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
     return array(TRUE, $termObjects, "");
@@ -260,7 +267,13 @@ class TaxonomyTermReference extends Field {
 
     $field_class = get_called_class();
     $tids = $field_class::convertValues($values, NULL);
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => $tids));
+    list($success, , $msg) = $formObject->fillValues(
+      $field_name,
+      array(LANGUAGE_NONE => $tids)
+    );
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
     return array(TRUE, $termObjects, "");

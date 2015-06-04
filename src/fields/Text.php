@@ -377,22 +377,23 @@ class Text extends Field {
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
+    $success = TRUE;
     $msg = '';
     if (Field::isCckField($formObject, $field_name)) {
       list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values, $offset);
     }
     else {
-      $values = $values[0]['value'];
-      $formObject->setValues($field_name, $values);
-      $success = TRUE;
-      $return = $values;
+      $values = is_array($values) ? $values[0]['value'] : $values;
+      list($success, $return, $msg) = $formObject->fillValues($field_name, $values);
+      //$return = $values;
     }
 
-    if (!$success) {
+    return array($success, Utils::normalize($return), $msg);
+    /*if (!$success) {
       return array(FALSE, Utils::normalize($return), $msg);
     }
 
-    return array(TRUE, Utils::normalize($return), "");
+    return array(TRUE, Utils::normalize($return), "");*/
   }
 
   /**

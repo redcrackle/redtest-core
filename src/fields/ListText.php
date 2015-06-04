@@ -32,7 +32,8 @@ class ListText extends ListField {
    */
   public static function fillDefaultOptionsButtonsValues(
     Form $formObject,
-    $field_name, $options = array()
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $allowed_values = array();
@@ -68,6 +69,8 @@ class ListText extends ListField {
     }
 
     $input = array();
+    $success = TRUE;
+    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -75,10 +78,13 @@ class ListText extends ListField {
         }
       }
 
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
     }
 
-    return array(TRUE, $input, "");
+    return array($success, $input, $msg);
   }
 
   public static function fillDefaultOptionsSelectValues(
@@ -119,6 +125,8 @@ class ListText extends ListField {
     }
 
     $input = array();
+    $success = TRUE;
+    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -126,9 +134,12 @@ class ListText extends ListField {
         }
       }
 
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
     }
 
-    return array(TRUE, $input, "");
+    return array($success, $input, $msg);
   }
 }

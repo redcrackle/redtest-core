@@ -174,7 +174,12 @@ class File extends Field {
         $field_name,
         $i
       );
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+
+      list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      if (!$success) {
+        return array(FALSE, Utils::normalize($return), $msg);
+      }
+
       list($success, $msg) = $formObject->pressButton(
         $triggering_element_name,
         array('ajax' => TRUE)
