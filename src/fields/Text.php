@@ -31,7 +31,11 @@ class Text extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillDefaultValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     $text_processing = FALSE;
     $max_length = 100;
@@ -39,7 +43,9 @@ class Text extends Field {
     $is_cck_field = FALSE;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
-      list($field, $instance, $field_num) = $formObject->getFieldDetails($field_name);
+      list($field, $instance, $field_num) = $formObject->getFieldDetails(
+        $field_name
+      );
 
       if (!is_null($field) && !is_null($instance)) {
         $text_processing = $instance['settings']['text_processing'];
@@ -380,20 +386,21 @@ class Text extends Field {
     $success = TRUE;
     $msg = '';
     if (Field::isCckField($formObject, $field_name)) {
-      list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values, $offset);
+      list($success, $return, $msg) = $formObject->fillMultiValued(
+        $field_name,
+        $values,
+        $offset
+      );
     }
     else {
       $values = is_array($values) ? $values[0]['value'] : $values;
-      list($success, $return, $msg) = $formObject->fillValues($field_name, $values);
-      //$return = $values;
+      list($success, $return, $msg) = $formObject->fillValues(
+        $field_name,
+        $values
+      );
     }
 
     return array($success, Utils::normalize($return), $msg);
-    /*if (!$success) {
-      return array(FALSE, Utils::normalize($return), $msg);
-    }
-
-    return array(TRUE, Utils::normalize($return), "");*/
   }
 
   /**

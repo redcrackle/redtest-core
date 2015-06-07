@@ -40,102 +40,6 @@ abstract class EntityForm extends Form {
   }
 
   /**
-   * __call Magic method. If function name matches the pattern
-   * fillDefault*Values, then fillDefaultFieldValues() function is called with
-   * the appropriate field name. If function name matches "fill*", then
-   * fillFieldValues() function is called with appropriate field name and
-   * arguments.
-   *
-   * @param string $name
-   *   Function name.
-   * @param $arguments
-   *   Arguments passed to the function.
-   *
-   * @return array|mixed
-   *   Values returned by the matching function.
-   */
-  public function __call($name, $arguments) {
-    if ($this->isFillDefaultFieldValuesFunction($name)) {
-      $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
-      array_unshift($arguments, $field_name);
-
-      return call_user_func_array(
-        array($this, 'fillDefaultFieldValues'),
-        $arguments
-      );
-    }
-    elseif ($this->isFillFieldValuesFunction($name)) {
-      $field_name = Utils::makeSnakeCase(substr($name, 4, -6));
-      $arguments = array_shift($arguments);
-
-      return $this->fillFieldValues($field_name, $arguments);
-    }
-    else {
-      return parent::__call($name, $arguments);
-    }
-  }
-
-  /**
-   * Fill specified field with the provided values.
-   *
-   * @param string|array $field_name
-   *   Field name if it is present at top-level form element. If it is not at
-   *   the top-level form element, then provide an array.
-   * @param string|int|array $values
-   *   Value that needs to be filled.
-   *
-   * @return array
-   *   An array with 3 values:
-   *   (1) $success: Whether the field could be filled with provided values.
-   *   (2) $values: Values that were actually filled in $form_state.
-   *   (3) $msg: Error message if $success is FALSE and empty otherwise.
-   */
-  public function fillFieldValues($field_name, $values) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-    if (!is_null($field) && !is_null($instance)) {
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
-
-      return $field_class::fillValues($this, $field_name, $values);
-    }
-
-    // $field_name is a property or is a field but is not a CCK field.
-    return parent::fillFieldValues($field_name, $values);
-    //$this->fillValues($field_name, $values);
-    //$this->fillValues(, array($field_name => $values));
-
-    //return array(TRUE, $values, "");
-  }
-
-  /**
-   * Fill specified field with randomly generated values.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param array $options
-   *   Options array.
-   *
-   * @return array
-   *   An array with 3 values:
-   *   (1) $success: Whether the field could be filled with provided values.
-   *   (2) $values: Values that were actually filled in $form_state.
-   *   (3) $msg: Error message if $success is FALSE and empty string otherwise.
-   */
-  public function fillDefaultFieldValues($field_name, $options = array()) {
-    list($field, $instance, $num) = $this->getFieldDetails($field_name);
-    if (!is_null($field) && !is_null($instance)) {
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
-
-      return $field_class::fillDefaultValues($this, $field_name, $options);
-    }
-
-    $function = "fillDefault" . Utils::makeTitleCase($field_name) . "Values";
-
-    return parent::__call($function, array($options));
-  }
-
-  /**
    * Fills default values in fields.
    *
    * @param array $options
@@ -295,13 +199,13 @@ abstract class EntityForm extends Form {
    * @return bool
    *   TRUE if it matches and FALSE if not.
    */
-  private function isFillDefaultFieldValuesFunction($name) {
+  /*private function isFillDefaultFieldValuesFunction($name) {
     // Check if function name starts with "fillDefault" and ends with "Values".
     return (strpos($name, 'fillDefault') === 0 && strrpos(
         $name,
         'Values'
       ) == strlen($name) - 6);
-  }
+  }*/
 
   /**
    * Returns whether the function name matches the pattern to fill a field with
@@ -313,12 +217,12 @@ abstract class EntityForm extends Form {
    * @return bool
    *   TRUE if it matches and FALSE if not.
    */
-  private function isFillFieldValuesFunction($name) {
+  /*private function isFillFieldValuesFunction($name) {
     // Check if function name starts with "fill".
     return (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
         $name
       ) - 6);
-  }
+  }*/
 
   /**
    * Fill values in a multi-valued field.
@@ -371,7 +275,10 @@ abstract class EntityForm extends Form {
       // without pressing Add More button. We fill the available fields with the
       // input values and for each remaining input value, we need to press "Add
       // More" button.
-      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
       if (!$success) {
         return array(FALSE, $input, $msg);
       }
@@ -392,7 +299,10 @@ abstract class EntityForm extends Form {
           return array(FALSE, $input, $msg);
         }
         $input[] = $value;
-        list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+        list($success, , $msg) = $this->fillValues(
+          $field_name,
+          array(LANGUAGE_NONE => $input)
+        );
         if (!$success) {
           return array(FALSE, $input, $msg);
         }
@@ -407,7 +317,10 @@ abstract class EntityForm extends Form {
       for ($i = sizeof($input); $i < $threshold - 1; $i++) {
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
     }
     else {
       $return = $input;
@@ -415,7 +328,10 @@ abstract class EntityForm extends Form {
         // $input is an empty array, which means we need to make it empty.
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      list($success, , $msg) = $this->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $this->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
     }
 
     return array($success, $return, $msg);

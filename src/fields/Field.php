@@ -287,8 +287,6 @@ class Field {
 
     // $field_name is a property.
     return $formObject->fillValues($field_name, $values);
-
-    //return array(TRUE, $values, "");
   }
 
   /**

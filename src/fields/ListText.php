@@ -78,10 +78,11 @@ class ListText extends ListField {
         }
       }
 
-      list($success, , $msg) = $formObject->fillValues(
+      list($success, $output, $msg) = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
+      $input = $output[LANGUAGE_NONE];
     }
 
     return array($success, $input, $msg);

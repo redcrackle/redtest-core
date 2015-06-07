@@ -147,7 +147,8 @@ class ListField extends Field {
         }
       }
 
-      list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, $output, $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      $input = $output[LANGUAGE_NONE];
     }
 
     return array($success, $input, $msg);

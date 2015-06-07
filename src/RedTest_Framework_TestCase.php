@@ -27,9 +27,10 @@ require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
 // throws an error. Although this does not affect RedTest execution or even
 // session handling, it's better to not let Drupal throw this error in the first
 // place.
-if (empty($_SERVER['SERVER_SOFTWARE'])) {
+/*if (empty($_SERVER['SERVER_SOFTWARE'])) {
   drupal_override_server_variables(array('SERVER_SOFTWARE' => 'RedTest'));
-}
+}*/
+drupal_override_server_variables();
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
 

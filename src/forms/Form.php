@@ -177,22 +177,68 @@ class Form {
   }
 
   /**
-   * Fill value in any field of the form.
+   * Fill value in any field of the form. It first checks if corresponding key
+   * exists in the form array. If yes, it finds out its #tree value and that of
+   * its parents and sets form_state appropriately. If it doesn't find the key
+   * in the form array, then it sets the values in form_state at the top level.
    *
-   * @param $field_name
-   * @param array $values
-   *   An associative array with field name and its values.
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
+   * @param string|int|array $values
+   *   Value that needs to be filled.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) bool $success: Whether the field could be filled with provided
+   *   values.
+   *   (2) string|int|array $values: Values that were actually filled in
+   *   $form_state.
+   *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
    */
   public function fillValues($field_name, $values) {
-    //$this->form_state['values'][$field_name] = $values;
     if (is_string($field_name)) {
       $field_name = array($field_name);
     }
 
-    $element['#parents'] = $field_name;
-    form_set_value($element, $values, $this->form_state);
+    list($success, $element['#parents'], $msg) = $this->getTreeKeys(
+      $field_name
+    );
+    if (!$success) {
+      $element['#parents'] = $field_name;
+    }
 
+    form_set_value($element, $values, $this->form_state);
     return array(TRUE, $values, "");
+  }
+
+  /**
+   * Fill specified field with the default values.
+   *
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) bool $success: Whether the field could be filled with provided
+   *   values.
+   *   (2) string|int|array $values: Values that were actually filled in
+   *   $form_state.
+   *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
+   */
+  public function fillDefaultFieldValues($field_name, $options = array()) {
+    list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
+    if ($field_class) {
+      return $field_class::fillDefaultValues($this, $field_name, $options);
+    }
+
+    if (is_array($field_name)) {
+      $field_name = array_pop($field_name);
+    }
+    return array(FALSE, NULL, "Field $field_name does not exist.");
   }
 
   /**
@@ -213,28 +259,24 @@ class Form {
    *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
    */
   public function fillFieldValues($field_name, $values) {
-    // This function is called means that the field is not a CCK field.
-    if (is_string($field_name)) {
-      $field_name = array($field_name);
+    list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
+    if ($field_class) {
+      return $field_class::fillValues($this, $field_name, $values);
     }
 
-    list($success, $element['#parents'], $msg) = $this->getTreeKeys(
-      $field_name
-    );
-
-    return $this->fillValues($field_name, $values);
-    /*if (!$success) {
-      $this->fillValues($field_name, $values);
-      return array()
+    list($success, $parents, $msg) = $this->getTreeKeys($field_name);
+    if (!$success) {
+      return $this->fillValues($field_name, $values);
     }
 
-    form_set_value($element, $values, $this->form_state);
-    return array(TRUE, $values, "");*/
+    return $this->fillValues($parents, $values);
   }
 
   /**
    * Get the array of keys based on #tree property. Output array is what goes
    * in $form_state['values'].
+   *
+   * @todo Verify that this function works as expected.
    *
    * @param array $input
    *   Array of keys.
@@ -244,6 +286,9 @@ class Form {
    */
   protected function getTreeKeys($input) {
     $parents = array();
+    if (is_string($input)) {
+      $input = array($input);
+    }
     foreach ($input as $key) {
       $parents[] = $key;
       $key_exists = NULL;
@@ -261,7 +306,7 @@ class Form {
         );
       }
 
-      if (!isset($value['#tree']) || $value['#tree']) {
+      if (!isset($value['#tree']) || !$value['#tree']) {
         $parents = array($key);
       }
     }
@@ -313,18 +358,6 @@ class Form {
   public function getValues($field_name) {
     return isset($this->form_state['values'][$field_name]) ? $this->form_state['values'][$field_name] : NULL;
   }
-
-  /**
-   * Sets value of a field in form state array.
-   *
-   * @param string $field_name
-   *   Field name.
-   * @param mixed $values
-   *   Value to be set in form state array for a field.
-   */
-  /*public function setValues($field_name, $values) {
-    $this->form_state['values'][$field_name] = $values;
-  }*/
 
   /**
    * Simulate action of pressing of an Add More button. This function processes
@@ -540,31 +573,63 @@ class Form {
     }
   }*/
 
+
+  /**
+   * Returns whether the function name matches the pattern to fill a field with
+   * provided values.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE if not.
+   */
+  protected function isFillFieldValuesFunction($name) {
+    // Check if function name starts with "fill".
+    return (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
+        $name
+      ) - 6);
+  }
+
+  /**
+   * Returns whether the function name matches the pattern to fill a field with
+   * default values.
+   *
+   * @param string $name
+   *   Function name.
+   *
+   * @return bool
+   *   TRUE if it matches and FALSE if not.
+   */
+  protected function isFillDefaultFieldValuesFunction($name) {
+    // Check if function name starts with "fillDefault" and ends with "Values".
+    return (strpos($name, 'fillDefault') === 0 && strrpos(
+        $name,
+        'Values'
+      ) == strlen($name) - 6);
+  }
+
   /**
    * @param $name
    * @param $arguments
    */
   public function __call($name, $arguments) {
-    if (strpos($name, 'fillDefault') === 0 && strrpos(
-        $name,
-        'Values'
-      ) == strlen($name) - 6
-    ) {
+    if ($this->isFillDefaultFieldValuesFunction($name)) {
       // Function name starts with "fillDefault" and ends with "Values".
       $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
+      array_unshift($arguments, $field_name);
 
-      return Field::fillDefaultValues($this, $field_name);
+      return call_user_func_array(
+        array($this, 'fillDefaultFieldValues'),
+        $arguments
+      );
     }
-    elseif (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
-        $name
-      ) - 6
-    ) {
+    elseif ($this->isFillFieldValuesFunction($name)) {
       // Function name starts with "fill" and ends with "Values".
       $field_name = Utils::makeSnakeCase(substr($name, 4, -6));
       $arguments = array_shift($arguments);
 
       return $this->fillFieldValues($field_name, $arguments);
-      //return Field::fillValues($this, $field_name, $arguments);
     }
     elseif (strpos($name, 'has') === 0 && strrpos($name, 'Access') == strlen(
         $name

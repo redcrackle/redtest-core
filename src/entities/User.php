@@ -88,10 +88,10 @@ class User extends Entity {
     $roles = array()
   ) {
     $userRegisterForm = new UserForms\UserRegisterForm();
-    $userRegisterForm->fillNameValues($username);
-    $userRegisterForm->fillMailValues($email);
-    $userRegisterForm->fillValues(array('pass', 'pass1'), $password);
-    $userRegisterForm->fillValues(array('pass', 'pass2'), $password);
+    $userRegisterForm->fillFieldValues(array('account', 'name'), $username);
+    $userRegisterForm->fillFieldValues(array('account', 'mail'), $email);
+    $userRegisterForm->fillFieldValues(array('pass', 'pass1'), $password);
+    $userRegisterForm->fillFieldValues(array('pass', 'pass2'), $password);
     /*$userRegisterForm->fillValues(
       ,
       array(
