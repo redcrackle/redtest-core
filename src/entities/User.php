@@ -312,7 +312,7 @@ class User extends Entity {
    * to be created, then it returns the entity itself and not the array.
    * (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function createDefault($num = 1, $options = array()) {
+  public static function createRandom($num = 1, $options = array()) {
     $options += array(
       'roles' => array(),
       'required_fields_only' => TRUE,

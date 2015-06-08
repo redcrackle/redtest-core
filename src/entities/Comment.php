@@ -112,4 +112,89 @@ class Comment extends Entity {
     comment_delete($this->getId());
     return TRUE;
   }
+
+  /**
+   * Create new entities with random field values.
+   *
+   * @param int $num
+   *   Number of entities to create.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
+   *
+   * @return array
+   *   An array with the following values:
+   *   (1) $success: TRUE if entities were created successfully and FALSE
+   *   otherwise.
+   *   (2) $objects: A single entity object or an associative array of entity
+   *   objects that are created.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
+   */
+  public static function createRandom($num = 1, $options = array()) {
+    if (!isset($options['nid']) && !isset($options['pid'])) {
+      return array(
+        FALSE,
+        NULL,
+        "Neither nid or pid is specified while creating a comment."
+      );
+    }
+
+    $options += array(
+      'nid' => NULL,
+      'pid' => NULL,
+    );
+
+    // First get the references that need to be created.
+    static::processBeforeCreateRandom($options);
+
+    // We need to use "static" here and not "self" since "getFormClass" needs to
+    // be called from individual Entity class to get the correct value.
+    $formClass = static::getFormClassName();
+
+    $output = array();
+    for ($i = 0; $i < $num; $i++) {
+      // Instantiate the form class.
+      $classForm = new $formClass(NULL, $options['nid'], $options['pid']);
+      if (!$classForm->getInitialized()) {
+        return array(FALSE, $output, $classForm->getErrors());
+      }
+
+      // Fill default values in the form. We don't check whether the created
+      // entity has the correct field since some custom function could be
+      // changing the field values on creation. For checking field values on
+      // entity creation, a form needs to be initialized in the test.
+      list($success, $fields, $msg) = $classForm->fillRandomValues($options);
+      if (!$success) {
+        return array(FALSE, $output, $msg);
+      }
+
+      // Submit the form to create the entity.
+      list($success, $object, $msg) = $classForm->submit();
+      if (!$success) {
+        return array(
+          FALSE,
+          $output,
+          "Could not create " . get_called_class() . " entity: " . $msg
+        );
+      }
+
+      // Make sure that there is an id.
+      if (!$object->getId()) {
+        return array(
+          FALSE,
+          $output,
+          "Could not get Id of the created " . get_called_class(
+          ) . " entity: " . $msg
+        );
+      }
+
+      // Store the created entity in the output array.
+      $output[] = $object;
+    }
+
+    return array(TRUE, Utils::normalize($output), "");
+  }
 }

@@ -221,7 +221,7 @@ class Field {
   }
 
   /**
-   * Fills in default values in the specified field. Internally it calls the
+   * Fills in random values in the specified field. Internally it calls the
    * class of the individual field type to fill the default values.
    *
    * @param Form $formObject
@@ -239,7 +239,7 @@ class Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
     $field_name,
     $options = array()
@@ -250,7 +250,7 @@ class Field {
     );
 
     if (!empty($field_class)) {
-      $function = 'fillDefault' . $widget_type . 'Values';
+      $function = 'fill' . $widget_type . 'RandomValues';
 
       return $field_class::$function($formObject, $field_name, $options);
     }

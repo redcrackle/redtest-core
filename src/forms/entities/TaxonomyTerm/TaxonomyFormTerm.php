@@ -95,13 +95,13 @@ class TaxonomyFormTerm extends EntityForm {
    *   (3) $msg: Error message if $success is FALSE, and an empty string
    *   otherwise.
    */
-  public function fillDefaultValues($options = array()) {
+  public function fillRandomValues($options = array()) {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillDefaultValues($options);
+    list($success, $fields, $msg) = parent::fillRandomValues($options);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }

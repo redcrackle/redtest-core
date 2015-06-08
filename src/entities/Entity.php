@@ -1487,7 +1487,7 @@ abstract class Entity {
    *   (3) $msg: Error message if $success is FALSE, and an empty string
    *   otherwise.
    */
-  public static function createDefault($num = 1, $options = array()) {
+  public static function createRandom($num = 1, $options = array()) {
     // First get the references that need to be created.
     static::processBeforeCreateRandom($options);
 
@@ -1507,7 +1507,7 @@ abstract class Entity {
       // entity has the correct field since some custom function could be
       // changing the field values on creation. For checking field values on
       // entity creation, a form needs to be initialized in the test.
-      list($success, $fields, $msg) = $classForm->fillDefaultValues($options);
+      list($success, $fields, $msg) = $classForm->fillRandomValues($options);
       if (!$success) {
         return array(FALSE, $output, $msg);
       }

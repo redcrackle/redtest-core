@@ -30,7 +30,7 @@ class LinkField extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
     $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
     $access = $formObject->$access_function();
     if (!$access) {

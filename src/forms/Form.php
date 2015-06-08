@@ -260,7 +260,7 @@ class Form {
   }
 
   /**
-   * Fill specified field with the default values.
+   * Fill specified field with the random values.
    *
    * @param string|array $field_name
    *   Field name if it is present at top-level form element. If it is not at
@@ -276,10 +276,10 @@ class Form {
    *   $form_state.
    *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public function fillDefaultFieldValues($field_name, $options = array()) {
+  public function fillFieldRandomValues($field_name, $options = array()) {
     list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
     if ($field_class) {
-      return $field_class::fillDefaultValues($this, $field_name, $options);
+      return $field_class::fillRandomValues($this, $field_name, $options);
     }
 
     if (is_array($field_name)) {
@@ -575,13 +575,13 @@ class Form {
     //return array(TRUE, Utils::normalize($values), "");
   }
 
-  /*public function fillDefaultValues($skip = array()) {
+  /*public function fillRandomValues($skip = array()) {
     $fields = array();
     foreach (element_children($this->form) as $field_name) {
       $field = $this->form[$field_name];
       list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
       if (!empty($field_class)) {
-        $function = 'fillDefault' . Utils::makeTitleCase($field_name) . 'Values';
+        $function = 'fill' . Utils::makeTitleCase($field_name) . 'RandomValues';
         list($success, $values, $msg) = $this->$function();
         $fields[$field_name] = $values;
         if (!$success) {
@@ -607,7 +607,7 @@ class Form {
       $field = $this->form[$field_name];
       list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
       if (!empty($field_class)) {
-        $function = 'fillDefault' . Utils::makeTitleCase($field_name) . 'Values';
+        $function = 'fill' . Utils::makeTitleCase($field_name) . 'RandomValues';
         list($success, $values, $msg) = $this->$function();
         $fields[$field_name] = $values;
         if (!$success) {
@@ -632,10 +632,13 @@ class Form {
    *   TRUE if it matches and FALSE if not.
    */
   protected function isFillFieldValuesFunction($name) {
-    // Check if function name starts with "fill".
-    return (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
-        $name
-      ) - 6);
+    // Check if function name starts with "fill" and ends with "Values" but does
+    // not end with "RandomValues".
+    $cond1 = (strpos($name, 'fill') === 0);
+    $cond2 = (strrpos($name, 'Values') === strlen($name) - 6);
+    $cond3 = (strrpos($name, 'RandomValues') === strlen($name) - 12);
+    $out = $cond1 && $cond2 && !$cond3;
+    return $out;
   }
 
   /**
@@ -648,26 +651,36 @@ class Form {
    * @return bool
    *   TRUE if it matches and FALSE if not.
    */
-  protected function isFillDefaultFieldValuesFunction($name) {
-    // Check if function name starts with "fillDefault" and ends with "Values".
-    return (strpos($name, 'fillDefault') === 0 && strrpos(
-        $name,
-        'Values'
-      ) == strlen($name) - 6);
+  protected function isFillFieldRandomValuesFunction($name) {
+    // Check if function name starts with "fill" and ends with "RandomValues".
+    $cond1 = (strpos($name, 'fill') === 0);
+    $cond2 = (strrpos($name, 'RandomValues') === strlen($name) - 12);
+    $out = $cond1 && $cond2;
+    return $out;
   }
 
   /**
-   * @param $name
-   * @param $arguments
+   * Magic method. This function will be executed when a matching function is
+   * not found. Currently this supports four kinds of functions:
+   * fill<FieldName>RandomValues(), fill<FieldName>Values,
+   * has<FieldName>Access, is<FieldName>Required.
+   *
+   * @param string $name
+   *   Called function name.
+   * @param string $arguments
+   *   Function arguments.
+   *
+   * @return mixed $output
+   *   Output depends on which function ultimately gets called.
    */
   public function __call($name, $arguments) {
-    if ($this->isFillDefaultFieldValuesFunction($name)) {
-      // Function name starts with "fillDefault" and ends with "Values".
-      $field_name = Utils::makeSnakeCase(substr($name, 11, -6));
+    if ($this->isFillFieldRandomValuesFunction($name)) {
+      // Function name starts with "fill" and ends with "RandomValues".
+      $field_name = Utils::makeSnakeCase(substr($name, 4, -12));
       array_unshift($arguments, $field_name);
 
       return call_user_func_array(
-        array($this, 'fillDefaultFieldValues'),
+        array($this, 'fillFieldRandomValues'),
         $arguments
       );
     }

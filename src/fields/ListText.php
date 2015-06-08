@@ -30,7 +30,7 @@ class ListText extends ListField {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultOptionsButtonsValues(
+  public static function fillOptionsButtonsRandomValues(
     Form $formObject,
     $field_name,
     $options = array()
@@ -90,7 +90,7 @@ class ListText extends ListField {
     return array($success, $input, $msg);
   }
 
-  public static function fillDefaultOptionsSelectValues(
+  public static function fillOptionsSelectRandomValues(
     Form $formObject,
     $field_name
   ) {

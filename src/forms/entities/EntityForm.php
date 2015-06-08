@@ -40,7 +40,7 @@ abstract class EntityForm extends Form {
   }
 
   /**
-   * Fills default values in fields.
+   * Fills random values in fields.
    *
    * @param array $options
    *   An associative options array. It can have the following keys:
@@ -57,7 +57,7 @@ abstract class EntityForm extends Form {
    *   (3) $msg: Error message if $success is FALSE, and an empty string
    *   otherwise.
    */
-  public function fillDefaultValues($options = array()) {
+  public function fillRandomValues($options = array()) {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
@@ -88,9 +88,9 @@ abstract class EntityForm extends Form {
         continue;
       }
 
-      $function = "fillDefault" . Utils::makeTitleCase(
+      $function = "fill" . Utils::makeTitleCase(
           $field_name
-        ) . "Values";
+        ) . "RandomValues";
       list($success, $values, $msg) = $this->$function($options);
       $fields[$field_name] = $values;
       if (!$success) {
@@ -190,41 +190,6 @@ abstract class EntityForm extends Form {
 
     return array($field, $instance, $num);
   }
-
-  /**
-   * Returns whether the function name matches the pattern to fill a field with
-   * default values.
-   *
-   * @param string $name
-   *   Function name.
-   *
-   * @return bool
-   *   TRUE if it matches and FALSE if not.
-   */
-  /*private function isFillDefaultFieldValuesFunction($name) {
-    // Check if function name starts with "fillDefault" and ends with "Values".
-    return (strpos($name, 'fillDefault') === 0 && strrpos(
-        $name,
-        'Values'
-      ) == strlen($name) - 6);
-  }*/
-
-  /**
-   * Returns whether the function name matches the pattern to fill a field with
-   * provided values.
-   *
-   * @param string $name
-   *   Function name.
-   *
-   * @return bool
-   *   TRUE if it matches and FALSE if not.
-   */
-  /*private function isFillFieldValuesFunction($name) {
-    // Check if function name starts with "fill".
-    return (strpos($name, 'fill') === 0 && strrpos($name, 'Values') == strlen(
-        $name
-      ) - 6);
-  }*/
 
   /**
    * Fill values in a multi-valued field.
@@ -337,8 +302,6 @@ abstract class EntityForm extends Form {
     }
 
     return array($success, $return, $msg);
-
-    //return array(TRUE, $return, "");
   }
 
   public function processBeforeSubmit() {

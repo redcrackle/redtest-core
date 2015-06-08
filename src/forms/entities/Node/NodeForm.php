@@ -103,13 +103,13 @@ class NodeForm extends EntityForm {
    *   (3) $msg: Error message if $success is FALSE, and an empty string
    *   otherwise.
    */
-  public function fillDefaultValues($options = array()) {
+  public function fillRandomValues($options = array()) {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillDefaultValues(
+    list($success, $fields, $msg) = parent::fillRandomValues(
       $options
     );
     if (!$success) {
@@ -203,7 +203,7 @@ class NodeForm extends EntityForm {
       // We'll need to create new author first.
       // Masquerade as user 1.
       list($superAdmin, $originalUser, $originalState) = User::masquerade(1);
-      list($success, $userObject, $msg) = User::createDefault();
+      list($success, $userObject, $msg) = User::createRandom();
       // Return to original user.
       User::unmasquerade($originalUser, $originalState);
 

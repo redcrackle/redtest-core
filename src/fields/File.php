@@ -31,7 +31,7 @@ class File extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
     $field_name,
     $options = array()

@@ -35,7 +35,7 @@ class TaxonomyTermReference extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
     $field_name,
     $options = array()
@@ -643,7 +643,7 @@ class TaxonomyTermReference extends Field {
       // Masquerade as user 1 so that there is no access problem.
       list($superUserObject, $userObject, $old_state) = User::masquerade(1);
 
-      list($success, $termObjects, $msg) = $class::createDefault($num);
+      list($success, $termObjects, $msg) = $class::createRandom($num);
       if (!$success) {
         return array(
           FALSE,

@@ -36,7 +36,7 @@ class ListBoolean extends ListField {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultOptionsButtonsValues(
+  public static function fillOptionsButtonsRandomValues(
     Form $formObject,
     $field_name,
     $options = array()
@@ -85,7 +85,7 @@ class ListBoolean extends ListField {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultOptionsOnOffValues(
+  public static function fillOptionsOnOffRandomValues(
     Form $formObject,
     $field_name
   ) {

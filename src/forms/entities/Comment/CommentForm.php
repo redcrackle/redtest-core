@@ -68,13 +68,13 @@ class CommentForm extends EntityForm {
     parent::__construct('comment_node_' . $type . '_form', (object) array('nid' => $nid, 'pid' => $pid));
   }
 
-  public function fillDefaultValues($options = array()) {
+  public function fillRandomValues($options = array()) {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillDefaultValues(
+    list($success, $fields, $msg) = parent::fillRandomValues(
       $options
     );
     if (!$success) {
@@ -84,7 +84,7 @@ class CommentForm extends EntityForm {
     if (($this->isSubjectRequired(
         ) || !$options['required_fields_only']) && $this->hasSubjectAccess()
     ) {
-      list($success, $value, $msg) = $this->fillDefaultSubjectValues();
+      list($success, $value, $msg) = $this->fillSubjectRandomValues();
       if (!$success) {
         return array(FALSE, $fields, $msg);
       }

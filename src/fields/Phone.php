@@ -30,7 +30,7 @@ class Phone extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultPhoneTextfieldValues(
+  public static function fillPhoneTextfieldRandomValues(
     Form $formObject,
     $field_name,
     $options = array()

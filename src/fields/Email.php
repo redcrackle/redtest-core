@@ -29,7 +29,7 @@ class Email extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
     $field_name,
     $options = array()
