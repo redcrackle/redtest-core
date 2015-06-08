@@ -96,20 +96,6 @@ class Utils {
       return NULL;
     }
 
-    // Do not use Faker for generating a random string since it doesn't give
-    // enough unique values and keys are generally used as unique indexes, for
-    // e.g. in username.
-    /*if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-
-      if ($num == 1) {
-        return $faker->word();
-      }
-      else {
-        return $faker->words($num);
-      }
-    }*/
-
     $string_array = array();
     foreach (range(0, $num - 1) as $index) {
       $string_array[] = substr(
@@ -142,17 +128,9 @@ class Utils {
       return NULL;
     }
 
-    $faker = NULL;
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-    }
-
     $text_array = array();
     foreach (range(0, $num - 1) as $index) {
-      if (!is_null($faker)) {
-        $text_array[] = $faker->text($length);
-      }
-      elseif ($length <= 2) {
+      if ($length <= 2) {
         $text_array[] = static::getRandomString($length);
       }
       else {
@@ -186,21 +164,11 @@ class Utils {
       return NULL;
     }
 
-    $faker = NULL;
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-    }
-
     $email_addresses = array();
     foreach (range(0, $num - 1) as $index) {
-      if (!is_null($faker)) {
-        $email_addresses[] = $faker->safeEmail();
-      }
-      else {
-        $email_addresses[] = self::getRandomString(
-            8
-          ) . '@' . self::getRandomString(20) . '.com';
-      }
+      $email_addresses[] = self::getRandomString(
+          8
+        ) . '@' . self::getRandomString(20) . '.com';
     }
 
     return self::normalize($email_addresses);
@@ -224,22 +192,11 @@ class Utils {
       return NULL;
     }
 
-    $faker = NULL;
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-    }
-
     $urls = array();
     if ($type == 'relative' || ($type == 'any' && self::getRandomBool())
     ) {
       $parts = self::getRandomInt(1, 5);
-      $paths = array();
-      if (!is_null($faker)) {
-        $paths = $faker->words($parts);
-      }
-      else {
-        $paths = Utils::getRandomString(8, $parts);
-      }
+      $paths = Utils::getRandomString(8, $parts);
 
       if (is_string($paths)) {
         $urls[] = $paths;
@@ -250,12 +207,7 @@ class Utils {
     }
     else {
       foreach (range(0, $num - 1) as $index) {
-        if (!is_null($faker)) {
-          $urls[] = $faker->url();
-        }
-        else {
-          $urls[] = 'www.' . self::getRandomString(10) . '.com';
-        }
+        $urls[] = 'www.' . self::getRandomString(10) . '.com';
       }
     }
 
@@ -314,19 +266,9 @@ class Utils {
       return NULL;
     }
 
-    $faker = NULL;
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-    }
-
     $numbers = array();
     foreach (range(0, $num - 1) as $index) {
-      if (!is_null($faker)) {
-        $numbers[] = $faker->numberBetween($start_int, $end_int);
-      }
-      else {
-        $numbers[] = mt_rand($start_int, $end_int);
-      }
+      $numbers[] = mt_rand($start_int, $end_int);
     }
 
     return self::normalize($numbers);
@@ -546,19 +488,9 @@ class Utils {
       return NULL;
     }
 
-    $faker = NULL;
-    if (class_exists('\Faker\Factory')) {
-      $faker = \Faker\Factory::create();
-    }
-
     $numbers = array();
     foreach (range(0, $num - 1) as $index) {
-      if (!is_null($faker)) {
-        $number = $faker->randomFloat(NULL, $min, $max);
-      }
-      else {
-        $number = $min + mt_rand() / mt_getrandmax() * ($max - $min);
-      }
+      $number = $min + mt_rand() / mt_getrandmax() * ($max - $min);
       $numbers[] = substr(round($number, 3), 0, 10);
     }
 
