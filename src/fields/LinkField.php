@@ -13,7 +13,24 @@ use RedTest\core\Utils;
 
 class LinkField extends Field {
 
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  /**
+   * Fill link field with random values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
+  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
     $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
     $access = $formObject->$access_function();
     if (!$access) {
@@ -44,7 +61,9 @@ class LinkField extends Field {
       if ($show_url !== 'optional' || Utils::getRandomBool()) {
         $value['url'] = Utils::getRandomUrl();
       }
-      if ($show_title == 'required' || empty($value['url']) || ($show_title == 'optional' && Utils::getRandomBool())) {
+      if ($show_title == 'required' || empty($value['url']) || ($show_title == 'optional' && Utils::getRandomBool(
+          ))
+      ) {
         $value['title'] = Utils::getRandomText($title_maxlength);
       }
       if ($link_target == 'user' && Utils::getRandomBool()) {
@@ -66,29 +85,137 @@ class LinkField extends Field {
   }
 
   public static function fillValues(Form $formObject, $field_name, $values) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
-    $formObject->emptyField($field_name);
+    $field_class = get_called_class();
+    //$values = $field_class::createInput($values);
+    $values = $field_class::formatValuesForCompare($values);
 
-    $values = self::denormalizeInput($values);
+    list($success, $return, $msg) = $formObject->fillMultiValued(
+      $field_name,
+      $values
+    );
+    $return = $field_class::normalize($return);
+    if (!$success) {
+      return array(FALSE, $return, $msg);
+    }
 
-    $input = array();
-    $index = 0;
-    foreach ($values as $key => $value) {
-      if ($index >= 1) {
-        $triggering_element_name = self::getTriggeringElementName($field_name);
-        $formObject->addMore($field_name, $input, $triggering_element_name);
+    return array(TRUE, $return, "");
+  }
+
+  public static function normalize($values) {
+    if (is_string($values) || is_numeric($values)) {
+      return strval($values);
+    }
+
+    $output = array();
+    if (is_array($values)) {
+      if ((bool) count(array_filter(array_keys($values), 'is_string'))) {
+        if (sizeof($values) == 1 && array_key_exists('url', $values)) {
+          // $values is of the form array('url' => 'URL 1').
+          $output = $values['url'];
+        }
+        else {
+          // $values can be of the form array('url' => 'URL 1', 'title' => 'Title 1')
+          $output = $values;
+        }
+
+        return $output;
       }
-      $input[$index] = self::createInput($value);
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $index++;
+      else {
+        // This is not an associative array.
+        foreach ($values as $val) {
+          if (is_string($val) || is_numeric($val)) {
+            // $values is of the form array('URL 1', 'URL 2').
+            $output[] = strval($val);
+          }
+          elseif (is_array($val)) {
+            if ((bool) count(array_filter(array_keys($val), 'is_string'))) {
+              if (sizeof($val) == 1 && array_key_exists('url', $val)) {
+                // $values is of the form array(array('url' => 'URL 1'), array('url' => 'URL 2')).
+                $output[] = $val['url'];
+              }
+              else {
+                // $values is of the form array(array('url' => 'URL 1', 'title' => 'Title 1'), array('url' => 'URL 2', 'title' => 'Title 2')).
+                $output[] = $val;
+              }
+            }
+          }
+        }
+
+        return Utils::normalize($output);
+      }
     }
 
-    return array(TRUE, Utils::normalize($input), "");
+    $output = Utils::normalize($values);
+
+    /*if (is_array($values)) {
+      if (sizeof($values) == 1) {
+        if ((bool) count(array_filter(array_keys($values), 'is_string'))) {
+          // Array is associative.
+          if (array_key_exists('url', $values)) {
+            // $values is of the form array('url' => 'URL 1').
+            return strval($values['url']);
+          }
+        }
+        else {
+          // Array is not associative.
+          // Check whether it's an array of array.
+          foreach ($values as $val) {
+            if (is_string($val) || is_numeric($val)) {
+              // $values is of the form array('URL 1')
+              return strval($val);
+            }
+
+            if (is_array($val)) {
+              if (sizeof($val) == 1) {
+                if ((bool) count(array_filter(array_keys($val), 'is_string'))) {
+                  // Array is associative.
+                  if (array_key_exists('url', $val)) {
+                    return strval($val['url']);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }*/
+
+    return $output;
+  }
+
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
+  public static function getEmptyValue(Form $formObject, $field_name) {
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $show_title = $instance['settings']['title'];
+
+    $output = array(
+      'url' => '',
+      'attributes' => array(),
+    );
+
+    if ($show_title != 'none') {
+      $output['title'] = '';
+    }
+
+    return $output;
   }
 
   /**
@@ -100,7 +227,7 @@ class LinkField extends Field {
    * @return string
    *   Triggering element name.
    */
-  private static function getTriggeringElementName($field_name) {
+  public static function getTriggeringElementName($field_name, $index) {
     return $field_name . '_add_more';
   }
 
@@ -114,13 +241,22 @@ class LinkField extends Field {
    *   Input array that can be sent in form POST.
    */
   private static function createInput($value) {
-    if (is_string($value)) {
-      $input = array(
-        'url' => $value
+    $input = array();
+
+    if (is_string($value) || is_numeric($value)) {
+      $input[] = array(
+        'url' => strval($value),
       );
     }
-    else {
-      $input = $value;
+    elseif (is_array($value)) {
+      foreach ($value as $val) {
+        if (is_string($val) || is_numeric($val)) {
+          $input[] = array('url' => $val);
+        }
+        else {
+          $input[] = $val;
+        }
+      }
     }
 
     return $input;
@@ -137,7 +273,7 @@ class LinkField extends Field {
    *   Standardized format: array of URLs.
    */
   private static function denormalizeInput($values) {
-    if (is_string($values)) {
+    if (is_string($values) || is_numeric($values)) {
       $values = array($values);
     }
 
@@ -145,17 +281,31 @@ class LinkField extends Field {
   }
 
   public static function compareValues($actual_values, $values) {
-    $actual_values = self::formatValuesForCompare($actual_values);
-    $values = self::formatValuesForCompare($values);
+    $field_class = get_called_class();
+
+    $actual_values = $field_class::formatValuesForCompare($actual_values);
+    $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($values) != sizeof($actual_values)) {
-      return array(FALSE, "Number of values do not match.");
+      return array(
+        FALSE,
+        "Number of values do not match. Actual values are " . print_r(
+          $actual_values,
+          TRUE
+        ) . " and expected values are " . print_r($values, TRUE)
+      );
     }
 
     foreach ($values as $index => $value_array) {
       foreach ($value_array as $key => $value) {
         if ($actual_values[$index][$key] != $value) {
-          return array(FALSE, "Key $key does not match for index $index.");
+          return array(
+            FALSE,
+            "Key $key does not match for index $index. Actual values are " . print_r(
+              $actual_values,
+              TRUE
+            ) . " and expected values are " . print_r($values, TRUE)
+          );
         }
       }
     }
@@ -203,15 +353,32 @@ class LinkField extends Field {
     }
 
     $output = array();
-    if (is_string($values)) {
-      $output[] = array('url' => $values);
+    if (is_string($values) || is_numeric($values)) {
+      $output[] = array('url' => strval($values));
     }
     elseif (is_array($values)) {
-      if (array_key_exists('url', $values) || array_key_exists('title', $values)) {
+      if (array_key_exists('url', $values) || array_key_exists(
+          'title',
+          $values
+        )
+      ) {
         $output[] = $values;
       }
       else {
-        $output = $values;
+        foreach ($values as $val) {
+          if (is_string($val) || is_numeric($val)) {
+            $output[] = array('url' => strval($val));
+          }
+          elseif (is_array($val)) {
+            if (array_key_exists('url', $val) || array_key_exists(
+                'title',
+                $val
+              )
+            ) {
+              $output[] = $val;
+            }
+          }
+        }
       }
     }
 

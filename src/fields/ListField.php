@@ -13,9 +13,27 @@ use RedTest\core\Utils;
 
 class ListField extends Field {
 
-  public static function fillDefaultOptionsButtonsValues(
+  /**
+   * Fill checkboxes field with random values.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
+  public static function fillOptionsButtonsRandomValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $allowed_values = array();
@@ -38,10 +56,12 @@ class ListField extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -51,22 +71,36 @@ class ListField extends Field {
     }
 
     $input = array();
+    $output = array();
+    $success = FALSE;
+    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
           // If value is 0, then make it a string otherwise it will be
           // interpreted as not selected.
+          $output[] = $value;
           $input[$value] = ($value === 0 ? strval($value) : $value);
         }
       }
 
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, , $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
+    }
+    else {
+      // Input is empty.
+      list($success, , $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => NULL)
+      );
     }
 
-    return array(TRUE, $input, "");
+    return array($success, Utils::normalize($output), $msg);
   }
 
-  public static function fillDefaultOptionsSelectValues(
+  public static function fillOptionsSelectRandomValues(
     Form $formObject,
     $field_name
   ) {
@@ -91,10 +125,12 @@ class ListField extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -104,6 +140,8 @@ class ListField extends Field {
     }
 
     $input = array();
+    $success = TRUE;
+    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -113,10 +151,11 @@ class ListField extends Field {
         }
       }
 
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
+      list($success, $output, $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      $input = $output[LANGUAGE_NONE];
     }
 
-    return array(TRUE, $input, "");
+    return array($success, $input, $msg);
   }
 
   /**

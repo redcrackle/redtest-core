@@ -12,7 +12,7 @@ use RedTest\core\forms\Form;
 
 class TaxonomyFormVocabulary extends Form {
 
-  function __construct() {
+  public function __construct() {
 	parent::__construct('taxonomy_form_vocabulary');
   }
   
@@ -22,7 +22,8 @@ class TaxonomyFormVocabulary extends Form {
    * @return $form_state if success else error message 
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Save')));
+    $this->fillOpValues(t('Save'));
+    //$this->fillValues(, array('op' => t('Save')));
 	$output = parent::submit($this->fillValues);
 	if (is_array($output)) {
 		// There was an error.

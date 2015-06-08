@@ -15,12 +15,14 @@ use RedTest\core\entities\Entity;
 class TextLong extends Text {
 
   /**
-   * Fills text area field with default values.
+   * Fill text area field with random long text values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -28,9 +30,9 @@ class TextLong extends Text {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
-    $field_name
+    $field_name, $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
@@ -39,7 +41,8 @@ class TextLong extends Text {
       $text_processing = $instance['settings']['text_processing'];
     }
 
-    $values = self::generateValues($num, $text_processing);
+    $field_class = get_called_class();
+    $values = $field_class::generateValues($num, $text_processing);
 
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
@@ -80,24 +83,21 @@ class TextLong extends Text {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillValues(
-    Form $formObject,
-    $field_name,
-    $values
-  ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+  public static function fillValues(Form $formObject, $field_name, $values) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
-
-    $formObject->emptyField($field_name);
 
     $defaults = array();
     if (!empty($format)) {
       $defaults['format'] = $format;
     }
 
-    return self::fillTextValues($formObject, $field_name, $values, $defaults);
+    $field_class = get_called_class();
+    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
   }
 }

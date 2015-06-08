@@ -17,13 +17,15 @@ class NodeDeleteConfirm extends Form {
   public function __construct($nid) {
     $this->node = node_load($nid);
     if ($this->node) {
-      module_load_include('inc', 'node', 'node.pages');
+      $this->includeFile('inc', 'node', 'node.pages');
       parent::__construct('node_delete_confirm', $this->node);
     }
   }
 
-  public function delete() {
-    $this->fillValues(array('confirm' => TRUE));
-    return parent::submit($this->node);
+  public function submit() {
+    $this->fillConfirmValues(TRUE);
+    //$this->fillValues(, array('confirm' => TRUE));
+    return $this->pressButton(NULL, array(), $this->node);
+    //return parent::submit($this->node);
   }
 }

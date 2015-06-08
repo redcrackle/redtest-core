@@ -14,12 +14,14 @@ use RedTest\core\Utils;
 class Email extends Field {
 
   /**
-   * Fills email field with default values.
+   * Fill email field with random values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -27,7 +29,11 @@ class Email extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
+  public static function fillRandomValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -60,29 +66,56 @@ class Email extends Field {
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
-    $formObject->emptyField($field_name);
+    $field_class = get_called_class();
 
-    $values = self::normalizeInputForCompare($values);
+    $values = $field_class::normalizeInputForCompare($values);
+    $values = $field_class::formatValuesForInput($values);
 
-    $input = array();
-    $index = 0;
-    foreach ($values as $key => $value) {
-      if ($index >= 1) {
-        $triggering_element_name = $field_name . '_add_more';
-        $formObject->addMore($field_name, $input, $triggering_element_name);
-      }
-      $input[$index] = array('email' => $value);
-      $formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
-      $index++;
+    list($success, $return, $msg) = $formObject->fillMultiValued(
+      $field_name,
+      $values
+    );
+    if (!$success) {
+      return array(FALSE, Utils::normalize($return), $msg);
     }
 
-    return array(TRUE, Utils::normalize($input), "");
+    return array(TRUE, Utils::normalize($return), "");
+  }
+
+  /**
+   * Returns triggering element name.
+   *
+   * @param string $field_name
+   *   Field name.
+   * @param int $index
+   *   Index of the element in multi-valued field.
+   *
+   * @return string
+   *   Triggering element name.
+   */
+  public static function getTriggeringElementName($field_name, $index) {
+    return $field_name . '_add_more';
+  }
+
+  /**
+   * Returns an empty field.
+   *
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field.
+   */
+  public static function getEmptyValue($field_name) {
+    return array('email' => '');
   }
 
   /**
@@ -147,6 +180,21 @@ class Email extends Field {
           $output[] = $value['email'];
         }
       }
+    }
+
+    return $output;
+  }
+
+  /**
+   * @param $values
+   *
+   * @return array
+   */
+  private static function formatValuesForInput($values) {
+    $output = array();
+
+    foreach ($values as $index => $value) {
+      $output[] = array('email' => $value);
     }
 
     return $output;

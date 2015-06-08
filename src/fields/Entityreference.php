@@ -14,19 +14,22 @@ use RedTest\core\Utils;
 class Entityreference extends Field {
 
   /**
-   * Fill generic file. Upload images.
+   * Fill autocomplete taxonomy term reference fields with random values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return mixed
    *   A path or an array of paths of images which are to be uploaded.
    */
-  public static function fillDefaultTaxonomyAutocompleteValues(
+  public static function fillTaxonomyAutocompleteRandomValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $vocabulary = '';
@@ -37,13 +40,22 @@ class Entityreference extends Field {
     }
 
     // Create new taxonomy terms in the specified vocabulary.
-    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase($vocabulary);
-    $terms = $vocabulary_class::createDefault($num);
+    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+        $vocabulary
+      );
+    $terms = $vocabulary_class::createRandom($num);
 
-    return self::fillTaxonomyAutocompleteValues($formObject, $field_name, $terms);
+    return self::fillTaxonomyAutocompleteValues(
+      $formObject,
+      $field_name,
+      $terms
+    );
   }
 
-  public static function fillDefaultOptionsButtonsValues(Form $formObject, $field_name) {
+  public static function fillOptionsButtonsRandomValues(
+    Form $formObject,
+    $field_name
+  ) {
     $num = 1;
     $target_entity_type = 'node';
     $target_bundles = array();
@@ -64,9 +76,11 @@ class Entityreference extends Field {
       }
       elseif ($target_entity_type == 'node') {
         $target_bundle = array_rand($target_bundles);
-        $class = "RedTest\\entities\\Node\\" . Utils::makeTitleCase($target_bundle);
+        $class = "RedTest\\entities\\Node\\" . Utils::makeTitleCase(
+            $target_bundle
+          );
       }
-      list($success, $object, $msg) = $class::createDefault();
+      list($success, $object, $msg) = $class::createRandom();
       if (!$success) {
         return array(
           FALSE,
@@ -82,14 +96,16 @@ class Entityreference extends Field {
   }
 
   /**
-   * Fills taxonomy term reference checkboxes field of a form with provided values.
+   * Fills taxonomy term reference checkboxes field of a form with provided
+   * values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
    * @param int|object|array $values
-   *   An integer taxonomy term id, a term object or an array of tids or term objects. Here are the acceptable formats:
+   *   An integer taxonomy term id, a term object or an array of tids or term
+   *   objects. Here are the acceptable formats:
    *   (a) 23
    *   (b) array(
    *         'tid' => 23,
@@ -131,7 +147,18 @@ class Entityreference extends Field {
    *
    * @return array
    */
-  public static function fillOptionsButtonsValues(Form $formObject, $field_name, $values) {
+  public static function fillOptionsButtonsValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      if (is_array($field_name)) {
+        $field_name = array_pop($field_name);
+      }
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $vocabulary = '';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -176,16 +203,24 @@ class Entityreference extends Field {
     $termObjects = array();
     foreach ($tids as $tid) {
       //$vocabulary = $terms[$tid]->vocabulary_machine_name;
-      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase($vocabulary);
+      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+          $vocabulary
+        );
       $termObjects[] = new $term_class($tid);
     }
 
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => drupal_map_assoc($tids)));
+    return $formObject->fillValues(
+      $field_name,
+      array(LANGUAGE_NONE => drupal_map_assoc($tids))
+    );
 
-    return array(TRUE, $termObjects, "");
+    //return array(TRUE, $termObjects, "");
   }
 
-  public static function fillDefaultOptionsSelectValues(Form $formObject, $field_name) {
+  public static function fillOptionsSelectRandomValues(
+    Form $formObject,
+    $field_name
+  ) {
     $num = 1;
     $vocabulary = '';
     if (method_exists($formObject, 'getEntityObject')) {
@@ -195,8 +230,10 @@ class Entityreference extends Field {
     }
 
     // Create new taxonomy terms in the specified vocabulary.
-    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase($vocabulary);
-    list($success, $termObjects, $msg) = $vocabulary_class::createDefault($num);
+    $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+        $vocabulary
+      );
+    list($success, $termObjects, $msg) = $vocabulary_class::createRandom($num);
     if (!$success) {
       return array(
         FALSE,
@@ -205,18 +242,24 @@ class Entityreference extends Field {
       );
     }
 
-    return self::fillOptionsSelectValues($formObject, $field_name, $termObjects);
+    return self::fillOptionsSelectValues(
+      $formObject,
+      $field_name,
+      $termObjects
+    );
   }
 
   /**
-   * Fills taxonomy term reference checkboxes field of a form with provided values.
+   * Fills taxonomy term reference checkboxes field of a form with provided
+   * values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
    * @param int|object|array $values
-   *   An integer taxonomy term id, a term object or an array of tids or term objects. Here are the acceptable formats:
+   *   An integer taxonomy term id, a term object or an array of tids or term
+   *   objects. Here are the acceptable formats:
    *   (a) 23
    *   (b) array(
    *         'tid' => 23,
@@ -258,7 +301,19 @@ class Entityreference extends Field {
    *
    * @return array
    */
-  public static function fillOptionsSelectValues(Form $formObject, $field_name, $values) {
+  public static function fillOptionsSelectValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
+    }
+
     $vocabulary = '';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -301,13 +356,12 @@ class Entityreference extends Field {
 
     $termObjects = array();
     foreach ($tids as $tid) {
-      //$vocabulary = $terms[$tid]->vocabulary_machine_name;
-      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase($vocabulary);
+      $term_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
+          $vocabulary
+        );
       $termObjects[] = new $term_class($tid);
     }
 
-    $formObject->setValues($field_name, array(LANGUAGE_NONE => $tids));
-
-    return array(TRUE, $termObjects, "");
+    return $formObject->fillValues($field_name, array(LANGUAGE_NONE => $tids));
   }
 }

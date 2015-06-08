@@ -38,8 +38,8 @@ class UserRegisterForm extends EntityForm {
    *   ID of the new user if registration was successful, an array of errors if not.
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Create new account')));
-    list($success, $msg) = parent::submit();
+    list($success, $msg) = $this->pressButton(t('Create new account'));
+    //list($success, $msg) = parent::submit();
     if (!$success) {
       return array(FALSE, NULL, $msg);
     }
@@ -49,6 +49,10 @@ class UserRegisterForm extends EntityForm {
     $uid = $form_state['user']->uid;
     $userObject = new User($uid);
     $this->setEntityObject($userObject);
+
+    // Store the created user in $entities so that it can later be deleted.
+    global $entities;
+    $entities['user'][$uid] = $userObject;
 
     return array(TRUE, $userObject, "");
   }

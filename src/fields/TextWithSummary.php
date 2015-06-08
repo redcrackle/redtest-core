@@ -15,12 +15,15 @@ use RedTest\core\entities\Entity;
 class TextWithSummary extends Text {
 
   /**
-   * Fills text area with summary field with default values.
+   * Fill text area with summary field with random long text with summary
+   * values.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -28,9 +31,10 @@ class TextWithSummary extends Text {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(
+  public static function fillRandomValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $display_summary = TRUE;
@@ -42,7 +46,8 @@ class TextWithSummary extends Text {
       $text_processing = $instance['settings']['text_processing'];
     }
 
-    $values = self::generateValues(
+    $field_class = get_called_class();
+    $values = $field_class::generateValues(
       $num,
       $text_processing,
       $display_summary
@@ -102,10 +107,12 @@ class TextWithSummary extends Text {
     $summary = '',
     $format = ''
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $defaults = array();
@@ -116,9 +123,26 @@ class TextWithSummary extends Text {
       $defaults['format'] = $format;
     }
 
-    return self::fillTextValues($formObject, $field_name, $values, $defaults);
+    $field_class = get_called_class();
+    return $field_class::fillTextValues(
+      $formObject,
+      $field_name,
+      $values,
+      $defaults
+    );
   }
 
+  /**
+   * Returns an empty field value.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param $field_name
+   *   Field name.
+   *
+   * @return array
+   *   An empty field value array.
+   */
   public static function getEmptyValue(Form $formObject, $field_name) {
     list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
     $display_summary = $instance['settings']['display_summary'];

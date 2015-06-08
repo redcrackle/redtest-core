@@ -15,19 +15,26 @@ use RedTest\core\entities\Entity;
 class File extends Field {
 
   /**
-   * Fill generic file. Upload images.
+   * Fill generic file field with random files.
    *
    * @param Form $formObject
    *   Form object.
    * @param string $field_name
    *   Field name.
+   * @param array $options
+   *   Options array.
    *
-   * @return mixed
-   *   A path or an array of paths of images which are to be uploaded.
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
    */
-  public static function fillDefaultFileGenericValues(
+  public static function fillRandomValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     $file_extensions = 'txt';
@@ -119,41 +126,72 @@ class File extends Field {
    * @return mixed $image_paths
    *   A path or an array of paths of images which are to be uploaded.
    */
-  public static function fillFileGenericValues(
-    Form $formObject,
-    $field_name,
-    $file_info
-  ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+  public static function fillValues(Form $formObject, $field_name, $file_info) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
-
-    $formObject->emptyField($field_name);
 
     $field_class = get_called_class();
 
-    $file_info = $field_class::normalizeInput($file_info);
+    $values = $field_class::normalizeInput($file_info);
 
-    $index = 0;
+    list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    $short_field_class = Utils::makeTitleCase($field['type']);
+    $field_class = "RedTest\\core\\fields\\" . $short_field_class;
+
+    $original_values = $formObject->getValues($field_name);
+    $original_values = !empty($original_values[LANGUAGE_NONE]) ? $original_values[LANGUAGE_NONE] : array();
+
+    $return = array();
     $input = array();
-    $output = array();
-    foreach ($file_info as $image_path) {
-      $file_temp = $field_class::saveFile($image_path);
-      $input[$index] = $field_class::createInput($file_temp, $image_path);
-      $output[$index] = $input[$index];
-      $output[$index]['uri'] = $file_temp->uri;
+    for ($i = 0; $i < sizeof($original_values); $i++) {
+      if ($original_values[$i]['fid']) {
+        list($success, $msg) = $formObject->pressButton(
+          $field_name . '_' . LANGUAGE_NONE . '_0_remove_button',
+          array('ajax' => TRUE)
+        );
+        if (!$success) {
+          return array(FALSE, array(), $msg);
+        }
+      }
+    }
+    for ($i = 0; $i < sizeof($values); $i++) {
+      unset($_SESSION['messages']['error']);
+      $file_temp = $field_class::saveFile($values[$i]);
+      if (!$file_temp) {
+        $errors = $_SESSION['messages']['error'];
+        $errors[] = 'Make sure that the destination directory, i.e. sites/default/files, is writable by PHP CLI.';
+        $formObject->setErrors($errors);
+        return array(FALSE, $return, implode(", ", $formObject->getErrors()));
+      }
+
+      $input[$i] = $field_class::createInput($file_temp, $values[$i]);
+      $return[$i] = $input[$i];
+      $return[$i]['uri'] = $file_temp->uri;
       $triggering_element_name = $field_class::getTriggeringElementName(
         $field_name,
-        $index
+        $i
       );
-      $formObject->addMore($field_name, $input, $triggering_element_name);
 
-      $index++;
+      list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      if (!$success) {
+        return array(FALSE, Utils::normalize($return), $msg);
+      }
+
+      list($success, $msg) = $formObject->pressButton(
+        $triggering_element_name,
+        array('ajax' => TRUE)
+      );
+      if (!$success) {
+        return array(FALSE, Utils::normalize($return), $msg);
+      }
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return array(TRUE, Utils::normalize($return), "");
   }
 
   /**
@@ -252,11 +290,19 @@ class File extends Field {
     );
     $scheme = !empty($file_info['scheme']) ? $file_info['scheme'] : 'public';
     $file_temp = file_get_contents($file_info['uri']);
+    // We add a random string in front of the file name to avoid race condition
+    // in file upload with the same name in case we are running multiple
+    // concurrent PHPUnit processes.
     $file_temp = file_save_data(
       $file_temp,
-      $scheme . '://' . $filename,
+      $scheme . '://' . Utils::getRandomString(20) . '_' . $filename,
       FILE_EXISTS_RENAME
     );
+
+    if (!$file_temp) {
+      return FALSE;
+    }
+
     // Set file status to temporary otherwise there is validation error.
     $file_temp->status = 0;
     file_save($file_temp);
@@ -301,12 +347,16 @@ class File extends Field {
    *   Triggering element name.
    */
   public static function getTriggeringElementName($field_name, $index) {
-    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . ($index - 1) . '_upload_button';
+    $triggering_element_name = $field_name . '_' . LANGUAGE_NONE . '_' . $index . '_upload_button';
 
     return $triggering_element_name;
   }
 
-  public static function getFileGenericValues(Entity $entityObject, $field_name, $post_process = FALSE) {
+  public static function getFileGenericValues(
+    Entity $entityObject,
+    $field_name,
+    $post_process = FALSE
+  ) {
     $field = $entityObject->getFieldItems($field_name);
     if (!$post_process) {
       return $field;
@@ -320,16 +370,23 @@ class File extends Field {
     return Utils::normalize($output);
   }
 
-  public static function checkFileGenericValues(Entity $entity, $field_name, $values) {
+  public static function checkFileGenericValues(
+    Entity $entity,
+    $field_name,
+    $values
+  ) {
     $function = "get" . Utils::makeTitleCase($field_name) . "Values";
     $actual_values = $entity->$function();
 
-    return self::compareFileGenericValues($actual_values, $values);
+    $field_class = get_called_class();
+
+    return $field_class::compareFileGenericValues($actual_values, $values);
   }
 
   public static function compareFileGenericValues($actual_values, $values) {
-    $values = self::normalizeInputForCompare($values);
-    $actual_values = self::normalizeInputForCompare($actual_values);
+    $field_class = get_called_class();
+    $values = $field_class::normalizeInputForCompare($values);
+    $actual_values = $field_class::normalizeInputForCompare($actual_values);
 
     if (sizeof($actual_values) != sizeof($values)) {
       return array(FALSE, "Number of values do not match.");

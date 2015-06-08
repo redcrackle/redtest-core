@@ -27,9 +27,17 @@ class Utils {
    *   String in title case format.
    */
   public static function makeTitleCase($input) {
+    static $map;
+
+    if (isset($map[$input])) {
+      return $map[$input];
+    }
+
     $output = str_replace("_", " ", strtolower($input));
     $output = ucwords($output);
     $output = str_replace(" ", "", $output);
+
+    $map[$input] = $output;
 
     return $output;
   }
@@ -45,20 +53,28 @@ class Utils {
    *   String in snake case format.
    */
   public static function makeSnakeCase($input) {
-    $input = strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
+    static $map;
+
+    if (isset($map[$input])) {
+      return $map[$input];
+    }
+
+    $input_mod = strtolower(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $input));
 
     // Insert _ before and after a numeric string unless it's at the start or end.
     $output = '';
     $is_numeric = FALSE;
-    for ($pos = 0; $pos < strlen($input); $pos++) {
-      if (is_numeric($input[$pos]) && !$is_numeric) {
+    for ($pos = 0; $pos < strlen($input_mod); $pos++) {
+      if (is_numeric($input_mod[$pos]) && !$is_numeric) {
         $output .= '_';
       }
-      elseif (!is_numeric($input[$pos]) && $is_numeric) {
+      elseif (!is_numeric($input_mod[$pos]) && $is_numeric) {
         $output .= '_';
       }
-      $output .= $input[$pos];
+      $output .= $input_mod[$pos];
     }
+
+    $map[$input] = $output;
 
     return $output;
   }
@@ -80,7 +96,10 @@ class Utils {
       return NULL;
     }
 
-    if (class_exists('\Faker\Factory')) {
+    // Do not use Faker for generating a random string since it doesn't give
+    // enough unique values and keys are generally used as unique indexes, for
+    // e.g. in username.
+    /*if (class_exists('\Faker\Factory')) {
       $faker = \Faker\Factory::create();
 
       if ($num == 1) {
@@ -89,7 +108,7 @@ class Utils {
       else {
         return $faker->words($num);
       }
-    }
+    }*/
 
     $string_array = array();
     foreach (range(0, $num - 1) as $index) {
@@ -133,14 +152,17 @@ class Utils {
       if (!is_null($faker)) {
         $text_array[] = $faker->text($length);
       }
+      elseif ($length <= 2) {
+        $text_array[] = static::getRandomString($length);
+      }
       else {
-        $text_array[] = substr(
-          str_shuffle(
-            " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-          ),
-          0,
-          $length
-        );
+        $text_array[] = static::getRandomString(1) . substr(
+            str_shuffle(
+              "          0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            ),
+            0,
+            $length - 2
+          ) . static::getRandomString(1);
       }
     }
 
@@ -218,7 +240,13 @@ class Utils {
       else {
         $paths = Utils::getRandomString(8, $parts);
       }
-      $urls[] = implode("/", $paths);
+
+      if (is_string($paths)) {
+        $urls[] = $paths;
+      }
+      elseif (is_array($paths)) {
+        $urls[] = implode("/", $paths);
+      }
     }
     else {
       foreach (range(0, $num - 1) as $index) {
@@ -386,6 +414,11 @@ class Utils {
             taxonomy_term_delete($entity_id);
           }
         }
+        elseif ($entity_type == 'comment') {
+          foreach ($entity_ids as $entity_id) {
+            comment_delete($entity_id);
+          }
+        }
 
         return FALSE;
       }
@@ -401,14 +434,17 @@ class Utils {
     if (!empty($entities)) {
       foreach ($entities as $key => $val) {
         foreach ($val as $entity_id => $object) {
-          $object->delete();
+          if ($object->deleteProgrammatically()) {
+            unset($entities[$key][$entity_id]);
+          }
         }
       }
     }
 
-    self::deleteEntities('node', 1);
+    /*self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1090);
+    self::deleteEntities('user', 30);
+    self::deleteEntities('comment', 0);*/
   }
 
   /**
@@ -422,8 +458,13 @@ class Utils {
    *   First value of the input array or the full input array.
    */
   public static function normalize($input) {
-    if (is_array($input) && sizeof($input) == 1) {
-      return array_shift($input);
+    if (is_array($input)) {
+      if (sizeof($input) === 0) {
+        return '';
+      }
+      elseif (sizeof($input) == 1) {
+        return array_shift($input);
+      }
     }
 
     return $input;
@@ -676,5 +717,71 @@ class Utils {
     }
 
     return array_values($sorted_array);
+  }
+
+  public static function formatDate($date, $format) {
+    if (is_null($date)) {
+      return NULL;
+    }
+
+    if (is_string($date)) {
+      $date = strtotime($date);
+    }
+    if ($format != 'integer' && is_numeric($date)) {
+      $date = format_date($date, 'custom', $format);
+    }
+
+    return $date;
+  }
+
+  /**
+   * Whether string starts with a pattern.
+   *
+   * @param string $haystack
+   *   String to be matched.
+   * @param string $needle
+   *   Pattern.
+   *
+   * @return bool
+   *   TRUE if string starts with the pattern and FALSE otherwise.
+   */
+  public static function startsWith($haystack, $needle) {
+    return (strpos($haystack, $needle) === 0);
+  }
+
+  /**
+   * Whether string ends with a pattern.
+   *
+   * @param string $haystack
+   *   String to be matched.
+   * @param string $needle
+   *   Pattern.
+   *
+   * @return bool
+   *   TRUE if string ends with the pattern and FALSE otherwise.
+   */
+  public static function endsWith($haystack, $needle) {
+    return (strrpos($haystack, $needle) == (strlen($haystack) - strlen(
+          $needle
+        )));
+  }
+
+  /**
+   * Returns the last element in an array. if input is a string, then the same
+   * string is returned.
+   *
+   * @param string|array $input
+   *   Input string or array.
+   *
+   * @return mixed
+   *   If input is string, then the same string is returned. If input is an
+   *   array, then last value of the array is returned.
+   */
+  public static function getLeaf($input) {
+    if (is_string($input)) {
+      return $input;
+    }
+
+    return array_pop($input);
   }
 }

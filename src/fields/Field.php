@@ -117,14 +117,120 @@ class Field {
     }
   }
 
+  public static function processBeforeCreateRandom(
+    Form $formObject,
+    $field_name,
+    &$options
+  ) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'BeforeCreateRandom';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function(
+        $formObject,
+        $field_name,
+        $options
+      );
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
+  public static function processBeforeSubmit(Form $formObject, $field_name) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'BeforeSubmit';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function($formObject, $field_name);
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
   /**
-   * Fills in default values in the specified field. Internally it calls the
+   * @param \RedTest\core\forms\Form $formObject
+   * @param $field_name
+   *
+   * @return array
+   */
+  public static function processAfterSubmit(Form $formObject, $field_name) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+    $function = 'process' . $widget_type . 'AfterSubmit';
+    if (method_exists($field_class, $function)) {
+      list($success, $msg) = $field_class::$function($formObject, $field_name);
+      if (!$success) {
+        return array(FALSE, $msg);
+      }
+    }
+    return array(TRUE, "");
+  }
+
+  /**
+   * Returns whether the provided field needs to be filled in the form. If the
+   * field is in skip array, then this function returns FALSE. If the field is
+   * not required and required_fields_only is set to TRUE, then this function
+   * returns FALSE. Otherwise the function returns TRUE.
+   *
+   * @param \RedTest\core\forms\Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array. The only 2 keys that are used here are
+   *   "required_fields_only" and "skip".
+   *
+   * @return bool
+   *   TRUE if the field needs to be filled and FALSE otherwise.
+   */
+  public static function isToBeFilled(Form $formObject, $field_name, $options) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
+
+    $required_function_name = 'is' . Utils::makeTitleCase(
+        $field_name
+      ) . 'Required';
+    if ($options['required_fields_only'] && !$formObject->$required_function_name(
+      )
+    ) {
+      // Check if the field is required. We use '#required' key in form array
+      // since it can be set or unset using custom code.
+      // Field is not required. There is no need to fill this field.
+      return FALSE;
+    }
+
+    $options += array('skip' => array());
+    if (in_array($field_name, $options['skip'])) {
+      // Field needs to be skipped.
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * Fills in random values in the specified field. Internally it calls the
    * class of the individual field type to fill the default values.
    *
    * @param Form $formObject
    *   Form object.
-   * @param string $field_name
-   *   Field name.
+   * @param string|array $field_name
+   *   Field name if it is present at top-level form element. If it is not at
+   *   the top-level form element, then provide an array.
+   * @param array $options
+   *   Options array.
    *
    * @return array
    *   An array with 3 values:
@@ -133,20 +239,26 @@ class Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+  public static function fillRandomValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
+    list($field_class, $widget_type) = Field::getFieldClass(
+      $formObject,
+      $field_name
+    );
 
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+    if (!empty($field_class)) {
+      $function = 'fill' . $widget_type . 'RandomValues';
 
-      $function = 'fillDefault' . Utils::makeTitleCase(
-          $instance['widget']['type']
-        ) . 'Values';
-
-      return $field_class::$function($formObject, $field_name);
+      return $field_class::$function($formObject, $field_name, $options);
     }
+
+    if (is_array($field_name)) {
+      $field_name = array_pop($field_name);
+    }
+    return array(FALSE, "", "Field or property $field_name not found.");
   }
 
   /**
@@ -167,18 +279,107 @@ class Field {
    *   $success is TRUE.
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
-    if (method_exists($formObject, 'getEntityObject')) {
-      // This is an entity form.
-      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    list($field_class, $widget_type) = Field::getFieldClass(
+      $formObject,
+      $field_name
+    );
 
-      $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
-
-      $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+    if (!empty($field_class)) {
       $function = 'fill' . $widget_type . 'Values';
 
       return $field_class::$function($formObject, $field_name, $values);
     }
+
+    // $field_name is a property.
+    return $formObject->fillValues($field_name, $values);
+  }
+
+  /**
+   * Returns class and widget type of a field.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string|array $field_name
+   *   Field name if the field is at top level of the form, otherwise an array
+   *   with parents and field name.
+   *
+   * @return array
+   *   An array with two values:
+   *   (a) Field class
+   *   (b) Widget type in Title Case.
+   */
+  public static function getFieldClass(Form $formObject, $field_name) {
+    $field_class = '';
+    $widget_type = '';
+
+    if (is_string($field_name) && method_exists(
+        $formObject,
+        'getEntityObject'
+      )
+    ) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+
+      if (!is_null($field) && !is_null($instance)) {
+        $short_field_class = Utils::makeTitleCase($field['type']);
+        $field_class = "RedTest\\core\\fields\\" . $short_field_class;
+
+        $widget_type = Utils::makeTitleCase($instance['widget']['type']);
+
+        return array($field_class, $widget_type);
+      }
+    }
+
+    // Code execution came here that means that either the form is not an
+    // EntityForm or the field name is a property and is not really a field.
+    $array = is_array($field_name) ? $field_name : array($field_name);
+    $key_exists = NULL;
+    $form = $formObject->getForm();
+    $value = drupal_array_get_nested_value($form, $array, $key_exists);
+    if ($key_exists) {
+      $type = $value['#type'];
+      switch ($type) {
+        case 'textfield':
+          $field_class = 'Text';
+          break;
+      }
+
+      if (!empty($field_class)) {
+        $field_class = "RedTest\\core\\fields\\" . $field_class;
+      }
+
+      return array($field_class, $widget_type);
+    }
+  }
+
+  /**
+   * Returns whether a field is a CCK field attached to an entity form.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   *
+   * @return bool
+   *   TRUE if the field is a CCK field attached to an entity form, FALSE
+   *   otherwise.
+   */
+  public static function isCckField(Form $formObject, $field_name) {
+    if (!is_string($field_name)) {
+      // $field_name is not a string (could be an array) so it can not be a CCK field.
+      return FALSE;
+    }
+
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+
+      if (!is_null($field) && !is_null($instance)) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
   public static function checkValues(
@@ -204,7 +405,22 @@ class Field {
       $function = "get" . Utils::makeTitleCase($field_name) . "Values";
       $actual_values = $entityObject->$function();
 
-      return $field_class::compareValues($actual_values, $values, $field, $instance);
+      $function = "compare" . $widget_type . "Values";
+      if (method_exists($field_class, $function)) {
+        return $field_class::$function(
+          $actual_values,
+          $values,
+          $field,
+          $instance
+        );
+      }
+
+      return $field_class::compareValues(
+        $actual_values,
+        $values,
+        $field,
+        $instance
+      );
     }
   }
 
@@ -232,7 +448,19 @@ class Field {
     }
   }
 
-  public static function getTriggeringElementName($field_name) {
+  public static function getTriggeringElementName($field_name, $index) {
     return $field_name . '_add_more';
+  }
+
+  public static function hasFieldAccess(Form $formObject, $field_name) {
+    if (is_string($field_name)) {
+      $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+      $access = $formObject->$access_function();
+    }
+    else {
+      $access = $formObject->hasFieldAccess($field_name);
+    }
+
+    return $access;
   }
 }

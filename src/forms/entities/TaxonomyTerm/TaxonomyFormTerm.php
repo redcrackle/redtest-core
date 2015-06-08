@@ -8,14 +8,31 @@
 
 namespace RedTest\core\forms\entities\TaxonomyTerm;
 
+use RedTest\core\entities\TaxonomyTerm;
 use RedTest\core\forms\entities\EntityForm;
 use RedTest\core\Utils;
 
+/**
+ * Class TaxonomyFormTerm
+ *
+ * @package RedTest\core\forms\entities\TaxonomyTerm
+ */
 class TaxonomyFormTerm extends EntityForm {
 
   private $vocabulary;
 
-  function __construct($tid = NULL) {
+  /**
+   * Default constructor of the taxonomy term form. You should not be invoking
+   * TaxonomyFormTerm directly. Create a form for your vocabulary that extends
+   * TaxonomyFormTerm and invoke that. The access level has to be kept public
+   * here because access level of parent class has to be match that of child
+   * class.
+   *
+   * @param null|int $tid
+   *   Taxonomy term id if a taxonomy term edit form is to be loaded. If a
+   *   taxonomy term add form is to be created, then keep it empty.
+   */
+  public function __construct($tid = NULL) {
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
     $class_shortname = $class->getShortName();
@@ -30,8 +47,11 @@ class TaxonomyFormTerm extends EntityForm {
         $this->vocabulary = taxonomy_vocabulary_machine_name_load(
           $vocabulary_name
         );
-        $this->setEntityObject($term);
-        module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+        $base_path = "RedTest\\entities\\TaxonomyTerm\\";
+        $class_fullname = $base_path . substr($class_shortname, 0, -4);
+        $termObject = new $class_fullname($tid);
+        $this->setEntityObject($termObject);
+        $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
         parent::__construct('taxonomy_form_term', $term, $this->vocabulary);
 
         return;
@@ -51,7 +71,7 @@ class TaxonomyFormTerm extends EntityForm {
 
     // tid is not provided or is not numeric.
     $this->vocabulary = taxonomy_vocabulary_machine_name_load($vocabulary_name);
-    module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+    $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
     parent::__construct('taxonomy_form_term', array(), $this->vocabulary);
   }
 
@@ -60,50 +80,98 @@ class TaxonomyFormTerm extends EntityForm {
    * this function and are different from Drupal's default values for the
    * fields.
    *
-   * @param array $skip
-   *   An array of field or property names that should not be filled with
-   *   default values.
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
    *
-   * @internal param array $entities An array of entities passed by reference.*
-   *     An array of entities passed by reference.
    * @return array
-   *   An array consisting of three values: TRUE (which means that the function
-   *   executed without any error), an array of fields which were modified and
-   *   an empty message.
+   *   An array with the following values:
+   *   (1) $success: TRUE if fields were filled successfully and FALSE
+   *   otherwise.
+   *   (2) $fields: An associative array of field values that are to be filled
+   *   keyed by field name.
+   *   (3) $msg: Error message if $success is FALSE, and an empty string
+   *   otherwise.
    */
-  public function fillDefaultValues($skip = array()) {
-    list($success, $fields, $msg) = parent::fillDefaultValues($skip);
+  public function fillRandomValues($options = array()) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
+
+    list($success, $fields, $msg) = parent::fillRandomValues($options);
     if (!$success) {
       return array(FALSE, $fields, $msg);
     }
 
-    if (!in_array('name', $skip)) {
-      $name = Utils::getRandomText(10);
-      $this->fillNameValues($name);
-      $fields['name'] = $name;
+    if (!$options['required_fields_only'] || $this->isDescriptionRequired()) {
+      // Check if the field is required. We use '#required' key in form array
+      // since it can be set or unset using custom code.
+      // Field is required or we need to fill all fields.
+      if (!in_array('description', $options['skip'])) {
+        $description = array(
+          'value' => Utils::getRandomText(100),
+          'format' => 'plain_text',
+        );
+        $this->fillDescriptionValues($description);
+        $fields['description'] = $description['value'];
+        $fields['format'] = $description['format'];
+      }
     }
 
-    if (!in_array('description', $skip)) {
-      $description = Utils::getRandomText(100);
-      $this->fillDescriptionValues($description);
-      $fields['description'] = $description;
+    // Fill name at the end so that there is less chance of getting non-unique
+    // value in the database.
+    if (!in_array('name', $options['skip'])) {
+      // Make sure that taxonomy term name is not repeated so that deleting
+      // entities at the end is easier.
+      $name = TaxonomyTerm::getUniqueName($this->vocabulary->machine_name);
+      $this->fillNameValues($name);
+      $fields['name'] = $name;
     }
 
     return array(TRUE, $fields, "");
   }
 
   /**
-   * This function is used for submit Taxonomy form.
+   * This function is used to submit Taxonomy form.
    *
-   * @return this will return $form_state is success else error if not   *
+   * @return array
    */
   public function submit() {
-    $this->fillValues(array('op' => t('Save')));
+    //$this->fillValues(array('op' => t('Save')));
     $weight = $this->getValues('weight');
     if (empty($weight)) {
-      $this->fillValues(array('weight' => 0));
+      $this->fillWeightValues(0);
+      //$this->fillValues(, array('weight' => 0));
     }
-    $output = parent::submit(array(), $this->vocabulary);
+    $parent = $this->getValues('parent');
+    if (empty($parent)) {
+      $this->fillParentValues(array(0 => "0"));
+    }
+
+    if (is_null($this->getEntityObject()->getId())) {
+      list($success, $msg) = $this->pressButton(
+        t('Save'),
+        array(),
+        array(),
+        $this->vocabulary
+      );
+    }
+    else {
+      list($success, $msg) = $this->pressButton(
+        t('Save'),
+        array(),
+        $this->getEntityObject()->getEntity(),
+        NULL
+      );
+    }
+
+    //$output = parent::submit(array(), $this->vocabulary);
+    if (!$success) {
+      return array(FALSE, NULL, $msg);
+    }
 
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
@@ -116,7 +184,11 @@ class TaxonomyFormTerm extends EntityForm {
     $this->setEntityObject($termObject);
     $this->getEntityObject()->reload();
 
-    return $output;
+    // Store the created user in $entities so that it can later be deleted.
+    global $entities;
+    $entities['taxonomy_term'][$termObject->getId()] = $termObject;
+
+    return array(TRUE, $termObject, "");
   }
 
   /**
@@ -138,4 +210,43 @@ class TaxonomyFormTerm extends EntityForm {
   public function fillTermVocabVidField($value) {
     $this->fillTermVocabVidWidgetField($value);
   }
-} 
+
+  /**
+   * Delete the taxonomy term. This is a multi-step form. This action involves
+   * first pressing the delete button and then confirming the action.
+   *
+   * @return array
+   *   An array with two values:
+   *   (1) bool $success: TRUE if deletion was successful and FALSE otherwise.
+   *   (2) string $msg: An error message if deletion failed.
+   */
+  public function delete() {
+    //$this->fillOpValues(t('Delete'));
+    list($success, $msg) = $this->pressButton(
+      t('Delete'),
+      array(),
+      $this->getEntityObject()->getEntity(),
+      NULL
+    );
+    if (!$success) {
+      return array(FALSE, $msg);
+    }
+
+    //$this->fillOpValues(t('Delete'));
+    $this->fillConfirmValues("1");
+    list($success, $msg) = $this->pressButton(
+      t('Delete'),
+      array(),
+      $this->getEntityObject()->getEntity(),
+      NULL
+    );
+    if (!$success) {
+      return array(FALSE, $msg);
+    }
+
+    global $entities;
+    unset($entities['taxonomy_term'][$this->getEntityObject()->getId()]);
+
+    return array(TRUE, $msg);
+  }
+}

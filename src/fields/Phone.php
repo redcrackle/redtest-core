@@ -13,9 +13,27 @@ use RedTest\core\Utils;
 
 class Phone extends Field {
 
-  public static function fillDefaultPhoneTextfieldValues(
+  /**
+   * Fill random phone number values in the phone field.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
+  public static function fillPhoneTextfieldRandomValues(
     Form $formObject,
-    $field_name
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
@@ -41,10 +59,12 @@ class Phone extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -59,7 +79,7 @@ class Phone extends Field {
       $input[$index] = array('email' => $value);
       $triggering_element_name = $field_name . '_add_more';
       //$triggering_element_value = 'Add another item';
-      $formObject->addMore($field_name, $input, $triggering_element_name);
+      $formObject->pressButton($triggering_element_name, array('ajax' => TRUE));
       $index++;
     }
 

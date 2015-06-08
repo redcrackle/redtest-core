@@ -14,10 +14,24 @@ use RedTest\core\entities\Entity;
 
 class Image extends File {
 
-  public static function fillDefaultImageImageValues(
-    Form $formObject,
-    $field_name
-  ) {
+  /**
+   * Fill image field with random images.
+   *
+   * @param Form $formObject
+   *   Form object.
+   * @param string $field_name
+   *   Field name.
+   * @param array $options
+   *   Options array.
+   *
+   * @return array
+   *   An array with 3 values:
+   *   (1) $success: Whether default values could be filled in the field.
+   *   (2) $values: Values that were filled for the field.
+   *   (3) $msg: Message in case there is an error. This will be empty if
+   *   $success is TRUE.
+   */
+  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
     $num = 1;
     $show_title = FALSE;
     $show_alt = FALSE;
@@ -55,7 +69,10 @@ class Image extends File {
     foreach ($files as $uri => $file) {
       $image_info = image_get_info($uri);
 
-      if (!empty($max_filesize) && $image_info['file_size'] > $max_filesize) {
+      if (!empty($max_filesize) && $image_info['file_size'] > parse_size(
+          $max_filesize
+        )
+      ) {
         continue;
       }
 
@@ -149,7 +166,7 @@ class Image extends File {
     $field_name,
     $image_paths
   ) {
-    return parent::fillFileGenericValues($formObject, $field_name, $image_paths);
+    return parent::fillValues($formObject, $field_name, $image_paths);
   }
 
   /**
@@ -181,15 +198,29 @@ class Image extends File {
     return $input;
   }
 
-  public static function getImageImageValues(Entity $entityObject, $field_name, $post_process = FALSE) {
-    return parent::getFileGenericValues($entityObject, $field_name, $post_process);
+  public static function getImageImageValues(
+    Entity $entityObject,
+    $field_name,
+    $post_process = FALSE
+  ) {
+    return parent::getFileGenericValues(
+      $entityObject,
+      $field_name,
+      $post_process
+    );
   }
 
-  public static function checkImageImageValues(Entity $entity, $field_name, $values) {
+  public static function checkImageImageValues(
+    Entity $entity,
+    $field_name,
+    $values
+  ) {
     $function = "get" . Utils::makeTitleCase($field_name) . "Values";
     $actual_values = $entity->$function();
 
-    return self::compareImageImageValues($actual_values, $values);
+    $field_class = get_called_class();
+
+    return $field_class::compareImageImageValues($actual_values, $values);
   }
 
   public static function compareImageImageValues($actual_values, $values) {
