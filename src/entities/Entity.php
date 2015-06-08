@@ -35,6 +35,16 @@ abstract class Entity {
   private $entity_type;
 
   /**
+   * @var bool
+   */
+  private $initialized;
+
+  /**
+   * @var array|string
+   */
+  private $errors;
+
+  /**
    * Prevent an object from being constructed.
    *
    * @param object $entity
@@ -43,6 +53,54 @@ abstract class Entity {
   protected function __construct($entity) {
     $this->entity = $entity;
     $this->entity_type = $this->getEntityType();
+    $this->setInitialized(TRUE);
+  }
+
+  /**
+   * Returns the $initialized variable.
+   *
+   * @return bool
+   *   Initialized variable.
+   */
+  public function getInitialized() {
+    return $this->initialized;
+  }
+
+  /**
+   * Sets the initialized variable.
+   *
+   * @param $initialized
+   *   Initialized variable.
+   */
+  public function setInitialized($initialized) {
+    $this->initialized = $initialized;
+  }
+
+  /**
+   * Returns an array of errors.
+   *
+   * @return array|string
+   *   Array of errors.
+   */
+  public function getErrors() {
+    return $this->errors;
+  }
+
+  /**
+   * Set errors array. This is needed is a field wants to set an error.
+   *
+   * @param array|string $errors
+   *   An array of errors.
+   */
+  public function setErrors($errors) {
+    $this->errors = $errors;
+  }
+
+  /**
+   * Clear errors from a form.
+   */
+  public function clearErrors() {
+    unset($this->errors);
   }
 
   /**
@@ -326,6 +384,9 @@ abstract class Entity {
     }
     elseif ($entity_type == 'node') {
       return node_access($op, $this->getEntity());
+    }
+    elseif ($entity_type == 'comment' && $op == 'update') {
+      return comment_access('edit', $this->getEntity());
     }
     elseif (($info = entity_get_info(
       )) && isset($info[$entity_type]['access callback'])
@@ -1438,6 +1499,9 @@ abstract class Entity {
     for ($i = 0; $i < $num; $i++) {
       // Instantiate the form class.
       $classForm = new $formClass();
+      if (!$classForm->getInitialized()) {
+        return array(FALSE, $output, $classForm->getErrors());
+      }
 
       // Fill default values in the form. We don't check whether the created
       // entity has the correct field since some custom function could be

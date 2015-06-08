@@ -73,10 +73,12 @@ class NumberInteger extends Number {
    *   $success is TRUE.
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $field_class = get_called_class();

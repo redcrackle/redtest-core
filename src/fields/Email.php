@@ -29,7 +29,11 @@ class Email extends Field {
    *   (2) $values: Values that were filled.
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
-  public static function fillDefaultValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillDefaultValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -62,10 +66,12 @@ class Email extends Field {
    *   (3) $msg: Error message if $success is FALSE and empty otherwise.
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $field_class = get_called_class();
@@ -73,7 +79,10 @@ class Email extends Field {
     $values = $field_class::normalizeInputForCompare($values);
     $values = $field_class::formatValuesForInput($values);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $values);
+    list($success, $return, $msg) = $formObject->fillMultiValued(
+      $field_name,
+      $values
+    );
     if (!$success) {
       return array(FALSE, Utils::normalize($return), $msg);
     }

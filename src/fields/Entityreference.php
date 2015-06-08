@@ -134,6 +134,13 @@ class Entityreference extends Field {
    * @return array
    */
   public static function fillOptionsButtonsValues(Form $formObject, $field_name, $values) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      if (is_array($field_name)) {
+        $field_name = array_pop($field_name);
+      }
+      return array(FALSE, "", "Field $field_name is not accessible.");
+    }
+
     $vocabulary = '';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
@@ -261,6 +268,14 @@ class Entityreference extends Field {
    * @return array
    */
   public static function fillOptionsSelectValues(Form $formObject, $field_name, $values) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
+    }
+
     $vocabulary = '';
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.

@@ -414,6 +414,11 @@ class Utils {
             taxonomy_term_delete($entity_id);
           }
         }
+        elseif ($entity_type == 'comment') {
+          foreach ($entity_ids as $entity_id) {
+            comment_delete($entity_id);
+          }
+        }
 
         return FALSE;
       }
@@ -438,7 +443,8 @@ class Utils {
 
     /*self::deleteEntities('node', 1);
     self::deleteEntities('taxonomy_term', 0);
-    self::deleteEntities('user', 1090);*/
+    self::deleteEntities('user', 30);
+    self::deleteEntities('comment', 0);*/
   }
 
   /**
@@ -758,5 +764,24 @@ class Utils {
     return (strrpos($haystack, $needle) == (strlen($haystack) - strlen(
           $needle
         )));
+  }
+
+  /**
+   * Returns the last element in an array. if input is a string, then the same
+   * string is returned.
+   *
+   * @param string|array $input
+   *   Input string or array.
+   *
+   * @return mixed
+   *   If input is string, then the same string is returned. If input is an
+   *   array, then last value of the array is returned.
+   */
+  public static function getLeaf($input) {
+    if (is_string($input)) {
+      return $input;
+    }
+
+    return array_pop($input);
   }
 }

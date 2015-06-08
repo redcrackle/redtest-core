@@ -129,7 +129,7 @@ class NodeForm extends EntityForm {
       $this->fillTitleValues($fields['title']);
     }
 
-    if ($this->hasAccess(
+    if ($this->hasFieldAccess(
         array('options', 'status')
       ) && isset($options['status'])
     ) {
@@ -151,7 +151,7 @@ class NodeForm extends EntityForm {
       }
     }
 
-    if ($this->hasAccess(
+    if ($this->hasFieldAccess(
         array('revision_information', 'revision')
       ) && isset($options['revision'])
     ) {
@@ -171,7 +171,7 @@ class NodeForm extends EntityForm {
       if (!is_null($revision)) {
         $this->fillRevisionValues($revision);
         $fields['revision'] = $revision;
-        if ($revision && $this->hasAccess(
+        if ($revision && $this->hasFieldAccess(
             array('revision_information', 'log')
           ) && isset($options['revision_log'])
         ) {
@@ -196,7 +196,7 @@ class NodeForm extends EntityForm {
       }
     }
 
-    if ($this->hasAccess(
+    if ($this->hasFieldAccess(
         array('author', 'name')
       ) && isset($options['change_author']) && $options['change_author']
     ) {
@@ -216,7 +216,7 @@ class NodeForm extends EntityForm {
       $fields['name'] = $name;
     }
 
-    if ($this->hasAccess(
+    if ($this->hasFieldAccess(
         array('author', 'date')
       ) && isset($options['change_published_date']) && $options['change_published_date']
     ) {

@@ -134,10 +134,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -215,10 +217,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -250,10 +254,12 @@ class TaxonomyTermReference extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);
@@ -534,7 +540,7 @@ class TaxonomyTermReference extends Field {
           // We are assuming that there will be only one term with the same name
           // in a given vocabulary.
           if (!sizeof($terms)) {
-            if (!in_array($term_name, self::$termNames)) {
+            if (is_null(self::$termNames) || !in_array($term_name, self::$termNames)) {
               self::$termNames[] = $term_name;
             }
           }

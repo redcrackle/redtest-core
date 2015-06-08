@@ -59,10 +59,12 @@ class Phone extends Field {
     $field_name,
     $values
   ) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(FALSE, "", "Field $field_name is not accessible.");
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return array(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
     }
 
     $formObject->emptyField($field_name);

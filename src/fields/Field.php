@@ -194,6 +194,11 @@ class Field {
    *   TRUE if the field needs to be filled and FALSE otherwise.
    */
   public static function isToBeFilled(Form $formObject, $field_name, $options) {
+    $options += array(
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
+
     $required_function_name = 'is' . Utils::makeTitleCase(
         $field_name
       ) . 'Required';
@@ -360,6 +365,11 @@ class Field {
    *   otherwise.
    */
   public static function isCckField(Form $formObject, $field_name) {
+    if (!is_string($field_name)) {
+      // $field_name is not a string (could be an array) so it can not be a CCK field.
+      return FALSE;
+    }
+
     if (method_exists($formObject, 'getEntityObject')) {
       // This is an entity form.
       list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
@@ -440,5 +450,17 @@ class Field {
 
   public static function getTriggeringElementName($field_name, $index) {
     return $field_name . '_add_more';
+  }
+
+  public static function hasFieldAccess(Form $formObject, $field_name) {
+    if (is_string($field_name)) {
+      $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
+      $access = $formObject->$access_function();
+    }
+    else {
+      $access = $formObject->hasFieldAccess($field_name);
+    }
+
+    return $access;
   }
 }

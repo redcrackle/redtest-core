@@ -73,7 +73,9 @@ abstract class EntityForm extends Form {
       $required_function_name = 'is' . Utils::makeTitleCase(
           $field_name
         ) . 'Required';
-      if ($options['required_fields_only'] && !$this->$required_function_name()
+      if ($options['required_fields_only'] && !$this->$required_function_name(
+          TRUE
+        )
       ) {
         // Check if the field is required. We use '#required' key in form array
         // since it can be set or unset using custom code.

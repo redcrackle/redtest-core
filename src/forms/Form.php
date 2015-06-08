@@ -11,12 +11,37 @@ namespace RedTest\core\forms;
 use RedTest\core\Utils;
 use RedTest\core\fields\Field;
 
+/**
+ * Class Form
+ *
+ * @package RedTest\core\forms
+ */
 class Form {
 
+  /**
+   * @var string
+   */
   private $form_id;
+
+  /**
+   * @var array
+   */
   private $form;
+
+  /**
+   * @var array
+   */
   private $form_state;
+
+  /**
+   * @var array|string
+   */
   private $errors;
+
+  /**
+   * @var bool
+   */
+  private $initialized;
 
   /**
    * Default constructor.
@@ -31,6 +56,28 @@ class Form {
     $this->form_state['build_info']['args'] = $args;
 
     $this->form = drupal_build_form($form_id, $this->form_state);
+
+    $this->setInitialized(TRUE);
+  }
+
+  /**
+   * Returns the $initialized variable.
+   *
+   * @return bool
+   *   Initialized variable.
+   */
+  public function getInitialized() {
+    return $this->initialized;
+  }
+
+  /**
+   * Sets the initialized variable.
+   *
+   * @param $initialized
+   *   Initialized variable.
+   */
+  public function setInitialized($initialized) {
+    $this->initialized = $initialized;
   }
 
   /**
@@ -427,7 +474,7 @@ class Form {
 
     $this->form_state['input'] = $old_form_state_values;
     $this->form_state['input']['form_build_id'] = $this->form['#build_id'];
-    if (!is_null($triggering_element_name)) {
+    if (!is_null($triggering_element_name) && $ajax) {
       $this->form_state['input']['_triggering_element_name'] = $triggering_element_name;
     }
     $this->form_state['no_redirect'] = TRUE;
@@ -456,7 +503,7 @@ class Form {
   /**
    * Set errors array. This is needed is a field wants to set an error.
    *
-   * @param array $errors
+   * @param array|string $errors
    *   An array of errors.
    */
   public function setErrors($errors) {
@@ -641,7 +688,7 @@ class Form {
       // function. This means that we are checking if a field is accessible.
       $field_name = Utils::makeSnakeCase(substr($name, 3, -6));
 
-      return $this->hasAccess($field_name);
+      return $this->hasFieldAccess($field_name);
     }
     elseif (strpos($name, 'is') === 0 && strrpos($name, 'Required') == strlen(
         $name
@@ -650,8 +697,9 @@ class Form {
       // Function name starts with "is" and ends with "Required". We are
       // checking if a field is required or not.
       $field_name = Utils::makeSnakeCase(substr($name, 2, -8));
+      $arguments = array_shift($arguments);
 
-      return $this->isRequired($field_name);
+      return $this->isRequired($field_name, $arguments);
     }
   }
 
@@ -660,11 +708,16 @@ class Form {
    *
    * @param string|array $parents
    *   Field name or an array of parents along with the field name.
+   * @param bool check_children
+   *   Check whether any of the children is required. This usually is needed
+   *   for CCK fields. For CCK fields, the field itself may not be required by
+   *   its child such as [LANGUAGE_NONE] may be required. In that case, the
+   *   fields itself should be considered as required.
    *
    * @return boolean
    *   TRUE if the field is required and FALSE otherwise.
    */
-  public function isRequired($parents) {
+  public function isRequired($parents, $check_children = FALSE) {
     if (is_string($parents) || is_numeric($parents)) {
       $parents = array($parents);
     }
@@ -672,7 +725,16 @@ class Form {
     $key_exists = NULL;
     $value = drupal_array_get_nested_value($this->form, $parents, $key_exists);
     if ($key_exists) {
-      return (isset($value['#required']) && $value['#required']);
+      if (!$check_children) {
+        return (isset($value['#required']) && $value['#required']);
+      }
+
+      // Go through the children and see if any of them is required.
+      foreach (element_children($value) as $index) {
+        if (isset($value[$index]['#required']) && $value[$index]['#required']) {
+          return TRUE;
+        }
+      }
     }
 
     return FALSE;
@@ -689,7 +751,7 @@ class Form {
    *
    * @throws \Exception
    */
-  public function hasAccess($parents) {
+  public function hasFieldAccess($parents) {
     if (is_string($parents) || is_numeric($parents)) {
       $parents = array($parents);
     }

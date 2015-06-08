@@ -11,6 +11,7 @@ namespace RedTest\core\forms\entities\Comment;
 use RedTest\core\fields\Field;
 use RedTest\core\forms\entities\EntityForm;
 use RedTest\core\Utils;
+use RedTest\core\entities\Comment;
 
 
 class CommentForm extends EntityForm {
@@ -26,27 +27,15 @@ class CommentForm extends EntityForm {
    */
   public function __construct($id) {
     if (!user_access('post comments')) {
-      throw new \Exception("User is not allowed to post comments.");
+      $this->setErrors("User is not allowed to post comments.");
+      $this->setInitialized(FALSE);
+      return;
     }
 
     $args = func_get_args();
     array_shift($args);
     $nid = array_shift($args);
-
-    /*if (is_null($id)) {
-      if (!isset($nid) || !is_numeric($nid)) {
-        throw new \Exception('Provide nid for a comment add form.');
-      }
-      $node = node_load($nid);
-    }
-    else {
-      $comment = comment_load($id);
-      $node = $comment['#node'];
-    }
-
-    if (!$node) {
-      throw new \Exception("Node $nid doesn't exist.");
-    }*/
+    $pid = array_shift($args);
 
     $classname = get_called_class();
     $class = new \ReflectionClass($classname);
@@ -56,36 +45,27 @@ class CommentForm extends EntityForm {
         0,
         -4
       );
-    $commentObject = new $class_fullname($id, $nid);
+
+    $commentObject = new $class_fullname($id, $nid, $pid);
+    if (!$commentObject->getInitialized()) {
+      $this->setErrors($commentObject->getErrors());
+      $this->setInitialized(FALSE);
+      return;
+    }
     $this->setEntityObject($commentObject);
 
     $nid = $commentObject->getNidValues();
     $node = node_load($nid);
     if ($node->comment != COMMENT_NODE_OPEN && is_null($id)) {
-      throw new \Exception("Node $nid does not allow posting of comments.");
+      $this->setErrors("Node $nid does not allow posting of comments.");
+      $this->setInitialized(FALSE);
+      return;
     }
-
-    /*$classname = get_called_class();
-    $class = new \ReflectionClass($classname);
-    $class_shortname = $class->getShortName();
 
     $type = Utils::makeSnakeCase(
       substr($class_shortname, 0, -11)
     );
-    if ($node->type != $type) {
-      throw new \Exception(
-        "Classes of comment and the node do not match. Class of comment is $type while that of node is " . $node->type . "."
-      );
-    }
-
-    $class_fullname = "RedTest\\entities\\Comment\\" . substr($class_shortname, 0, -4);
-    $commentObject = new $class_fullname($id, $nid);
-    $this->setEntityObject($commentObject);*/
-
-    $type = Utils::makeSnakeCase(
-      substr($class_shortname, 0, -11)
-    );
-    parent::__construct('comment_node_' . $type . '_form', $node);
+    parent::__construct('comment_node_' . $type . '_form', (object) array('nid' => $nid, 'pid' => $pid));
   }
 
   public function fillDefaultValues($options = array()) {
@@ -116,7 +96,10 @@ class CommentForm extends EntityForm {
       $options['required_fields_only']
     )
     ) {
-      list($success, $value, $msg) = Field::fillDefaultValues($this, array('author', 'mail'));
+      list($success, $value, $msg) = $this->fillFieldValues(
+        array('author', 'name'),
+        Utils::getRandomText(10)
+      );
       if (!$success) {
         return array(FALSE, $fields, $msg);
       }
@@ -128,7 +111,8 @@ class CommentForm extends EntityForm {
       $options['required_fields_only']
     )
     ) {
-      list($success, $value, $msg) = $this->fillMailValues(
+      list($success, $value, $msg) = $this->fillFieldValues(
+        array('author', 'mail'),
         Utils::getRandomEmail()
       );
       if (!$success) {
@@ -137,8 +121,15 @@ class CommentForm extends EntityForm {
       $fields['mail'] = $value;
     }
 
-    if ($this->isAuthorSubfieldToBeFilled('homepage', $options['required_fields_only'])) {
-      list($success, $value, $msg) = $this->fillHomepageValues(Utils::getRandomUrl());
+    if ($this->isAuthorSubfieldToBeFilled(
+      'homepage',
+      $options['required_fields_only']
+    )
+    ) {
+      list($success, $value, $msg) = $this->fillFieldValues(
+        array('account', 'homepage'),
+        Utils::getRandomUrl()
+      );
       if (!$success) {
         return array(FALSE, $fields, $msg);
       }
@@ -166,7 +157,7 @@ class CommentForm extends EntityForm {
     $form = $this->getForm();
     return (($this->isRequired(
           array('author', $field_name)
-        ) || !$required_fields_only) && $this->hasAccess(
+        ) || !$required_fields_only) && $this->hasFieldAccess(
         array('author', $field_name)
       ) && ($form['author'][$field_name]['#type'] == 'textfield'));
   }
@@ -186,5 +177,36 @@ class CommentForm extends EntityForm {
     $bundle = 'comment_node_' . $node->type;
 
     return field_info_instance('comment', $field_name, $bundle);
+  }
+
+  public function submit() {
+    $this->includeFile('inc', 'comment', 'comment.pages');
+
+    $this->processBeforeSubmit();
+
+    list($success, $msg) = $this->pressButton(t('Save'), array(), $this->getEntityObject()->getEntity());
+
+    $commentObject = NULL;
+    if ($success) {
+      // Get the comment from form_state.
+      $form_state = $this->getFormState();
+      $comment = $form_state['comment'];
+      $node_type = str_replace('comment_node_', '', $comment->node_type);
+      $classname = Utils::makeTitleCase($node_type) . 'Comment';
+      $class_fullname = "RedTest\\entities\\Comment\\" . $classname;
+      $commentObject = new $class_fullname($comment->cid);
+      if (!$commentObject->getInitialized()) {
+        return array(FALSE, NULL, $commentObject->getErrors());
+      }
+      $this->setEntityObject($commentObject);
+
+      // Store the created node in $entities so that it can later be deleted.
+      global $entities;
+      $entities['comment'][$comment->cid] = $commentObject;
+    }
+
+    $this->processAfterSubmit();
+
+    return array($success, $commentObject, $msg);
   }
 }
