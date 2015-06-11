@@ -380,7 +380,7 @@ abstract class Entity {
 
     $entity_type = $this->getEntityType();
     if (module_exists('entity')) {
-      return entity_access($op, $entity_type);
+      return entity_access($op, $entity_type, $this->getEntity());
     }
     elseif ($entity_type == 'node') {
       return node_access($op, $this->getEntity());

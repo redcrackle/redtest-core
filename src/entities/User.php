@@ -212,6 +212,7 @@ class User extends Entity {
     drupal_static_reset('menu_tree');
     drupal_static_reset('menu_tree_page_data');
     drupal_static_reset('menu_tree_set_path');
+    drupal_static_reset('node_access_view_all_nodes');
     drupal_static_reset('Menu::getBlocks');
   }
 
@@ -291,6 +292,7 @@ class User extends Entity {
     drupal_static_reset('menu_tree');
     drupal_static_reset('menu_tree_page_data');
     drupal_static_reset('menu_tree_set_path');
+    drupal_static_reset('node_access_view_all_nodes');
     drupal_static_reset('Menu::getBlocks');
 
     return array(TRUE, $userObject, "");
