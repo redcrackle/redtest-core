@@ -10,6 +10,7 @@ namespace RedTest\core\forms\entities\User;
 
 use RedTest\core\entities\User;
 use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Response;
 
 class UserRegisterForm extends EntityForm {
 
@@ -38,10 +39,9 @@ class UserRegisterForm extends EntityForm {
    *   ID of the new user if registration was successful, an array of errors if not.
    */
   public function submit() {
-    list($success, $msg) = $this->pressButton(t('Create new account'));
-    //list($success, $msg) = parent::submit();
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    $response = $this->pressButton(t('Create new account'));
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
     // Get the user from form_state.
@@ -54,6 +54,6 @@ class UserRegisterForm extends EntityForm {
     global $entities;
     $entities['user'][$uid] = $userObject;
 
-    return array(TRUE, $userObject, "");
+    return new Response(TRUE, $userObject, "");
   }
 } 

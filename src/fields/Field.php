@@ -10,6 +10,7 @@ namespace RedTest\core\fields;
 
 use RedTest\core\entities\Entity;
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Field {
@@ -126,18 +127,17 @@ class Field {
       $formObject,
       $field_name
     );
+
+    $response = NULL;
     $function = 'process' . $widget_type . 'BeforeCreateRandom';
     if (method_exists($field_class, $function)) {
-      list($success, $msg) = $field_class::$function(
+      $response = $field_class::$function(
         $formObject,
         $field_name,
         $options
       );
-      if (!$success) {
-        return array(FALSE, $msg);
-      }
     }
-    return array(TRUE, "");
+    return ($response ? $response : new Response(TRUE, NULL, ""));
   }
 
   public static function processBeforeSubmit(Form $formObject, $field_name) {
@@ -145,14 +145,13 @@ class Field {
       $formObject,
       $field_name
     );
+
+    $response = NULL;
     $function = 'process' . $widget_type . 'BeforeSubmit';
     if (method_exists($field_class, $function)) {
-      list($success, $msg) = $field_class::$function($formObject, $field_name);
-      if (!$success) {
-        return array(FALSE, $msg);
-      }
+      $response = $field_class::$function($formObject, $field_name);
     }
-    return array(TRUE, "");
+    return ($response ? $response : new Response(TRUE, NULL, ""));
   }
 
   /**
@@ -166,14 +165,13 @@ class Field {
       $formObject,
       $field_name
     );
+
+    $response = NULL;
     $function = 'process' . $widget_type . 'AfterSubmit';
     if (method_exists($field_class, $function)) {
-      list($success, $msg) = $field_class::$function($formObject, $field_name);
-      if (!$success) {
-        return array(FALSE, $msg);
-      }
+      $response = $field_class::$function($formObject, $field_name);
     }
-    return array(TRUE, "");
+    return ($response ? $response : new Response(TRUE, NULL, ""));
   }
 
   /**
@@ -258,7 +256,8 @@ class Field {
     if (is_array($field_name)) {
       $field_name = array_pop($field_name);
     }
-    return array(FALSE, "", "Field or property $field_name not found.");
+
+    return new Response(FALSE, "", "Field or property $field_name not found.");
   }
 
   /**

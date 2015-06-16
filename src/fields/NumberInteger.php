@@ -8,6 +8,7 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
@@ -30,7 +31,11 @@ class NumberInteger extends Number {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillRandomValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     $min = -255;
     $max = 255;
@@ -74,9 +79,9 @@ class NumberInteger extends Number {
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -85,12 +90,16 @@ class NumberInteger extends Number {
     $values = $field_class::normalizeInput($values);
     $input = $field_class::formatValuesForInput($values);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $input);
-    if (!$success) {
-      return array(FALSE, Utils::normalize($return), $msg);
+    $response = $formObject->fillMultiValued($field_name, $input);
+    if (!$response->getSuccess()) {
+      return new Response(
+        FALSE,
+        Utils::normalize($response->getVar()),
+        $response->getMsg()
+      );
     }
 
-    return array(TRUE, Utils::normalize($values), "");
+    return new Response(TRUE, Utils::normalize($values), "");
   }
 
   /**

@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class LinkField extends Field {
@@ -30,13 +31,11 @@ class LinkField extends Field {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
-    $access_function = "has" . Utils::makeTitleCase($field_name) . "Access";
-    $access = $formObject->$access_function();
-    if (!$access) {
-      return array(TRUE, "", "");
-    }
-
+  public static function fillRandomValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     $show_url = 0;
     $show_title = 'required';
@@ -86,9 +85,9 @@ class LinkField extends Field {
 
   public static function fillValues(Form $formObject, $field_name, $values) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -97,16 +96,10 @@ class LinkField extends Field {
     //$values = $field_class::createInput($values);
     $values = $field_class::formatValuesForCompare($values);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued(
-      $field_name,
-      $values
-    );
-    $return = $field_class::normalize($return);
-    if (!$success) {
-      return array(FALSE, $return, $msg);
-    }
+    $response = $formObject->fillMultiValued($field_name, $values);
+    $return = $field_class::normalize($response->getVar());
 
-    return array(TRUE, $return, "");
+    return new Response($response->getSuccess(), $return, $response->getMsg());
   }
 
   public static function normalize($values) {
@@ -287,8 +280,9 @@ class LinkField extends Field {
     $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($values) != sizeof($actual_values)) {
-      return array(
+      return new Response(
         FALSE,
+        NULL,
         "Number of values do not match. Actual values are " . print_r(
           $actual_values,
           TRUE
@@ -299,8 +293,9 @@ class LinkField extends Field {
     foreach ($values as $index => $value_array) {
       foreach ($value_array as $key => $value) {
         if ($actual_values[$index][$key] != $value) {
-          return array(
+          return new Response(
             FALSE,
+            NULL,
             "Key $key does not match for index $index. Actual values are " . print_r(
               $actual_values,
               TRUE
@@ -310,7 +305,7 @@ class LinkField extends Field {
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**

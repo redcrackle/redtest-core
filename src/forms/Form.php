@@ -8,6 +8,7 @@
 
 namespace RedTest\core\forms;
 
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\fields\Field;
 
@@ -78,6 +79,23 @@ class Form {
    */
   public function setInitialized($initialized) {
     $this->initialized = $initialized;
+  }
+
+  /**
+   * Verify that the class got initialized correctly.
+   *
+   * @param string|\PHPUnit_Framework_TestCase $testClass
+   *   Test class.
+   *
+   * @return $this
+   *   The form object.
+   */
+  public function verify($testClass) {
+    if (is_string($testClass)) {
+      $testClass = new $testClass();
+    }
+    $testClass->assertTrue($this->getInitialized(), $this->getErrors());
+    return $this;
   }
 
   /**
@@ -248,15 +266,16 @@ class Form {
       $field_name = array($field_name);
     }
 
-    list($success, $element['#parents'], $msg) = $this->getTreeKeys(
-      $field_name
-    );
-    if (!$success) {
+    $response = $this->getTreeKeys($field_name);
+    if (!$response->getSuccess()) {
       $element['#parents'] = $field_name;
+    }
+    else {
+      $element['#parents'] = $response->getVar();
     }
 
     form_set_value($element, $values, $this->form_state);
-    return array(TRUE, $values, "");
+    return new Response(TRUE, $values, "");
   }
 
   /**
@@ -285,7 +304,7 @@ class Form {
     if (is_array($field_name)) {
       $field_name = array_pop($field_name);
     }
-    return array(FALSE, NULL, "Field $field_name does not exist.");
+    return new Response(FALSE, NULL, "Field $field_name does not exist.");
   }
 
   /**
@@ -297,13 +316,8 @@ class Form {
    * @param string|int|array $values
    *   Value that needs to be filled.
    *
-   * @return array
-   *   An array with 3 values:
-   *   (1) bool $success: Whether the field could be filled with provided
-   *   values.
-   *   (2) string|int|array $values: Values that were actually filled in
-   *   $form_state.
-   *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
+   * @return Response
+   *   Response object.
    */
   public function fillFieldValues($field_name, $values) {
     list($field_class, $widget_type) = Field::getFieldClass($this, $field_name);
@@ -311,12 +325,12 @@ class Form {
       return $field_class::fillValues($this, $field_name, $values);
     }
 
-    list($success, $parents, $msg) = $this->getTreeKeys($field_name);
-    if (!$success) {
+    $response = $this->getTreeKeys($field_name);
+    if (!$response->getSuccess()) {
       return $this->fillValues($field_name, $values);
     }
 
-    return $this->fillValues($parents, $values);
+    return $this->fillValues($response->getVar(), $values);
   }
 
   /**
@@ -346,7 +360,7 @@ class Form {
       );
       if (!$key_exists) {
         $last_key = array_pop($parents);
-        return array(
+        return new Response(
           FALSE,
           array(),
           "Key $last_key doesn't exist in the form."
@@ -357,7 +371,7 @@ class Form {
         $parents = array($key);
       }
     }
-    return array(TRUE, $parents, "");
+    return new Response(TRUE, $parents, "");
   }
 
   /**
@@ -418,10 +432,8 @@ class Form {
    *   $triggering_element_name is assumed to be name of the Add More button
    *   otherwise it is taken to be the value of Op key.
    *
-   * @return array
-   *   An array with two values:
-   *   (1) $success: Whether the action of pressing button worked.
-   *   (2) $msg: Error message if the action was unsuccessful.
+   * @return Response
+   *   Response object.
    */
   public function pressButton(
     $triggering_element_name = NULL,
@@ -435,17 +447,19 @@ class Form {
         $triggering_element_name
       )
     ) {
-      return array(FALSE, "Button $triggering_element_name does not exist.");
+      return new Response(
+        FALSE,
+        NULL,
+        "Button $triggering_element_name does not exist."
+      );
     }
 
     if (!$ajax) {
       // If this is not an AJAX request, then the supplied name is the value of
       // Op parameter.
-      list($success, $values, $msg) = $this->fillOpValues(
-        $triggering_element_name
-      );
-      if (!$success) {
-        return array(FALSE, $msg);
+      $response = $this->fillOpValues($triggering_element_name);
+      if (!$response->getSuccess()) {
+        return $response;
       }
     }
 
@@ -494,10 +508,10 @@ class Form {
     if ($errors = form_get_errors()) {
       $this->errors = $errors;
 
-      return array(FALSE, implode(", ", $this->errors));
+      return new Response(FALSE, NULL, implode(", ", $this->errors));
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**

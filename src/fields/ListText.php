@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class ListText extends ListField {
@@ -57,9 +58,9 @@ class ListText extends ListField {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -71,8 +72,6 @@ class ListText extends ListField {
     }
 
     $input = array();
-    $success = TRUE;
-    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -80,14 +79,19 @@ class ListText extends ListField {
         }
       }
 
-      list($success, $output, $msg) = $formObject->fillValues(
+      $response = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
-      $input = $output[LANGUAGE_NONE];
+      $input = $response->getVar();
+      $input = $input[LANGUAGE_NONE];
     }
 
-    return array($success, $input, $msg);
+    return (isset($response) ? new Response(
+      $response->getSuccess(),
+      $input,
+      $response->getMsg()
+    ) : new Response(TRUE, $input, ''));
   }
 
   public static function fillOptionsSelectRandomValues(
@@ -116,7 +120,7 @@ class ListText extends ListField {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -130,8 +134,6 @@ class ListText extends ListField {
     }
 
     $input = array();
-    $success = TRUE;
-    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -139,12 +141,16 @@ class ListText extends ListField {
         }
       }
 
-      list($success, , $msg) = $formObject->fillValues(
+      $response = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
     }
 
-    return array($success, $input, $msg);
+    return (isset($response) ? new Response(
+      $response->getSuccess(),
+      $input,
+      $response->getMsg()
+    ) : new Response(TRUE, $input, ''));
   }
 }

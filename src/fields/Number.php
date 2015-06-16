@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Number extends Field {
@@ -39,9 +40,9 @@ class Number extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -58,12 +59,16 @@ class Number extends Field {
     );
     $input = $field_class::formatValuesForInput($input);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued($field_name, $input);
-    if (!$success) {
-      return array(FALSE, Utils::normalize($return), $msg);
+    $response = $formObject->fillMultiValued($field_name, $input);
+    if (!$response->getSuccess()) {
+      return new Response(
+        FALSE,
+        Utils::normalize($response->getVar()),
+        $response->getMsg()
+      );
     }
 
-    return array(TRUE, Utils::normalize($values), "");
+    return new Response(TRUE, Utils::normalize($values), "");
   }
 
   /**
@@ -118,16 +123,16 @@ class Number extends Field {
     $values = $field_class::normalizeInput($values, $decimal_separator);
 
     if (sizeof($values) != sizeof($actual_values)) {
-      return array(FALSE, "Number of values do not match.");
+      return new Response(FALSE, NULL, "Number of values do not match.");
     }
 
     foreach ($values as $key => $value) {
       if ($actual_values[$key] != $value) {
-        return array(FALSE, "Key $key does not match.");
+        return new Response(FALSE, NULL, "Key $key does not match.");
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**

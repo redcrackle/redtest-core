@@ -9,6 +9,7 @@
 namespace RedTest\core\forms\entities;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\fields\Field;
 
@@ -48,14 +49,8 @@ abstract class EntityForm extends Form {
    *   (b) required_fields_only: TRUE if only required fields are to be filled
    *   and FALSE if all fields are to be filled.
    *
-   * @return array
-   *   An array with the following values:
-   *   (1) $success: TRUE if fields were filled successfully and FALSE
-   *   otherwise.
-   *   (2) $fields: An associative array of field values that are to be filled
-   *   keyed by field name.
-   *   (3) $msg: Error message if $success is FALSE, and an empty string
-   *   otherwise.
+   * @return Response
+   *   Response object.
    */
   public function fillRandomValues($options = array()) {
     $options += array(
@@ -91,14 +86,14 @@ abstract class EntityForm extends Form {
       $function = "fill" . Utils::makeTitleCase(
           $field_name
         ) . "RandomValues";
-      list($success, $values, $msg) = $this->$function($options);
-      $fields[$field_name] = $values;
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      $response = $this->$function($options);
+      $fields[$field_name] = $response->getVar();
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
     }
 
-    return array(TRUE, $fields, "");
+    return new Response(TRUE, $fields, "");
   }
 
   /**
@@ -242,12 +237,12 @@ abstract class EntityForm extends Form {
       // without pressing Add More button. We fill the available fields with the
       // input values and for each remaining input value, we need to press "Add
       // More" button.
-      list($success, , $msg) = $this->fillValues(
+      $response = $this->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
-      if (!$success) {
-        return array(FALSE, $input, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $input, $response->getMsg());
       }
 
       // $input_add is the remaining input values for which we need to press
@@ -258,20 +253,20 @@ abstract class EntityForm extends Form {
           $field_name,
           $key
         );
-        list($success, $msg) = $this->pressButton(
+        $response = $this->pressButton(
           $triggering_element_name,
           array('ajax' => TRUE)
         );
-        if (!$success) {
-          return array(FALSE, $input, $msg);
+        if (!$response->getSuccess()) {
+          return new Response(FALSE, $input, $response->getMsg());
         }
         $input[] = $value;
-        list($success, , $msg) = $this->fillValues(
+        $response = $this->fillValues(
           $field_name,
           array(LANGUAGE_NONE => $input)
         );
-        if (!$success) {
-          return array(FALSE, $input, $msg);
+        if (!$response->getSuccess()) {
+          return new Response(FALSE, $input, $response->getMsg());
         }
       }
       $return = $input;
@@ -284,7 +279,7 @@ abstract class EntityForm extends Form {
       for ($i = sizeof($input); $i < $threshold - 1; $i++) {
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      list($success, , $msg) = $this->fillValues(
+      $response = $this->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
@@ -295,13 +290,13 @@ abstract class EntityForm extends Form {
         // $input is an empty array, which means we need to make it empty.
         $input[] = $field_class::getEmptyValue($this, $field_name);
       }
-      list($success, , $msg) = $this->fillValues(
+      $response = $this->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
     }
 
-    return array($success, $return, $msg);
+    return new Response($response->getSuccess(), $return, $response->getMsg());
   }
 
   public function processBeforeSubmit() {

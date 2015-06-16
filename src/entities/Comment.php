@@ -8,6 +8,7 @@
 
 namespace RedTest\core\entities;
 
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Comment extends Entity {
@@ -135,7 +136,7 @@ class Comment extends Entity {
    */
   public static function createRandom($num = 1, $options = array()) {
     if (!isset($options['nid']) && !isset($options['pid'])) {
-      return array(
+      return new Response(
         FALSE,
         NULL,
         "Neither nid or pid is specified while creating a comment."
@@ -159,42 +160,43 @@ class Comment extends Entity {
       // Instantiate the form class.
       $classForm = new $formClass(NULL, $options['nid'], $options['pid']);
       if (!$classForm->getInitialized()) {
-        return array(FALSE, $output, $classForm->getErrors());
+        return new Response(FALSE, $output, $classForm->getErrors());
       }
 
       // Fill default values in the form. We don't check whether the created
       // entity has the correct field since some custom function could be
       // changing the field values on creation. For checking field values on
       // entity creation, a form needs to be initialized in the test.
-      list($success, $fields, $msg) = $classForm->fillRandomValues($options);
-      if (!$success) {
-        return array(FALSE, $output, $msg);
+      $response = $classForm->fillRandomValues($options);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $output, $response->getMsg());
       }
 
       // Submit the form to create the entity.
-      list($success, $object, $msg) = $classForm->submit();
-      if (!$success) {
-        return array(
+      $response = $classForm->submit();
+      if (!$response->getSuccess()) {
+        return new Response(
           FALSE,
           $output,
-          "Could not create " . get_called_class() . " entity: " . $msg
+          "Could not create " . get_called_class(
+          ) . " entity: " . $response->getMsg()
         );
       }
 
       // Make sure that there is an id.
-      if (!$object->getId()) {
-        return array(
+      if (!$response->getVar()->getId()) {
+        return new Response(
           FALSE,
           $output,
           "Could not get Id of the created " . get_called_class(
-          ) . " entity: " . $msg
+          ) . " entity: " . $response->getMsg()
         );
       }
 
       // Store the created entity in the output array.
-      $output[] = $object;
+      $output[] = $response->getVar();
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return new Response(TRUE, Utils::normalize($output), "");
   }
 }

@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Entityreference extends Field {
@@ -82,7 +83,7 @@ class Entityreference extends Field {
       }
       list($success, $object, $msg) = $class::createRandom();
       if (!$success) {
-        return array(
+        return new Response(
           FALSE,
           $objects,
           "Could not create " . $target_entity_type . " of bundle " . $target_bundle . " for the field " . $field_name
@@ -156,7 +157,7 @@ class Entityreference extends Field {
       if (is_array($field_name)) {
         $field_name = array_pop($field_name);
       }
-      return array(FALSE, "", "Field $field_name is not accessible.");
+      return new Response(FALSE, "", "Field $field_name is not accessible.");
     }
 
     $vocabulary = '';
@@ -213,8 +214,6 @@ class Entityreference extends Field {
       $field_name,
       array(LANGUAGE_NONE => drupal_map_assoc($tids))
     );
-
-    //return array(TRUE, $termObjects, "");
   }
 
   public static function fillOptionsSelectRandomValues(
@@ -233,19 +232,15 @@ class Entityreference extends Field {
     $vocabulary_class = "RedTest\\entities\\TaxonomyTerm\\" . Utils::makeTitleCase(
         $vocabulary
       );
-    list($success, $termObjects, $msg) = $vocabulary_class::createRandom($num);
-    if (!$success) {
-      return array(
-        FALSE,
-        $termObjects,
-        "Could not create taxonomy terms for the field " . $field_name
-      );
+    $response = $vocabulary_class::createRandom($num);
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
     return self::fillOptionsSelectValues(
       $formObject,
       $field_name,
-      $termObjects
+      $response->getVar()
     );
   }
 
@@ -307,7 +302,7 @@ class Entityreference extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."

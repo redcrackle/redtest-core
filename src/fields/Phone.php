@@ -8,6 +8,7 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 
@@ -60,9 +61,9 @@ class Phone extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -85,6 +86,6 @@ class Phone extends Field {
 
     //$formObject->setValues($field_name, array(LANGUAGE_NONE => $input));
 
-    return array(TRUE, Utils::normalize($input), "");
+    return new Response(TRUE, Utils::normalize($input), "");
   }
 }

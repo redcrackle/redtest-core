@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Email extends Field {
@@ -79,15 +80,16 @@ class Email extends Field {
     $values = $field_class::normalizeInputForCompare($values);
     $values = $field_class::formatValuesForInput($values);
 
-    list($success, $return, $msg) = $formObject->fillMultiValued(
+    $response = $formObject->fillMultiValued(
       $field_name,
       $values
     );
-    if (!$success) {
-      return array(FALSE, Utils::normalize($return), $msg);
-    }
 
-    return array(TRUE, Utils::normalize($return), "");
+    return new Response(
+      $response->getSuccess(),
+      Utils::normalize($response->getVar()),
+      $response->getMsg()
+    );
   }
 
   /**
@@ -135,16 +137,16 @@ class Email extends Field {
     $values = $field_class::normalizeInputForCompare($values);
 
     if (sizeof($actual_values) != sizeof($values)) {
-      return array(FALSE, "Number of values do not match.");
+      return new Response(FALSE, NULL, "Number of values do not match.");
     }
 
     foreach ($values as $key => $value) {
       if ($value != $actual_values[$key]) {
-        return array(FALSE, "Key " . $key . " does not match.");
+        return new Response(FALSE, NULL, "Key " . $key . " does not match.");
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**

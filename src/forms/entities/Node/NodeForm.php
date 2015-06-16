@@ -9,6 +9,7 @@
 namespace RedTest\core\forms\entities\Node;
 
 use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\User;
 
@@ -56,14 +57,14 @@ class NodeForm extends EntityForm {
 
     $this->processBeforeSubmit();
 
-    list($success, $msg) = $this->pressButton(
+    $response = $this->pressButton(
       t('Save'),
       array(),
       $this->getEntityObject()->getEntity()
     );
 
     $nodeObject = NULL;
-    if ($success) {
+    if ($response->getSuccess()) {
       // Get the node from form_state.
       $form_state = $this->getFormState();
       $node = $form_state['node'];
@@ -80,7 +81,11 @@ class NodeForm extends EntityForm {
 
     $this->processAfterSubmit();
 
-    return array($success, $nodeObject, $msg);
+    return new Response(
+      $response->getSuccess(),
+      $nodeObject,
+      $response->getMsg()
+    );
   }
 
   /**
@@ -94,14 +99,8 @@ class NodeForm extends EntityForm {
    *   (b) required_fields_only: TRUE if only required fields are to be filled
    *   and FALSE if all fields are to be filled.
    *
-   * @return array
-   *   An array with the following values:
-   *   (1) $success: TRUE if fields were filled successfully and FALSE
-   *   otherwise.
-   *   (2) $fields: An associative array of field values that are to be filled
-   *   keyed by field name.
-   *   (3) $msg: Error message if $success is FALSE, and an empty string
-   *   otherwise.
+   * @return Response
+   *   Response object.
    */
   public function fillRandomValues($options = array()) {
     $options += array(
@@ -109,13 +108,14 @@ class NodeForm extends EntityForm {
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillRandomValues(
-      $options
-    );
-    if (!$success) {
-      return array(FALSE, $fields, $msg);
+    $response = parent::fillRandomValues($options);
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
+    $fields = $response->getVar();
+
+    // @todo Check about field access.
     if ((!$options['required_fields_only'] || $this->isTitleRequired(
         )) && !in_array(
         'title',
@@ -125,10 +125,15 @@ class NodeForm extends EntityForm {
       // Check if the field is required. We use '#required' key in form array
       // since it can be set or unset using custom code.
       // Field is not required. There is no need to fill this field.
-      $fields['title'] = Utils::getRandomText(25);
-      $this->fillTitleValues($fields['title']);
+      // @todo Provide the ability to pass max_length in $options array.
+      $response = $this->fillTitleRandomValues();
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
+      }
+      $fields['title'] = $response->getVar();
     }
 
+    // @todo Check in $skip array.
     if ($this->hasFieldAccess(
         array('options', 'status')
       ) && isset($options['status'])
@@ -146,11 +151,15 @@ class NodeForm extends EntityForm {
           break;
       }
       if (!is_null($status)) {
-        $this->fillStatusValues($status);
+        $response = $this->fillStatusValues($status);
+        if (!$response->getSuccess()) {
+          return new Response(FALSE, $fields, $response->getMsg());
+        }
         $fields['status'] = $status;
       }
     }
 
+    // @todo Check in $skip array.
     if ($this->hasFieldAccess(
         array('revision_information', 'revision')
       ) && isset($options['revision'])
@@ -169,7 +178,10 @@ class NodeForm extends EntityForm {
           break;
       }
       if (!is_null($revision)) {
-        $this->fillRevisionValues($revision);
+        $response = $this->fillRevisionValues($revision);
+        if (!$response->getSuccess()) {
+          return new Response(FALSE, $fields, $response->getMsg());
+        }
         $fields['revision'] = $revision;
         if ($revision && $this->hasFieldAccess(
             array('revision_information', 'log')
@@ -189,13 +201,17 @@ class NodeForm extends EntityForm {
               break;
           }
           if (!is_null($revision_log)) {
-            $this->fillLogValues($revision_log);
+            $response = $this->fillLogValues($revision_log);
+            if (!$response->getSuccess()) {
+              return new Response(FALSE, $fields, $response->getMsg());
+            }
             $fields['log'] = $revision_log;
           }
         }
       }
     }
 
+    // @todo Check $skip array.
     if ($this->hasFieldAccess(
         array('author', 'name')
       ) && isset($options['change_author']) && $options['change_author']
@@ -203,19 +219,23 @@ class NodeForm extends EntityForm {
       // We'll need to create new author first.
       // Masquerade as user 1.
       list($superAdmin, $originalUser, $originalState) = User::masquerade(1);
-      list($success, $userObject, $msg) = User::createRandom();
+
+      $response = User::createRandom();
+
       // Return to original user.
       User::unmasquerade($originalUser, $originalState);
 
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
 
+      $userObject = $response->getVar();
       $name = $userObject->getNameValues();
       $this->fillNameValues($name);
       $fields['name'] = $name;
     }
 
+    // @todo Check $skip array.
     if ($this->hasFieldAccess(
         array('author', 'date')
       ) && isset($options['change_published_date']) && $options['change_published_date']
@@ -231,10 +251,13 @@ class NodeForm extends EntityForm {
       ) : $now + (3 * 365 * 24 * 60 * 60);
 
       $date = Utils::getRandomDate('Y-m-d H:i:s', $start, $end);
-      $this->fillDateValues($date);
+      $response = $this->fillDateValues($date);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
+      }
       $fields['date'] = $date;
     }
 
-    return array(TRUE, $fields, "");
+    return new Response(TRUE, $fields, "");
   }
 }

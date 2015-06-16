@@ -10,10 +10,16 @@ namespace RedTest\core\forms\entities\Comment;
 
 use RedTest\core\fields\Field;
 use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\Comment;
 
 
+/**
+ * Class CommentForm
+ *
+ * @package RedTest\core\forms\entities\Comment
+ */
 class CommentForm extends EntityForm {
 
   /**
@@ -22,8 +28,6 @@ class CommentForm extends EntityForm {
    * @param null|int $id
    *   Comment id if a comment edit form is to be loaded and null if comment
    *   add form is to be loaded.
-   *
-   * @throws \Exception
    */
   public function __construct($id) {
     if (!user_access('post comments')) {
@@ -65,30 +69,45 @@ class CommentForm extends EntityForm {
     $type = Utils::makeSnakeCase(
       substr($class_shortname, 0, -11)
     );
-    parent::__construct('comment_node_' . $type . '_form', (object) array('nid' => $nid, 'pid' => $pid));
+    parent::__construct(
+      'comment_node_' . $type . '_form',
+      (object) array('nid' => $nid, 'pid' => $pid)
+    );
   }
 
+  /**
+   * Fills random values in fields.
+   *
+   * @param array $options
+   *   An associative options array. It can have the following keys:
+   *   (a) skip: An array of field names which are not to be filled.
+   *   (b) required_fields_only: TRUE if only required fields are to be filled
+   *   and FALSE if all fields are to be filled.
+   *
+   * @return Response
+   *   Response object.
+   */
   public function fillRandomValues($options = array()) {
     $options += array(
       'skip' => array(),
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillRandomValues(
-      $options
-    );
-    if (!$success) {
-      return array(FALSE, $fields, $msg);
+    $response = parent::fillRandomValues($options);
+    if (!$response->getSuccess()) {
+      return $response;
     }
+
+    $fields = $response->getVar();
 
     if (($this->isSubjectRequired(
         ) || !$options['required_fields_only']) && $this->hasSubjectAccess()
     ) {
-      list($success, $value, $msg) = $this->fillSubjectRandomValues();
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      $response = $this->fillSubjectRandomValues();
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
-      $fields['subject'] = $value;
+      $fields['subject'] = $response->getVar();
     }
 
     if ($this->isAuthorSubfieldToBeFilled(
@@ -96,14 +115,14 @@ class CommentForm extends EntityForm {
       $options['required_fields_only']
     )
     ) {
-      list($success, $value, $msg) = $this->fillFieldValues(
+      $response = $this->fillFieldValues(
         array('author', 'name'),
         Utils::getRandomText(10)
       );
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
-      $fields['name'] = $value;
+      $fields['name'] = $response->getVar();
     }
 
     if ($this->isAuthorSubfieldToBeFilled(
@@ -111,14 +130,14 @@ class CommentForm extends EntityForm {
       $options['required_fields_only']
     )
     ) {
-      list($success, $value, $msg) = $this->fillFieldValues(
+      $response = $this->fillFieldValues(
         array('author', 'mail'),
         Utils::getRandomEmail()
       );
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
-      $fields['mail'] = $value;
+      $fields['mail'] = $response->getVar();
     }
 
     if ($this->isAuthorSubfieldToBeFilled(
@@ -126,17 +145,17 @@ class CommentForm extends EntityForm {
       $options['required_fields_only']
     )
     ) {
-      list($success, $value, $msg) = $this->fillFieldValues(
+      $response = $this->fillFieldValues(
         array('account', 'homepage'),
         Utils::getRandomUrl()
       );
-      if (!$success) {
-        return array(FALSE, $fields, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
       }
-      $fields['homepage'] = $value;
+      $fields['homepage'] = $response->getVar();
     }
 
-    return array(TRUE, $fields, '');
+    return new Response(TRUE, $fields, "");
   }
 
   /**
@@ -179,15 +198,25 @@ class CommentForm extends EntityForm {
     return field_info_instance('comment', $field_name, $bundle);
   }
 
+  /**
+   * Submit the comment form.
+   *
+   * @return Response
+   *   Response object.
+   */
   public function submit() {
     $this->includeFile('inc', 'comment', 'comment.pages');
 
     $this->processBeforeSubmit();
 
-    list($success, $msg) = $this->pressButton(t('Save'), array(), $this->getEntityObject()->getEntity());
+    $response = $this->pressButton(
+      t('Save'),
+      array(),
+      $this->getEntityObject()->getEntity()
+    );
 
     $commentObject = NULL;
-    if ($success) {
+    if ($response->getSuccess()) {
       // Get the comment from form_state.
       $form_state = $this->getFormState();
       $comment = $form_state['comment'];
@@ -196,7 +225,7 @@ class CommentForm extends EntityForm {
       $class_fullname = "RedTest\\entities\\Comment\\" . $classname;
       $commentObject = new $class_fullname($comment->cid);
       if (!$commentObject->getInitialized()) {
-        return array(FALSE, NULL, $commentObject->getErrors());
+        return new Response(FALSE, NULL, $commentObject->getErrors());
       }
       $this->setEntityObject($commentObject);
 
@@ -207,6 +236,10 @@ class CommentForm extends EntityForm {
 
     $this->processAfterSubmit();
 
-    return array($success, $commentObject, $msg);
+    return new Response(
+      $response->getSuccess(),
+      $commentObject,
+      $response->getMsg()
+    );
   }
 }

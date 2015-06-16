@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 
@@ -59,7 +60,7 @@ class File extends Field {
     }
 
     if (!sizeof($filenames)) {
-      return array(
+      return new Response(
         FALSE,
         array(),
         "Could not find a file to attach with any of the following extensions: " . $file_extensions
@@ -128,7 +129,7 @@ class File extends Field {
    */
   public static function fillValues(Form $formObject, $field_name, $file_info) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -150,12 +151,12 @@ class File extends Field {
     $input = array();
     for ($i = 0; $i < sizeof($original_values); $i++) {
       if ($original_values[$i]['fid']) {
-        list($success, $msg) = $formObject->pressButton(
+        $response = $formObject->pressButton(
           $field_name . '_' . LANGUAGE_NONE . '_0_remove_button',
           array('ajax' => TRUE)
         );
-        if (!$success) {
-          return array(FALSE, array(), $msg);
+        if (!$response->getSuccess()) {
+          return $response;
         }
       }
     }
@@ -166,7 +167,11 @@ class File extends Field {
         $errors = $_SESSION['messages']['error'];
         $errors[] = 'Make sure that the destination directory, i.e. sites/default/files, is writable by PHP CLI.';
         $formObject->setErrors($errors);
-        return array(FALSE, $return, implode(", ", $formObject->getErrors()));
+        return new Response(
+          FALSE,
+          $return,
+          implode(", ", $formObject->getErrors())
+        );
       }
 
       $input[$i] = $field_class::createInput($file_temp, $values[$i]);
@@ -177,21 +182,32 @@ class File extends Field {
         $i
       );
 
-      list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
-      if (!$success) {
-        return array(FALSE, Utils::normalize($return), $msg);
+      $response = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
+      if (!$response->getSuccess()) {
+        return new Response(
+          FALSE,
+          Utils::normalize($return),
+          $response->getMsg()
+        );
       }
 
-      list($success, $msg) = $formObject->pressButton(
+      $response = $formObject->pressButton(
         $triggering_element_name,
         array('ajax' => TRUE)
       );
-      if (!$success) {
-        return array(FALSE, Utils::normalize($return), $msg);
+      if (!$response->getSuccess()) {
+        return new Response(
+          FALSE,
+          Utils::normalize($return),
+          $response->getMsg()
+        );
       }
     }
 
-    return array(TRUE, Utils::normalize($return), "");
+    return new Response(TRUE, Utils::normalize($return), "");
   }
 
   /**
@@ -389,19 +405,19 @@ class File extends Field {
     $actual_values = $field_class::normalizeInputForCompare($actual_values);
 
     if (sizeof($actual_values) != sizeof($values)) {
-      return array(FALSE, "Number of values do not match.");
+      return new Response(FALSE, NULL, "Number of values do not match.");
     }
 
     // Iterate over values and make sure that all the keys match.
     foreach ($values as $index => $value_array) {
       foreach ($value_array as $key => $value) {
         if ($actual_values[$index][$key] != $value) {
-          return array(FALSE, "Key " . $key . " does not match.");
+          return new Response(FALSE, NULL, "Key " . $key . " does not match.");
         }
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   private static function normalizeInputForCompare($values) {

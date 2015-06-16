@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 
@@ -31,7 +32,11 @@ class Image extends File {
    *   (3) $msg: Message in case there is an error. This will be empty if
    *   $success is TRUE.
    */
-  public static function fillRandomValues(Form $formObject, $field_name, $options = array()) {
+  public static function fillRandomValues(
+    Form $formObject,
+    $field_name,
+    $options = array()
+  ) {
     $num = 1;
     $show_title = FALSE;
     $show_alt = FALSE;
@@ -96,10 +101,10 @@ class Image extends File {
     }
 
     if (empty($valid_files)) {
-      return array(
+      return new Response(
         FALSE,
         array(),
-        'Appropriate image could not be found for ' . $field_name
+        "Appropriate image could not be found for $field_name."
       );
     }
 

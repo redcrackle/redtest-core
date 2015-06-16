@@ -8,6 +8,7 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
@@ -131,7 +132,7 @@ class Text extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -182,18 +183,18 @@ class Text extends Field {
     $values = $field_class::convertValuesToInput($values, array());
 
     if (sizeof($values) != sizeof($actual_values)) {
-      return array(FALSE, "Number of values do not match.");
+      return new Response(FALSE, NULL, "Number of values do not match.");
     }
 
     foreach ($values as $index => $values_array) {
       foreach ($values_array as $key => $value) {
         if ($value != $actual_values[$index][$key]) {
-          return array(FALSE, "Key " . $key . " does not match.");
+          return new Response(FALSE, NULL, "Key " . $key . " does not match.");
         }
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**
@@ -385,10 +386,8 @@ class Text extends Field {
 
     $values = $field_class::convertValuesToInput($values, $defaults);
 
-    $success = TRUE;
-    $msg = '';
     if (Field::isCckField($formObject, $field_name)) {
-      list($success, $return, $msg) = $formObject->fillMultiValued(
+      $response = $formObject->fillMultiValued(
         $field_name,
         $values,
         $offset
@@ -396,13 +395,14 @@ class Text extends Field {
     }
     else {
       $values = is_array($values) ? $values[0]['value'] : $values;
-      list($success, $return, $msg) = $formObject->fillValues(
-        $field_name,
-        $values
-      );
+      $response = $formObject->fillValues($field_name, $values);
     }
 
-    return array($success, Utils::normalize($return), $msg);
+    return new Response(
+      $response->getSuccess(),
+      Utils::normalize($response->getVar()),
+      $response->getMsg()
+    );
   }
 
   /**

@@ -8,6 +8,7 @@
 
 namespace RedTest\core\entities;
 
+use RedTest\core\Response;
 use RedTest\core\fields\Field;
 use RedTest\core\Utils;
 use RedTest\core\forms;
@@ -101,6 +102,23 @@ abstract class Entity {
    */
   public function clearErrors() {
     unset($this->errors);
+  }
+
+  /**
+   * Verify that the class got initialized correctly.
+   *
+   * @param string|\PHPUnit_Framework_TestCase $testClass
+   *   Test class.
+   *
+   * @return $this
+   *   The form object.
+   */
+  public function verify($testClass) {
+    if (is_string($testClass)) {
+      $testClass = new $testClass();
+    }
+    $testClass->assertTrue($this->getInitialized(), $this->getErrors());
+    return $this;
   }
 
   /**
@@ -1478,14 +1496,8 @@ abstract class Entity {
    *   (b) required_fields_only: TRUE if only required fields are to be filled
    *   and FALSE if all fields are to be filled.
    *
-   * @return array
-   *   An array with the following values:
-   *   (1) $success: TRUE if entities were created successfully and FALSE
-   *   otherwise.
-   *   (2) $objects: A single entity object or an associative array of entity
-   *   objects that are created.
-   *   (3) $msg: Error message if $success is FALSE, and an empty string
-   *   otherwise.
+   * @return Response
+   *   Response object.
    */
   public static function createRandom($num = 1, $options = array()) {
     // First get the references that need to be created.
@@ -1500,35 +1512,37 @@ abstract class Entity {
       // Instantiate the form class.
       $classForm = new $formClass();
       if (!$classForm->getInitialized()) {
-        return array(FALSE, $output, $classForm->getErrors());
+        return new Response(FALSE, $output, $classForm->getErrors());
       }
 
       // Fill default values in the form. We don't check whether the created
       // entity has the correct field since some custom function could be
       // changing the field values on creation. For checking field values on
       // entity creation, a form needs to be initialized in the test.
-      list($success, $fields, $msg) = $classForm->fillRandomValues($options);
-      if (!$success) {
-        return array(FALSE, $output, $msg);
+      $response = $classForm->fillRandomValues($options);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $output, $response->getMsg());
       }
 
       // Submit the form to create the entity.
-      list($success, $object, $msg) = $classForm->submit();
-      if (!$success) {
-        return array(
+      $response = $classForm->submit();
+      if (!$response->getSuccess()) {
+        return new Response(
           FALSE,
           $output,
-          "Could not create " . get_called_class() . " entity: " . $msg
+          "Could not create " . get_called_class(
+          ) . " entity: " . $response->getMsg()
         );
       }
 
       // Make sure that there is an id.
+      $object = $response->getVar();
       if (!$object->getId()) {
-        return array(
+        return new Response(
           FALSE,
           $output,
           "Could not get Id of the created " . get_called_class(
-          ) . " entity: " . $msg
+          ) . " entity: " . $response->getMsg()
         );
       }
 
@@ -1536,7 +1550,7 @@ abstract class Entity {
       $output[] = $object;
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return new Response(TRUE, Utils::normalize($output), "");
   }
 
   public function checkMarkup(
@@ -1601,9 +1615,13 @@ abstract class Entity {
       if (isset($values[$field_name])) {
         if (!in_array($field_name, $skip)) {
           $function = "check" . Utils::makeTitleCase($field_name) . "Values";
-          list($success, $msg) = $this->$function($values[$field_name]);
-          if (!$success) {
-            return array(FALSE, "Field " . $field_name . ": " . $msg);
+          $response = $this->$function($values[$field_name]);
+          if (!$response->getSuccess()) {
+            return new Response(
+              FALSE,
+              NULL,
+              "Field " . $field_name . ": " . $response->getMsg()
+            );
           }
         }
         // Field has been checked so add it to $checked_fields array.
@@ -1618,20 +1636,27 @@ abstract class Entity {
     // Unchecked fields could be properties.
     foreach ($unchecked_fields as $field_name) {
       if (!property_exists($this->entity, $field_name)) {
-        return array(FALSE, "Field " . $field_name . " not found.");
+        return new Response(
+          FALSE, NULL, "Field " . $field_name . " not found."
+        );
       }
 
       $function = "get" . Utils::makeTitleCase($field_name) . "Values";
       if ($this->$function() != $values[$field_name]) {
-        return array(FALSE, "Values of " . $field_name . " do not match.");
+        return new Response(
+          FALSE,
+          NULL,
+          "Values of " . $field_name . " do not match."
+        );
       }
 
       $unchecked_fields = array_diff($unchecked_fields, array($field_name));
     }
 
     if (sizeof($unchecked_fields)) {
-      return array(
+      return new Response(
         FALSE,
+        NULL,
         "Following fields or properties could not be found: " . print_r(
           $unchecked_fields,
           TRUE
@@ -1639,7 +1664,7 @@ abstract class Entity {
       );
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   public function checkFieldStructure($testClass) {

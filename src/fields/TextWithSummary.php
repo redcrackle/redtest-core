@@ -8,9 +8,9 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
-use RedTest\core\entities\Entity;
 
 class TextWithSummary extends Text {
 
@@ -108,7 +108,7 @@ class TextWithSummary extends Text {
     $format = ''
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."

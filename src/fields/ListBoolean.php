@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\fields\Field;
 
@@ -128,9 +129,9 @@ class ListBoolean extends ListField {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -142,6 +143,7 @@ class ListBoolean extends ListField {
       $values = array($values);
     }
 
+    $response = NULL;
     $input = array();
     $output = array();
     if (sizeof($values)) {
@@ -174,16 +176,20 @@ class ListBoolean extends ListField {
         }
       }
 
-      list($success, , $msg) = $formObject->fillValues(
+      $response = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
-      if (!$success) {
-        return array(FALSE, Utils::normalize($output), $msg);
+      if (!$response->getSuccess()) {
+        return new Response(
+          FALSE,
+          Utils::normalize($output),
+          $response->getMsg()
+        );
       }
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return new Response(TRUE, Utils::normalize($output), "");
   }
 
   /**
@@ -235,8 +241,9 @@ class ListBoolean extends ListField {
     $values = $field_class::formatOptionsOnOffValuesForCompare($values);
 
     if (sizeof($actual_values) != sizeof($values)) {
-      return array(
+      return new Response(
         FALSE,
+        NULL,
         "Number of values do not match. Actual values are: " . print_r(
           $actual_values,
           TRUE
@@ -246,9 +253,8 @@ class ListBoolean extends ListField {
 
     foreach ($values as $key => $value) {
       if ($actual_values[$key] != $value) {
-        return array(
-          FALSE,
-          "Key $key does not match. Actual values are: " . print_r(
+        return new Response(
+          FALSE, NULL, "Key $key does not match. Actual values are: " . print_r(
             $actual_values,
             TRUE
           ) . " and expected values are " . print_r($values, TRUE) . "."
@@ -256,7 +262,7 @@ class ListBoolean extends ListField {
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**
@@ -303,8 +309,9 @@ class ListBoolean extends ListField {
     $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($actual_values) != sizeof($values)) {
-      return array(
+      return new Response(
         FALSE,
+        NULL,
         "Number of values do not match. Actual values are: " . print_r(
           $actual_values,
           TRUE
@@ -314,9 +321,8 @@ class ListBoolean extends ListField {
 
     foreach ($values as $key => $value) {
       if ($actual_values[$key] != $value) {
-        return array(
-          FALSE,
-          "Key $key does not match. Actual values are: " . print_r(
+        return new Response(
+          FALSE, NULL, "Key $key does not match. Actual values are: " . print_r(
             $actual_values,
             TRUE
           ) . " and expected values are " . print_r($values, TRUE) . "."
@@ -324,7 +330,7 @@ class ListBoolean extends ListField {
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**

@@ -8,6 +8,7 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
@@ -32,7 +33,8 @@ class TextLong extends Text {
    */
   public static function fillRandomValues(
     Form $formObject,
-    $field_name, $options = array()
+    $field_name,
+    $options = array()
   ) {
     $num = 1;
     if (method_exists($formObject, 'getEntityObject')) {
@@ -85,7 +87,7 @@ class TextLong extends Text {
    */
   public static function fillValues(Form $formObject, $field_name, $values) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -98,6 +100,11 @@ class TextLong extends Text {
     }
 
     $field_class = get_called_class();
-    return $field_class::fillTextValues($formObject, $field_name, $values, $defaults);
+    return $field_class::fillTextValues(
+      $formObject,
+      $field_name,
+      $values,
+      $defaults
+    );
   }
 }

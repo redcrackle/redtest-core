@@ -8,6 +8,7 @@
 
 namespace RedTest\core\entities;
 
+use RedTest\core\Response;
 use RedTest\core\forms\entities\User as UserForms;
 use RedTest\core\Utils;
 
@@ -92,27 +93,17 @@ class User extends Entity {
     $userRegisterForm->fillFieldValues(array('account', 'mail'), $email);
     $userRegisterForm->fillFieldValues(array('pass', 'pass1'), $password);
     $userRegisterForm->fillFieldValues(array('pass', 'pass2'), $password);
-    /*$userRegisterForm->fillValues(
-      ,
-      array(
-        'name' => $username,
-        'mail' => $email,
-        'pass' => array(
-          'pass1' => $password,
-          'pass2' => $password,
-        ),
-      )
-    );*/
 
-    list($success, $userObject, $msg) = $userRegisterForm->submit();
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    $response = $userRegisterForm->submit();
+    if (!$response->getSuccess()) {
+      return new Response(FALSE, NULL, $response->getMsg());
     }
 
     /**
      * @todo Find a better way to make the user active and add roles than using user_save().
      */
     $roles = self::formatRoles($roles);
+    $userObject = $response->getVar();
 
     if (!$userObject->getStatusValues() || sizeof($roles)) {
       $account = $userObject->getEntity();
@@ -120,10 +111,10 @@ class User extends Entity {
       $edit['roles'] = $account->roles + $roles;
       $account = user_save($account, $edit);
       if (!$account) {
-        return array(
+        return new Response(
           FALSE,
           NULL,
-          "Could not make the user active or could not add roles"
+          "Could not make the user active or could not add roles."
         );
       }
 
@@ -136,7 +127,7 @@ class User extends Entity {
     $account->password = $form_state['user']->password;
     $userObject->setEntity($account);
 
-    return array(TRUE, $userObject, "");
+    return new Response(TRUE, $userObject, "");
   }
 
   /**
@@ -261,12 +252,8 @@ class User extends Entity {
    * @param string|int $uid_or_username
    *   Uid or Username.
    *
-   * @return array
-   *   An array with three values:
-   *   (1) $success: Whether user could log in successfully.
-   *   (2) $userObject: User object if the user could log in.
-   *   (3) $msg: An error message if user could not log in. If the login was
-   *   successful, then this will be empty.
+   * @return Response
+   *   Response object.
    */
   public static function loginProgrammatically($uid_or_username) {
     global $user;
@@ -277,7 +264,7 @@ class User extends Entity {
       $login_array = array('name' => $uid_or_username);
     }
     else {
-      return array(
+      return new Response(
         FALSE,
         NULL,
         "User with uid or username $uid_or_username not found."
@@ -295,7 +282,7 @@ class User extends Entity {
     drupal_static_reset('node_access_view_all_nodes');
     drupal_static_reset('Menu::getBlocks');
 
-    return array(TRUE, $userObject, "");
+    return new Response(TRUE, $userObject, "");
   }
 
   /**
@@ -307,12 +294,8 @@ class User extends Entity {
    *   Options array. This array can have "roles" key that provides an array of
    *   role names that the newly created user will need to be assigned.
    *
-   * @return array An array with 3 values:
-   * An array with 3 values:
-   * (1) $success: Whether entity creation succeeded.
-   * (2) $entities: An array of created entities. If there is only one entity
-   * to be created, then it returns the entity itself and not the array.
-   * (3) $msg: Error message if $success is FALSE and empty otherwise.
+   * @return Response
+   *   Response object.
    */
   public static function createRandom($num = 1, $options = array()) {
     $options += array(
@@ -338,20 +321,21 @@ class User extends Entity {
 
       // Get a random password.
       $password = Utils::getRandomString();
-      list($success, $object, $msg) = User::registerUser(
+
+      $response = User::registerUser(
         $username,
         $email,
         $password,
         $options['roles']
       );
-      if (!$success) {
-        return array(FALSE, $output, $msg);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $output, $response->getMsg());
       }
 
-      $output[] = $object;
+      $output[] = $response->getVar();
     }
 
-    return array(TRUE, Utils::normalize($output), "");
+    return new Response(TRUE, Utils::normalize($output), "");
   }
 
   /**

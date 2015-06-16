@@ -8,6 +8,7 @@
 
 namespace RedTest\core\fields;
 
+use RedTest\core\Response;
 use RedTest\core\forms\Form;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
@@ -103,7 +104,7 @@ class TaxonomyTermReference extends Field {
       }
       else {
         // $references is an empty array.
-        return array(
+        return new Response(
           FALSE,
           NULL,
           "Could not find any existing taxonomy term that can be referenced by $field_name."
@@ -135,7 +136,7 @@ class TaxonomyTermReference extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -154,9 +155,12 @@ class TaxonomyTermReference extends Field {
     $field_class = get_called_class();
     $names = $field_class::convertValues($values, $vocabulary, TRUE, FALSE);
     $field_value = is_array($names) ? implode(",", $names) : $names;
-    list($success, , $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $field_value));
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    $response = $formObject->fillValues(
+      $field_name,
+      array(LANGUAGE_NONE => $field_value)
+    );
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
     $termObjects = TaxonomyTerm::createTermObjectsFromNames(
@@ -165,7 +169,7 @@ class TaxonomyTermReference extends Field {
       FALSE
     );
 
-    return array(TRUE, Utils::normalize($termObjects), "");
+    return new Response(TRUE, Utils::normalize($termObjects), "");
   }
 
   public static function checkValues(
@@ -201,14 +205,14 @@ class TaxonomyTermReference extends Field {
     $values = $field_class::convertValues($values, NULL);
     if (sizeof($values) == 1 && !$values[0]) {
       // Converted $values is FALSE which means that term could not be found.
-      return array(FALSE, "");
+      return new Response(FALSE, NULL, "");
     }
 
     if ($actual_values === $values) {
-      return array(TRUE, "");
+      return new Response(TRUE, NULL, "");
     }
     else {
-      return array(FALSE, "Values do not match.");
+      return new Response(FALSE, NULL, "Values do not match.");
     }
   }
 
@@ -218,9 +222,9 @@ class TaxonomyTermReference extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -236,17 +240,17 @@ class TaxonomyTermReference extends Field {
 
     $field_class = get_called_class();
     $tids = $field_class::convertValues($values, $vocabulary);
-    list($success, , $msg) = $formObject->fillValues(
+    $response = $formObject->fillValues(
       $field_name,
       array(LANGUAGE_NONE => drupal_map_assoc($tids))
     );
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
-    return array(TRUE, $termObjects, "");
+    return new Response(TRUE, $termObjects, "");
   }
 
   public static function fillOptionsSelectValues(
@@ -255,7 +259,7 @@ class TaxonomyTermReference extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -273,16 +277,17 @@ class TaxonomyTermReference extends Field {
 
     $field_class = get_called_class();
     $tids = $field_class::convertValues($values, NULL);
-    list($success, , $msg) = $formObject->fillValues(
+    $response = $formObject->fillValues(
       $field_name,
       array(LANGUAGE_NONE => $tids)
     );
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    if (!$response->getSuccess()) {
+      return $response;
     }
+
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
-    return array(TRUE, $termObjects, "");
+    return new Response(TRUE, $termObjects, "");
   }
 
   /**
@@ -540,13 +545,19 @@ class TaxonomyTermReference extends Field {
           // We are assuming that there will be only one term with the same name
           // in a given vocabulary.
           if (!sizeof($terms)) {
-            if (is_null(self::$termNames) || !in_array($term_name, self::$termNames)) {
+            if (is_null(self::$termNames) || !in_array(
+                $term_name,
+                self::$termNames
+              )
+            ) {
               self::$termNames[] = $term_name;
             }
           }
         }
       }
     }
+
+    return new Response(TRUE, NULL, "");
   }
 
   /**
@@ -586,7 +597,7 @@ class TaxonomyTermReference extends Field {
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**
@@ -643,17 +654,19 @@ class TaxonomyTermReference extends Field {
       // Masquerade as user 1 so that there is no access problem.
       list($superUserObject, $userObject, $old_state) = User::masquerade(1);
 
-      list($success, $termObjects, $msg) = $class::createRandom($num);
-      if (!$success) {
-        return array(
+      $response = $class::createRandom($num);
+      if (!$response->getSuccess()) {
+        return new Response(
           FALSE,
           NULL,
-          "Could not create terms of vocabulary $vocabulary attached to $field_name: " . $msg
+          "Could not create terms of vocabulary $vocabulary attached to $field_name: " . $response->getMsg(
+          )
         );
       }
 
       User::unmasquerade($userObject, $old_state);
 
+      $termObjects = $response->getVar();
       if (is_object($termObjects)) {
         $termObjects = array($termObjects);
       }
@@ -663,6 +676,6 @@ class TaxonomyTermReference extends Field {
       );
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 }

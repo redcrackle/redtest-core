@@ -9,6 +9,7 @@
 namespace RedTest\core\fields;
 
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class ListField extends Field {
@@ -57,9 +58,9 @@ class ListField extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
-        "",
+        NULL,
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
       );
     }
@@ -72,8 +73,6 @@ class ListField extends Field {
 
     $input = array();
     $output = array();
-    $success = FALSE;
-    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -84,20 +83,24 @@ class ListField extends Field {
         }
       }
 
-      list($success, , $msg) = $formObject->fillValues(
+      $response = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
     }
     else {
       // Input is empty.
-      list($success, , $msg) = $formObject->fillValues(
+      $response = $formObject->fillValues(
         $field_name,
         array(LANGUAGE_NONE => NULL)
       );
     }
 
-    return array($success, Utils::normalize($output), $msg);
+    return new Response(
+      $response->getSuccess(),
+      Utils::normalize($response->getVars()),
+      $response->getMsg()
+    );
   }
 
   public static function fillOptionsSelectRandomValues(
@@ -126,7 +129,7 @@ class ListField extends Field {
     $values
   ) {
     if (!Field::hasFieldAccess($formObject, $field_name)) {
-      return array(
+      return new Response(
         FALSE,
         "",
         "Field " . Utils::getLeaf($field_name) . " is not accessible."
@@ -151,11 +154,22 @@ class ListField extends Field {
         }
       }
 
-      list($success, $output, $msg) = $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      $response = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
+      list($success, $output, $msg) = $formObject->fillValues(
+        $field_name,
+        array(LANGUAGE_NONE => $input)
+      );
       $input = $output[LANGUAGE_NONE];
     }
 
-    return array($success, $input, $msg);
+    return (isset($response) ? new Response(
+      $response->getSuccess(),
+      $input,
+      $response->getMsg()
+    ) : new Response(TRUE, $input, ''));
   }
 
   /**
@@ -193,16 +207,16 @@ class ListField extends Field {
     $values = $field_class::formatValuesForCompare($values);
 
     if (sizeof($actual_values) != sizeof($values)) {
-      return array(FALSE, "Number of values do not match.");
+      return new Response(FALSE, NULL, "Number of values do not match.");
     }
 
     foreach ($values as $index => $value) {
       if ($actual_values[$index] != $value) {
-        return array(FALSE, "Index $index does not match.");
+        return new Response(FALSE, NULL, "Index $index does not match.");
       }
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   /**
