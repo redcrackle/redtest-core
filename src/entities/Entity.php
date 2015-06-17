@@ -1074,14 +1074,14 @@ abstract class Entity {
     // Field instance does not exist. Check if a property exists and its value
     // matches.
     if (!property_exists($this->entity, $field_name)) {
-      return array(FALSE, "Field " . $field_name . " not found.");
+      return new Response(FALSE, NULL, "Field " . $field_name . " not found.");
     }
 
     if ($this->entity->$field_name != $values) {
-      return array(FALSE, "Values of " . $field_name . " do not match.");
+      return new Response(FALSE, NULL, "Values of $field_name do not match.");
     }
 
-    return array(TRUE, "");
+    return new Response(TRUE, NULL, "");
   }
 
   public function checkTaxonomyTermReferenceItems(
@@ -1605,6 +1605,13 @@ abstract class Entity {
     );
   }
 
+  /**
+   * @param $values
+   * @param array $skip
+   *
+   * @return Response
+   *   Response object.
+   */
   public function checkValues($values, $skip = array()) {
     $instances = $this->getFieldInstances();
 

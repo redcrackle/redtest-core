@@ -10,6 +10,7 @@ namespace RedTest\core\forms\entities\TaxonomyTerm;
 
 use RedTest\core\entities\TaxonomyTerm;
 use RedTest\core\forms\entities\EntityForm;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 /**
@@ -54,10 +55,13 @@ class TaxonomyFormTerm extends EntityForm {
         $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
         parent::__construct('taxonomy_form_term', $term, $this->vocabulary);
 
+        $this->setInitialized(TRUE);
         return;
       }
       else {
-        // Vocabulary name of the provided term does not match the class it was called from. Return without doing anything.
+        // Vocabulary name of the provided term does not match the class it was called from. Return with a FAIL response.
+        $this->setErrors("Vocabulary of the provided term does not match the class it was called from.");
+        $this->setInitialized(FALSE);
         return;
       }
     }
@@ -73,6 +77,8 @@ class TaxonomyFormTerm extends EntityForm {
     $this->vocabulary = taxonomy_vocabulary_machine_name_load($vocabulary_name);
     $this->includeFile('inc', 'taxonomy', 'taxonomy.admin');
     parent::__construct('taxonomy_form_term', array(), $this->vocabulary);
+
+    $this->setInitialized(TRUE);
   }
 
   /**
@@ -101,10 +107,12 @@ class TaxonomyFormTerm extends EntityForm {
       'required_fields_only' => TRUE,
     );
 
-    list($success, $fields, $msg) = parent::fillRandomValues($options);
-    if (!$success) {
-      return array(FALSE, $fields, $msg);
+    $response = parent::fillRandomValues($options);
+    if (!$response->getSuccess()) {
+      return $response;
     }
+
+    $fields = $response->getVar();
 
     if (!$options['required_fields_only'] || $this->isDescriptionRequired()) {
       // Check if the field is required. We use '#required' key in form array
@@ -115,7 +123,10 @@ class TaxonomyFormTerm extends EntityForm {
           'value' => Utils::getRandomText(100),
           'format' => 'plain_text',
         );
-        $this->fillDescriptionValues($description);
+        $response = $this->fillDescriptionValues($description);
+        if (!$response->getSuccess()) {
+          return new Response(FALSE, $fields, $response->getMsg());
+        }
         $fields['description'] = $description['value'];
         $fields['format'] = $description['format'];
       }
@@ -127,11 +138,14 @@ class TaxonomyFormTerm extends EntityForm {
       // Make sure that taxonomy term name is not repeated so that deleting
       // entities at the end is easier.
       $name = TaxonomyTerm::getUniqueName($this->vocabulary->machine_name);
-      $this->fillNameValues($name);
+      $response = $this->fillNameValues($name);
+      if (!$response->getSuccess()) {
+        return new Response(FALSE, $fields, $response->getMsg());
+      }
       $fields['name'] = $name;
     }
 
-    return array(TRUE, $fields, "");
+    return new Response(TRUE, $fields, "");
   }
 
   /**
@@ -143,16 +157,21 @@ class TaxonomyFormTerm extends EntityForm {
     //$this->fillValues(array('op' => t('Save')));
     $weight = $this->getValues('weight');
     if (empty($weight)) {
-      $this->fillWeightValues(0);
-      //$this->fillValues(, array('weight' => 0));
+      $response = $this->fillWeightValues(0);
+      if (!$response->getSuccess()) {
+        return $response;
+      }
     }
     $parent = $this->getValues('parent');
     if (empty($parent)) {
-      $this->fillParentValues(array(0 => "0"));
+      $response = $this->fillParentValues(array(0 => "0"));
+      if (!$response->getSuccess()) {
+        return $response;
+      }
     }
 
     if (is_null($this->getEntityObject()->getId())) {
-      list($success, $msg) = $this->pressButton(
+      $response = $this->pressButton(
         t('Save'),
         array(),
         array(),
@@ -160,7 +179,7 @@ class TaxonomyFormTerm extends EntityForm {
       );
     }
     else {
-      list($success, $msg) = $this->pressButton(
+      $response = $this->pressButton(
         t('Save'),
         array(),
         $this->getEntityObject()->getEntity(),
@@ -168,9 +187,8 @@ class TaxonomyFormTerm extends EntityForm {
       );
     }
 
-    //$output = parent::submit(array(), $this->vocabulary);
-    if (!$success) {
-      return array(FALSE, NULL, $msg);
+    if (!$response->getSuccess()) {
+      return new Response(FALSE, NULL, $response->getMsg());
     }
 
     $classname = get_called_class();
@@ -188,7 +206,7 @@ class TaxonomyFormTerm extends EntityForm {
     global $entities;
     $entities['taxonomy_term'][$termObject->getId()] = $termObject;
 
-    return array(TRUE, $termObject, "");
+    return new Response(TRUE, $termObject, "");
   }
 
   /**
@@ -221,32 +239,34 @@ class TaxonomyFormTerm extends EntityForm {
    *   (2) string $msg: An error message if deletion failed.
    */
   public function delete() {
-    //$this->fillOpValues(t('Delete'));
-    list($success, $msg) = $this->pressButton(
+    $response = $this->pressButton(
       t('Delete'),
       array(),
       $this->getEntityObject()->getEntity(),
       NULL
     );
-    if (!$success) {
-      return array(FALSE, $msg);
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
-    //$this->fillOpValues(t('Delete'));
-    $this->fillConfirmValues("1");
-    list($success, $msg) = $this->pressButton(
+    $response = $this->fillConfirmValues("1");
+    if (!$response->getSuccess()) {
+      return $response;
+    }
+
+    $response = $this->pressButton(
       t('Delete'),
       array(),
       $this->getEntityObject()->getEntity(),
       NULL
     );
-    if (!$success) {
-      return array(FALSE, $msg);
+    if (!$response->getSuccess()) {
+      return $response;
     }
 
     global $entities;
     unset($entities['taxonomy_term'][$this->getEntityObject()->getId()]);
 
-    return array(TRUE, $msg);
+    return new Response(TRUE, NULL, "");
   }
 }

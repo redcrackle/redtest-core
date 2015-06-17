@@ -197,7 +197,7 @@ class TaxonomyTermReference extends Field {
   public static function compareValues($actual_values, $values) {
     if (!$actual_values && !$values) {
       // both values are empty or FALSE.
-      return array(TRUE, "");
+      return new Response(TRUE, NULL, "");
     }
 
     $field_class = get_called_class();

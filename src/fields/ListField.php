@@ -98,7 +98,7 @@ class ListField extends Field {
 
     return new Response(
       $response->getSuccess(),
-      Utils::normalize($response->getVars()),
+      Utils::normalize($output),
       $response->getMsg()
     );
   }
@@ -143,8 +143,6 @@ class ListField extends Field {
     }
 
     $input = array();
-    $success = TRUE;
-    $msg = '';
     if (sizeof($values)) {
       foreach ($values as $key => $value) {
         if (is_string($value) || is_numeric($value)) {
@@ -158,10 +156,7 @@ class ListField extends Field {
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
-      list($success, $output, $msg) = $formObject->fillValues(
-        $field_name,
-        array(LANGUAGE_NONE => $input)
-      );
+      $output = $response->getVar();
       $input = $output[LANGUAGE_NONE];
     }
 

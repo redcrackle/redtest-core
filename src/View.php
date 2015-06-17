@@ -13,14 +13,50 @@ class View {
 
   private $view;
 
+  private $initialized;
+
+  private $errors;
+
+  protected function setInitialized($initialized) {
+    $this->initialized = $initialized;
+  }
+
+  protected function setErrors($errors) {
+    $this->errors = $errors;
+  }
+
+  public function getInitialized() {
+    return $this->initialized;
+  }
+
+  public function getErrors() {
+    return $this->errors;
+  }
+
+  public function verify($testCase) {
+    if (is_string($testCase)) {
+      $testCase = new $testCase();
+    }
+    $testCase->assertTrue($this->getInitialized(), $this->getErrors());
+    return $this;
+  }
+
   public function __construct($view_name, $display_id = NULL) {
     $this->view = views_get_view($view_name);
+    if (!$this->view) {
+      $this->setErrors('View does not exist.');
+      $this->setInitialized(FALSE);
+      return;
+    }
+
     if (is_string($display_id)) {
       $this->view->set_display($display_id);
     }
     else {
       $this->view->init_display();
     }
+
+    $this->setInitialized(TRUE);
   }
 
   public function execute(
