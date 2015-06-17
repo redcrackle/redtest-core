@@ -42,6 +42,8 @@ class Node extends Entity {
       node_object_prepare($node);
       parent::__construct($node);
     }
+
+    $this->setInitialized(TRUE);
   }
 
   /**

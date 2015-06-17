@@ -181,11 +181,8 @@ class ListBoolean extends ListField {
         array(LANGUAGE_NONE => $input)
       );
       if (!$response->getSuccess()) {
-        return new Response(
-          FALSE,
-          Utils::normalize($output),
-          $response->getMsg()
-        );
+        $response->setVar(Utils::normalize($output));
+        return $response;
       }
     }
 

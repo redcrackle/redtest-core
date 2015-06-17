@@ -1521,7 +1521,8 @@ abstract class Entity {
       // entity creation, a form needs to be initialized in the test.
       $response = $classForm->fillRandomValues($options);
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $output, $response->getMsg());
+        $response->setVar($output);
+        return $response;
       }
 
       // Submit the form to create the entity.

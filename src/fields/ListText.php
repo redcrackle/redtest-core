@@ -87,11 +87,14 @@ class ListText extends ListField {
       $input = $input[LANGUAGE_NONE];
     }
 
-    return (isset($response) ? new Response(
-      $response->getSuccess(),
-      $input,
-      $response->getMsg()
-    ) : new Response(TRUE, $input, ''));
+    if (isset($response)) {
+      $response->setVar($input);
+    }
+    else {
+      $response = new Response(TRUE, $input, '');
+    }
+
+    return $response;
   }
 
   public static function fillOptionsSelectRandomValues(
@@ -147,10 +150,13 @@ class ListText extends ListField {
       );
     }
 
-    return (isset($response) ? new Response(
-      $response->getSuccess(),
-      $input,
-      $response->getMsg()
-    ) : new Response(TRUE, $input, ''));
+    if (isset($response)) {
+      $response->setVar($input);
+    }
+    else {
+      $response = new Response(TRUE, $input, '');
+    }
+
+    return $response;
   }
 }

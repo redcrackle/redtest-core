@@ -398,11 +398,8 @@ class Text extends Field {
       $response = $formObject->fillValues($field_name, $values);
     }
 
-    return new Response(
-      $response->getSuccess(),
-      Utils::normalize($response->getVar()),
-      $response->getMsg()
-    );
+    $response->normalizeVar();
+    return $response;
   }
 
   /**

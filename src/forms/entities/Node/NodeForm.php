@@ -46,6 +46,8 @@ class NodeForm extends EntityForm {
         $this->getEntityObject()->getEntity()
       );
     }
+
+    $this->setInitialized(TRUE);
   }
 
   /**
@@ -81,11 +83,8 @@ class NodeForm extends EntityForm {
 
     $this->processAfterSubmit();
 
-    return new Response(
-      $response->getSuccess(),
-      $nodeObject,
-      $response->getMsg()
-    );
+    $response->setVar($nodeObject);
+    return $response;
   }
 
   /**
@@ -128,7 +127,8 @@ class NodeForm extends EntityForm {
       // @todo Provide the ability to pass max_length in $options array.
       $response = $this->fillTitleRandomValues();
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $fields, $response->getMsg());
+        $response->setVar($fields);
+        return $response;
       }
       $fields['title'] = $response->getVar();
     }
@@ -153,7 +153,8 @@ class NodeForm extends EntityForm {
       if (!is_null($status)) {
         $response = $this->fillStatusValues($status);
         if (!$response->getSuccess()) {
-          return new Response(FALSE, $fields, $response->getMsg());
+          $response->setVar($fields);
+          return $response;
         }
         $fields['status'] = $status;
       }
@@ -180,7 +181,8 @@ class NodeForm extends EntityForm {
       if (!is_null($revision)) {
         $response = $this->fillRevisionValues($revision);
         if (!$response->getSuccess()) {
-          return new Response(FALSE, $fields, $response->getMsg());
+          $response->setVar($fields);
+          return $response;
         }
         $fields['revision'] = $revision;
         if ($revision && $this->hasFieldAccess(
@@ -203,7 +205,8 @@ class NodeForm extends EntityForm {
           if (!is_null($revision_log)) {
             $response = $this->fillLogValues($revision_log);
             if (!$response->getSuccess()) {
-              return new Response(FALSE, $fields, $response->getMsg());
+              $response->setVar($fields);
+              return $response;
             }
             $fields['log'] = $revision_log;
           }
@@ -226,7 +229,8 @@ class NodeForm extends EntityForm {
       User::unmasquerade($originalUser, $originalState);
 
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $fields, $response->getMsg());
+        $response->setVar($fields);
+        return $response;
       }
 
       $userObject = $response->getVar();
@@ -253,7 +257,8 @@ class NodeForm extends EntityForm {
       $date = Utils::getRandomDate('Y-m-d H:i:s', $start, $end);
       $response = $this->fillDateValues($date);
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $fields, $response->getMsg());
+        $response->setVar($fields);
+        return $response;
       }
       $fields['date'] = $date;
     }

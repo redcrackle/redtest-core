@@ -89,7 +89,8 @@ abstract class EntityForm extends Form {
       $response = $this->$function($options);
       $fields[$field_name] = $response->getVar();
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $fields, $response->getMsg());
+        $response->setVar($fields);
+        return $response;
       }
     }
 
@@ -242,7 +243,8 @@ abstract class EntityForm extends Form {
         array(LANGUAGE_NONE => $input)
       );
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $input, $response->getMsg());
+        $response->setVar($input);
+        return $response;
       }
 
       // $input_add is the remaining input values for which we need to press
@@ -258,7 +260,8 @@ abstract class EntityForm extends Form {
           array('ajax' => TRUE)
         );
         if (!$response->getSuccess()) {
-          return new Response(FALSE, $input, $response->getMsg());
+          $response->setVar($input);
+          return $response;
         }
         $input[] = $value;
         $response = $this->fillValues(
@@ -266,7 +269,8 @@ abstract class EntityForm extends Form {
           array(LANGUAGE_NONE => $input)
         );
         if (!$response->getSuccess()) {
-          return new Response(FALSE, $input, $response->getMsg());
+          $response->setVar($input);
+          return $response;
         }
       }
       $return = $input;

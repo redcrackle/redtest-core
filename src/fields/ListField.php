@@ -96,11 +96,8 @@ class ListField extends Field {
       );
     }
 
-    return new Response(
-      $response->getSuccess(),
-      Utils::normalize($output),
-      $response->getMsg()
-    );
+    $response->setVar(Utils::normalize($output));
+    return $response;
   }
 
   public static function fillOptionsSelectRandomValues(
@@ -156,15 +153,19 @@ class ListField extends Field {
         $field_name,
         array(LANGUAGE_NONE => $input)
       );
+
       $output = $response->getVar();
       $input = $output[LANGUAGE_NONE];
     }
 
-    return (isset($response) ? new Response(
-      $response->getSuccess(),
-      $input,
-      $response->getMsg()
-    ) : new Response(TRUE, $input, ''));
+    if (isset($response)) {
+      $response->setVar($input);
+    }
+    else {
+      $response = new Response(TRUE, $input, "");
+    }
+
+    return $response;
   }
 
   /**

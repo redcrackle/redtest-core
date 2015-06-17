@@ -97,9 +97,9 @@ class LinkField extends Field {
     $values = $field_class::formatValuesForCompare($values);
 
     $response = $formObject->fillMultiValued($field_name, $values);
-    $return = $field_class::normalize($response->getVar());
+    $response->setVar($field_class::normalize($response->getVar()));
 
-    return new Response($response->getSuccess(), $return, $response->getMsg());
+    return $response;
   }
 
   public static function normalize($values) {

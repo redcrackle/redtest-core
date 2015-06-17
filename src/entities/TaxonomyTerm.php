@@ -39,6 +39,8 @@ class TaxonomyTerm extends Entity {
       );
       parent::__construct($term);
     }
+
+    $this->setInitialized(TRUE);
   }
 
   public function deleteProgrammatically() {
@@ -76,6 +78,17 @@ class TaxonomyTerm extends Entity {
     return $termObject;
   }
 
+  /**
+   * Returns a taxonomy term object based on its name and vocabulary.
+   *
+   * @param string $name
+   *   Taxonomy term name.
+   * @param null|string $vocabulary
+   *   Vocabulary machine name to limit the search by.
+   *
+   * @return object|bool
+   *   Taxonomy term object if the term exists and FALSE otherwise.
+   */
   public static function termExistsForName($name, $vocabulary = NULL) {
     if (!is_string($name) && !is_numeric($name)) {
       return FALSE;

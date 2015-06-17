@@ -20,12 +20,12 @@ class NodeDeleteConfirm extends Form {
       $this->includeFile('inc', 'node', 'node.pages');
       parent::__construct('node_delete_confirm', $this->node);
     }
+
+    $this->setInitialized(TRUE);
   }
 
   public function submit() {
     $this->fillConfirmValues(TRUE);
-    //$this->fillValues(, array('confirm' => TRUE));
     return $this->pressButton(NULL, array(), $this->node);
-    //return parent::submit($this->node);
   }
 }

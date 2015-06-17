@@ -85,11 +85,8 @@ class Email extends Field {
       $values
     );
 
-    return new Response(
-      $response->getSuccess(),
-      Utils::normalize($response->getVar()),
-      $response->getMsg()
-    );
+    $response->normalizeVar();
+    return $response;
   }
 
   /**

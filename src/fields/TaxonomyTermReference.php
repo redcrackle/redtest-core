@@ -169,7 +169,8 @@ class TaxonomyTermReference extends Field {
       FALSE
     );
 
-    return new Response(TRUE, Utils::normalize($termObjects), "");
+    $response->setVar(Utils::normalize($termObjects));
+    return $response;
   }
 
   public static function checkValues(
@@ -250,7 +251,8 @@ class TaxonomyTermReference extends Field {
 
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
-    return new Response(TRUE, $termObjects, "");
+    $response->setVar($termObjects);
+    return $response;
   }
 
   public static function fillOptionsSelectValues(
@@ -287,7 +289,8 @@ class TaxonomyTermReference extends Field {
 
     $termObjects = TaxonomyTerm::createTermObjectsFromTids($tids, $vocabulary);
 
-    return new Response(TRUE, $termObjects, "");
+    $response->setVar($termObjects);
+    return $response;
   }
 
   /**

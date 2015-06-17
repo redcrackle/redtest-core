@@ -187,11 +187,8 @@ class File extends Field {
         array(LANGUAGE_NONE => $input)
       );
       if (!$response->getSuccess()) {
-        return new Response(
-          FALSE,
-          Utils::normalize($return),
-          $response->getMsg()
-        );
+        $response->normalizeVar();
+        return $response;
       }
 
       $response = $formObject->pressButton(
@@ -199,11 +196,8 @@ class File extends Field {
         array('ajax' => TRUE)
       );
       if (!$response->getSuccess()) {
-        return new Response(
-          FALSE,
-          Utils::normalize($return),
-          $response->getMsg()
-        );
+        $response->normalizeVar();
+        return $response;
       }
     }
 

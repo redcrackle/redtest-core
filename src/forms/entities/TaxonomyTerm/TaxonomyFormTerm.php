@@ -125,7 +125,8 @@ class TaxonomyFormTerm extends EntityForm {
         );
         $response = $this->fillDescriptionValues($description);
         if (!$response->getSuccess()) {
-          return new Response(FALSE, $fields, $response->getMsg());
+          $response->setVar($fields);
+          return $response;
         }
         $fields['description'] = $description['value'];
         $fields['format'] = $description['format'];
@@ -140,7 +141,8 @@ class TaxonomyFormTerm extends EntityForm {
       $name = TaxonomyTerm::getUniqueName($this->vocabulary->machine_name);
       $response = $this->fillNameValues($name);
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $fields, $response->getMsg());
+        $response->setVar($fields);
+        return $response;
       }
       $fields['name'] = $name;
     }
@@ -188,7 +190,8 @@ class TaxonomyFormTerm extends EntityForm {
     }
 
     if (!$response->getSuccess()) {
-      return new Response(FALSE, NULL, $response->getMsg());
+      $response->setVar(NULL);
+      return $response;
     }
 
     $classname = get_called_class();
@@ -206,7 +209,8 @@ class TaxonomyFormTerm extends EntityForm {
     global $entities;
     $entities['taxonomy_term'][$termObject->getId()] = $termObject;
 
-    return new Response(TRUE, $termObject, "");
+    $response->setVar($termObject);
+    return $response;
   }
 
   /**
@@ -267,6 +271,7 @@ class TaxonomyFormTerm extends EntityForm {
     global $entities;
     unset($entities['taxonomy_term'][$this->getEntityObject()->getId()]);
 
-    return new Response(TRUE, NULL, "");
+    $response->setVar(NULL);
+    return $response;
   }
 }

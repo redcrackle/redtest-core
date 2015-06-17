@@ -31,20 +31,21 @@ class UserCancelConfirmForm extends Form {
 
     $this->includeFile('inc', 'user', 'user.pages');
     parent::__construct('user_cancel_confirm_form', $this->account);
+
+    $this->setInitialized(TRUE);
   }
 
   function submit() {
-    $this->fillUserCancelMethodValues('user_cancel_delete');
-    $this->fillValues('_account', $this->account);
-    /*$this->fillValues(
-      ,
-      array(
-        'user_cancel_method' => 'user_cancel_delete',
-        '_account' => $this->account,
-      )
-    );*/
+    $response = $this->fillUserCancelMethodValues('user_cancel_delete');
+    if (!$response->getSuccess()) {
+      return $response;
+    }
 
-    $this->pressButton(NULL, $this->account);
-    //parent::submit($this->account);
+    $response = $this->fillValues('_account', $this->account);
+    if (!$response->getSuccess()) {
+      return $response;
+    }
+
+    return $this->pressButton(NULL, $this->account);
   }
 }

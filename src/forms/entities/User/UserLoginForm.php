@@ -47,6 +47,7 @@ class UserLoginForm extends Form {
     $userObject = new User($uid);
     $this->setEntityObject($userObject);
 
-    return new Response(TRUE, $userObject, "");
+    $response->setVar($userObject);
+    return $response;
   }
 }

@@ -61,14 +61,12 @@ class Number extends Field {
 
     $response = $formObject->fillMultiValued($field_name, $input);
     if (!$response->getSuccess()) {
-      return new Response(
-        FALSE,
-        Utils::normalize($response->getVar()),
-        $response->getMsg()
-      );
+      $response->normalizeVar();
+      return $response;
     }
 
-    return new Response(TRUE, Utils::normalize($values), "");
+    $response->setVar(Utils::normalize($values));
+    return $response;
   }
 
   /**

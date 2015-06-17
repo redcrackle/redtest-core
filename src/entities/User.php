@@ -30,6 +30,8 @@ class User extends Entity {
     if (!is_null($uid) && is_numeric($uid) && $account = user_load($uid)) {
       parent::__construct($account);
     }
+
+    $this->setInitialized(TRUE);
   }
 
   /**
@@ -53,13 +55,6 @@ class User extends Entity {
     $userLoginForm = new UserForms\UserLoginForm();
     $userLoginForm->fillNameValues($username);
     $userLoginForm->fillPassValues($password);
-    /*$userLoginForm->fillValues(
-      ,
-      array(
-        'name' => $username,
-        'pass' => $password,
-      )
-    );*/
 
     return $userLoginForm->submit();
   }
@@ -96,7 +91,7 @@ class User extends Entity {
 
     $response = $userRegisterForm->submit();
     if (!$response->getSuccess()) {
-      return new Response(FALSE, NULL, $response->getMsg());
+      return $response;
     }
 
     /**
@@ -171,7 +166,7 @@ class User extends Entity {
     $userCancelConfirmForm = new UserForms\UserCancelConfirmForm(
       $this->getEntity()
     );
-    $userCancelConfirmForm->submit();
+    return $userCancelConfirmForm->submit();
   }
 
   /**
@@ -329,7 +324,8 @@ class User extends Entity {
         $options['roles']
       );
       if (!$response->getSuccess()) {
-        return new Response(FALSE, $output, $response->getMsg());
+        $response->setVar($output);
+        return $response;
       }
 
       $output[] = $response->getVar();

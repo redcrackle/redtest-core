@@ -14,6 +14,11 @@ namespace RedTest\core;
  *
  * @package RedTest\core
  */
+/**
+ * Class Response
+ *
+ * @package RedTest\core
+ */
 class Response {
 
   /**
@@ -82,6 +87,20 @@ class Response {
    */
   public function getVar() {
     return $this->var;
+  }
+
+  /**
+   * Sets the returned array or object.
+   *
+   * @param array|object|string|null $var
+   *   Object or array of objects that function returned.
+   */
+  public function setVar($var) {
+    $this->var = $var;
+  }
+
+  public function normalizeVar() {
+    $this->var = Utils::normalize($this->var);
   }
 
   /**

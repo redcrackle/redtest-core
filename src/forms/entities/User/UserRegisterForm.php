@@ -54,6 +54,7 @@ class UserRegisterForm extends EntityForm {
     global $entities;
     $entities['user'][$uid] = $userObject;
 
-    return new Response(TRUE, $userObject, "");
+    $response->setVar($userObject);
+    return $response;
   }
 } 

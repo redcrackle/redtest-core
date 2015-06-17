@@ -253,13 +253,8 @@ class Form {
    * @param string|int|array $values
    *   Value that needs to be filled.
    *
-   * @return array
-   *   An array with 3 values:
-   *   (1) bool $success: Whether the field could be filled with provided
-   *   values.
-   *   (2) string|int|array $values: Values that were actually filled in
-   *   $form_state.
-   *   (3) string $msg: Error message if $success is FALSE and empty otherwise.
+   * @return Response
+   *   Response object.
    */
   public function fillValues($field_name, $values) {
     if (is_string($field_name)) {
@@ -579,7 +574,7 @@ class Form {
    * @param $values
    * @param int $offset
    *
-   * @return array
+   * @return Response
    */
   public function fillMultiValued($field_name, $values, $offset = 0) {
     // In custom form, fields are single-valued by default so we won't worry
