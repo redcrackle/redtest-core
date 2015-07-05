@@ -73,7 +73,10 @@ class TaxonomyTermReference extends Field {
     $termObjects = array();
 
     for ($i = 0; $i < $num; $i++) {
-      if ($widget_type == 'taxonomy_autocomplete') {
+      if (in_array(
+        $widget_type,
+        array('taxonomy_autocomplete', 'autocomplete_deluxe_taxonomy')
+      )) {
         if (sizeof($references)) {
           // Use taxonomy terms that are provided.
           $termObjects[] = Utils::getLabel($references[$i]);
@@ -115,6 +118,83 @@ class TaxonomyTermReference extends Field {
     $function = "fill" . Utils::makeTitleCase($field_name) . "Values";
 
     return $formObject->$function($termObjects);
+  }
+
+  /**
+   * @todo Currently $values only supports taxonomy term names. Modify the
+   *   function so that it supports term ids as well.
+   *
+   * @param \RedTest\core\forms\Form $formObject
+   * @param $field_name
+   * @param $values
+   *
+   * @return \RedTest\core\Response
+   */
+  public static function fillAutocompleteDeluxeTaxonomyValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return new Response(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
+    }
+
+    $formObject->emptyField($field_name);
+
+    $num = 1;
+    $vocabulary = NULL;
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+      $vocabulary = $field['settings']['allowed_values'][0]['vocabulary'];
+    }
+
+    $input = array(
+      'textfield' => '',
+      'value_field' => '',
+    );
+
+    if ($num == 1) {
+      if (is_string($values) || is_numeric($values)) {
+        $input['textfield'] = '""' . $values . '""';
+      }
+      else {
+        $input['textfield'] = '""' . $values[0] . '""';
+      }
+    }
+    else {
+      if (is_string($values) || is_numeric($values)) {
+        $input['value_field'] = '""' . $values . '""';
+      }
+      else {
+        $input_array = array();
+        foreach ($values as $value) {
+          $input_array[] = '""' . $value . '""';
+        }
+        $input['value_field'] = implode(' ', $input_array);
+      }
+    }
+
+    $response = $formObject->fillValues(
+      $field_name,
+      array(LANGUAGE_NONE => $input)
+    );
+    if (!$response->getSuccess()) {
+      return $response;
+    }
+
+    $termObjects = TaxonomyTerm::createTermObjectsFromNames(
+      $values,
+      $vocabulary,
+      FALSE
+    );
+
+    $response->setVar(Utils::normalize($termObjects));
+    return $response;
   }
 
   /**
@@ -556,6 +636,20 @@ class TaxonomyTermReference extends Field {
               self::$termNames[] = $term_name;
             }
           }
+        }
+
+        // If the widget is autocomplete deluxe, then format the input correctly.
+        list($field_class, $widget_type) = Field::getFieldClass($formObject, $field_name);
+        if ($widget_type == 'AutocompleteDeluxeTaxonomy') {
+          $input_array = array();
+          foreach ($term_names as $term_name) {
+            $input_array[] = '""' . $term_name . '""';
+          }
+          $input = array(
+            'textfield' => '',
+            'value_field' => implode(' ', $input_array),
+          );
+          $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
         }
       }
     }
