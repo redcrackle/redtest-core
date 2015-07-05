@@ -12,192 +12,100 @@ namespace RedTest\core;
 class Menu {
 
   /**
-   * Returns the page callback function name.
-   *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return null|string
-   *   Page callback function if one exists, NULL otherwise.
+   * @var string
    */
-  public static function getPageCallback($path) {
-    if ($router_item = self::getItem($path)) {
-      return $router_item['page_callback'];
-    }
-
-    return NULL;
-  }
+  private $menu_name;
 
   /**
-   * Returns input argument names that are passed to the page callback function.
+   * Default constructor.
    *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return bool|array
-   *   An array of arguments passed to the callback function.
+   * @param string $menu_name
+   *   Menu name.
    */
-  public static function getPageArguments($path) {
-    if ($router_item = self::getItem($path)) {
-      if (is_array($router_item['page_arguments'])) {
-        return $router_item['page_arguments'];
-      }
-      return unserialize($router_item['page_arguments']);
-    }
-
-    return array();
+  public function __construct($menu_name) {
+    $this->menu_name = $menu_name;
   }
 
-  /**
-   * Returns access callback function for a particular path.
-   *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return null|string
-   *   Access callback function if one exists and NULL otherwise.
-   */
-  public static function getAccessCallback($path) {
-    if ($router_item = self::getItem($path)) {
-      return $router_item['access_callback'];
-    }
-
-    return NULL;
+  public function getLinks() {
+    return menu_load_links($this->menu_name);
   }
 
-  /**
-   * Returns an array of access argument names that are being passed to the
-   * access callback function.
-   *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return array
-   *   Array of access argument names.
-   */
-  public static function getAccessArguments($path) {
-    if ($router_item = self::getItem($path)) {
-      return unserialize($router_item['access_arguments']);
-    }
+  public function getLinksByTitle($title, $parent_title = NULL) {
+    $links = $this->getLinks();
 
-    return array();
-  }
-
-  /**
-   * Returns whether the currently logged in user has access to the specified
-   * path.
-   *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return bool
-   *   TRUE if the user has access and FALSE otherwise.
-   */
-  public static function hasAccess($path) {
-    if ($router_item = self::getItem($path)) {
-      if ($router_item['access']) {
-        return TRUE;
+    $output = array();
+    foreach ($links as $link) {
+      if ($link['link_title'] == $title) {
+        if (!is_null($parent_title)) {
+          $plid = $link['plid'];
+          $parent_links = $this->getLinks();
+          foreach ($parent_links as $parent_link) {
+            if ($parent_link['mlid'] == $plid && $parent_link['link_title'] == $parent_title) {
+              $output[] = $link;
+            }
+          }
+        }
+        else {
+          $output[] = $link;
+        }
       }
     }
 
-    return FALSE;
+    return $output;
   }
 
-  /**
-   * Returns the page title for the specified path.
-   *
-   * @param string $path
-   *   Path where the page resides.
-   *
-   * @return null|string
-   *   Title if one exists and NULL otherwise.
-   */
-  public static function getTitle($path) {
-    if ($router_item = self::getItem($path)) {
-      if (!empty($router_item['title'])) {
-        return $router_item['title'];
+  public function getLinksByPath($path, $parent_path = NULL) {
+    $links = $this->getLinks();
+
+    $output = array();
+    foreach ($links as $link) {
+      if ($link['link_path'] == $path) {
+        if (!is_null($parent_path)) {
+          $plid = $link['plid'];
+          $parent_links = $this->getLinks();
+          foreach ($parent_links as $parent_link) {
+            if ($parent_link['mlid'] == $plid && $parent_link['link_path'] == $parent_path) {
+              $output[] = $link;
+            }
+          }
+        }
+        else {
+          $output[] = $link;
+        }
       }
     }
 
-    return NULL;
+    return $output;
   }
 
-  public static function getItem($path) {
-    //drupal_static_reset('menu_get_item');
-    $router_item = menu_get_item($path);
+  public function getLinksByTitlePath($title, $path, $parent_title = NULL, $parent_path = NULL) {
+    $links = $this->getLinks();
 
-    //drupal_static_reset('menu_get_item');
+    $output = array();
+    foreach ($links as $link) {
+      if ($link['link_path'] == $path && $link['link_title'] == $title) {
+        if (!is_null($parent_title) || !is_null($parent_path)) {
+          $plid = $link['plid'];
+          $parent_links = $this->getLinks();
+          foreach ($parent_links as $parent_link) {
+            if ($parent_link['mlid'] == $plid) {
+              if (!is_null($parent_title) && $parent_link['link_title'] != $parent_title) {
+                continue;
+              }
+              if (!is_null($parent_path) && $parent_link['link_path'] != $parent_path) {
+                continue;
+              }
 
-    return $router_item;
-  }
-
-  /**
-   * Returns blocks present on a webpage.
-   *
-   * @param $path
-   *   URL for which the blocks need to be returned.
-   * @param null|string $region
-   *   Region for which the blocks need to be filtered. If this argument is
-   *   NULL, then blocks for all regions on the page are returned.
-   *
-   * @return array
-   *   If $region is NULL, then the output format will be:
-   *   array(
-   *     'region 1' => array(
-   *       'block 1' => array(...),
-   *       'block 2' => array(...),
-   *     ),
-   *     'region 2' => array(
-   *       'block 3' => array(...),
-   *     ),
-   *   )
-   *   If $region is not NULL, then the output format will be:
-   *   array(
-   *     'block 1' => array(...),
-   *     'block 2' => array(...),
-   *   )
-   */
-  public static function getBlocks($path, $region = NULL) {
-    if (!module_exists('block')) {
-      return array();
+              $output[] = $link;
+            }
+          }
+        }
+        else {
+          $output[] = $link;
+        }
+      }
     }
 
-    if ($path == '<front>') {
-      $path = variable_get('site_frontpage', 'node');
-    }
-
-    static $drupal_static_fast;
-    if (!isset($drupal_static_fast)) {
-      $drupal_static_fast = &drupal_static('Menu::' . __FUNCTION__);
-    }
-    $pages = &$drupal_static_fast;
-
-    if (!isset($pages[$path])) {
-      $pages[$path] = array();
-
-      // This is a hack that needed to be done otherwise function
-      // menu_tree_page_data() in menu.inc file calls menu_get_item() with NULL
-      // argument. This means that menu_get_item() takes path as $_GET['q'].
-      // There doesn't seem to be any other way to solve this.
-      $original_query_param = $_GET['q'];
-      $_GET['q'] = $path;
-
-      block_page_build($pages[$path]);
-
-      $_GET['q'] = $original_query_param;
-
-      // Function menu_tree() in menu.inc caches the blocks by page. So its
-      // static cache needs to be reset before going to any other page.
-      drupal_static_reset('menu_tree');
-    }
-
-    if (!is_null($region)) {
-      return array_key_exists(
-        $region,
-        $pages[$path]
-      ) ? $pages[$path]['region'] : array();
-    }
-
-    return $pages[$path];
+    return $output;
   }
 }

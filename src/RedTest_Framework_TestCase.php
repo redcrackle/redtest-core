@@ -9,7 +9,6 @@
 namespace RedTest\core;
 
 
-use RedTest\core\Utils;
 use RedTest\core\entities\User;
 
 
