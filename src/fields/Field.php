@@ -140,6 +140,21 @@ class Field {
     return ($response ? $response : new Response(TRUE, NULL, ""));
   }
 
+  public static function processBeforePressButton(Form $formObject, $field_name) {
+    list($field_class, $widget_type) = self::getFieldClass(
+      $formObject,
+      $field_name
+    );
+
+
+    $response = NULL;
+    $function = 'process' . $widget_type . 'BeforePressButton';
+    if (method_exists($field_class, $function)) {
+      $response = $field_class::$function($formObject, $field_name);
+    }
+    return ($response ? $response : new Response(TRUE, NULL, ""));
+  }
+
   public static function processBeforeSubmit(Form $formObject, $field_name) {
     list($field_class, $widget_type) = self::getFieldClass(
       $formObject,

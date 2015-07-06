@@ -462,6 +462,8 @@ class Form {
     $this->makeUncheckedCheckboxesNull();
     $this->removeFileFieldWeights();
 
+    $this->processBeforePressButton();
+
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
 
@@ -801,5 +803,10 @@ class Form {
 
     return TRUE;
   }
+
+  /**
+   * Process the form before button is pressed.
+   */
+  public function processBeforePressButton() {}
 }
 

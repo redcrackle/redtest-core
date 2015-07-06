@@ -639,7 +639,7 @@ class TaxonomyTermReference extends Field {
         }
 
         // If the widget is autocomplete deluxe, then format the input correctly.
-        list($field_class, $widget_type) = Field::getFieldClass($formObject, $field_name);
+        /*list($field_class, $widget_type) = Field::getFieldClass($formObject, $field_name);
         if ($widget_type == 'AutocompleteDeluxeTaxonomy') {
           $input_array = array();
           foreach ($term_names as $term_name) {
@@ -650,7 +650,7 @@ class TaxonomyTermReference extends Field {
             'value_field' => implode(' ', $input_array),
           );
           $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
-        }
+        }*/
       }
     }
 
@@ -695,6 +695,27 @@ class TaxonomyTermReference extends Field {
     }
 
     return new Response(TRUE, NULL, "");
+  }
+
+  public static function processAutocompleteDeluxeTaxonomyBeforePressButton(Form $formObject, $field_name) {
+    if (self::isCckField($formObject, $field_name)) {
+      $form_state = $formObject->getFormState();
+      $values = $form_state['values'][$field_name][LANGUAGE_NONE];
+      if (is_string($values)) {
+        $term_names = explode(',', $values);
+
+        $input_array = array();
+        foreach ($term_names as $term_name) {
+          $input_array[] = '""' . $term_name . '""';
+        }
+
+        $input = array(
+          'textfield' => '',
+          'value_field' => implode(' ', $input_array),
+        );
+        $formObject->fillValues($field_name, array(LANGUAGE_NONE => $input));
+      }
+    }
   }
 
   /**

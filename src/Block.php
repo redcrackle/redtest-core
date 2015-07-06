@@ -88,8 +88,9 @@ class Block {
 
     $output = NULL;
 
+    $pathClass = new Path($path);
     if (is_null($region)) {
-      foreach (Menu::getBlocks($path) as $region => $block_array) {
+      foreach ($pathClass->getBlocks() as $region => $block_array) {
         foreach ($block_array as $block => $block_info) {
           if ($block == $this->name) {
             $output = $block_info;
@@ -99,7 +100,7 @@ class Block {
       }
     }
     else {
-      foreach (Menu::getBlocks($path, $region) as $block => $block_info) {
+      foreach ($pathClass->getBlocks($region) as $block => $block_info) {
         if ($block == $this->name) {
           $output = $block_info;
           break;

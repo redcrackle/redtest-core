@@ -303,6 +303,22 @@ abstract class EntityForm extends Form {
     return new Response($response->getSuccess(), $return, $response->getMsg());
   }
 
+  public function processBeforePressButton() {
+    // First get all field instances.
+    $field_instances = $this->getEntityObject()->getFieldInstances();
+
+    // Iterate over all the field instances and if the field is to be filled,
+    // then process it.
+    foreach ($field_instances as $field_name => $field_instance) {
+      list($field_class, $widget_type) = Field::getFieldClass(
+        $this,
+        $field_name
+      );
+
+      $field_class::processBeforePressButton($this, $field_name);
+    }
+  }
+
   public function processBeforeSubmit() {
     // First get all field instances.
     $field_instances = $this->getEntityObject()->getFieldInstances();
