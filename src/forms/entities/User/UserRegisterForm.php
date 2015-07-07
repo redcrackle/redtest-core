@@ -22,6 +22,9 @@ class UserRegisterForm extends EntityForm {
     //module_disable(array('captcha', 'recaptcha', 'honeypot', 'mollom'), TRUE);
     //cache_clear_all();
     parent::__construct('user_register_form');
+
+    $userObject = new User();
+    $this->setEntityObject($userObject);
   }
 
   /**

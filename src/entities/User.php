@@ -30,8 +30,9 @@ class User extends Entity {
     if (!is_null($uid) && is_numeric($uid) && $account = user_load($uid)) {
       parent::__construct($account);
     }
-
-    $this->setInitialized(TRUE);
+    else {
+      parent::__construct(NULL);
+    }
   }
 
   /**

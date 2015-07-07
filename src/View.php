@@ -78,7 +78,8 @@ class View {
   }
 
   public function hasAccess() {
-    return Menu::hasAccess($this->getUrl());
+    $path = new Path($this->getUrl());
+    return $path->hasAccess();
   }
 
   public function getResultCount() {
