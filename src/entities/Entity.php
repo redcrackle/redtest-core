@@ -360,7 +360,14 @@ abstract class Entity {
     $entity_class = get_called_class();
     $entity_type = $entity_class::getEntityType();
     if (module_exists('entity')) {
-      return entity_access($op, $entity_type);
+      $class = new \ReflectionClass($entity_class);
+      $bundle = Utils::makeSnakeCase($class->getShortName());
+
+      return entity_access(
+        $op,
+        $entity_type,
+        (object) array('type' => $bundle)
+      );
     }
     elseif ($entity_type == 'node') {
       $class = new \ReflectionClass($entity_class);

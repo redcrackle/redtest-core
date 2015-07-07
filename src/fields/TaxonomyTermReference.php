@@ -358,7 +358,7 @@ class TaxonomyTermReference extends Field {
     }
 
     $field_class = get_called_class();
-    $tids = $field_class::convertValues($values, NULL);
+    $tids = $field_class::convertValues($values, $vocabulary);
     $response = $formObject->fillValues(
       $field_name,
       array(LANGUAGE_NONE => $tids)

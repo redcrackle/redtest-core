@@ -370,4 +370,15 @@ class User extends Entity {
     $user = $original_user_object->getEntity();
     drupal_save_session($old_state);
   }
+
+  public function hasRole($role_or_rid) {
+    if (is_numeric($role_or_rid)) {
+      $rids = array_keys($this->getEntity()->roles);
+      return in_array($role_or_rid, $rids);
+    }
+    else {
+      $roles = array_values($this->getEntity()->roles);
+      return in_array($role_or_rid, $roles);
+    }
+  }
 }

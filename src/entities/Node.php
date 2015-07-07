@@ -26,9 +26,19 @@ class Node extends Entity {
     $type = Utils::makeSnakeCase($class->getShortName());
     if (!is_null($nid) && is_numeric($nid)) {
       $node = node_load($nid);
-      if ($node->type == $type) {
-        parent::__construct($node);
+      if (!$node) {
+        $this->setErrors("Node with nid $nid does not exist.");
+        $this->setInitialized(FALSE);
+        return;
       }
+
+      if ($node->type != $type) {
+        $this->setErrors("Node's type doesn't match the class.");
+        $this->setInitialized(FALSE);
+        return;
+      }
+
+      parent::__construct($node);
     }
     else {
       global $user;
