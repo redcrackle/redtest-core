@@ -20,6 +20,9 @@ class Mail {
    * Delete all emails.
    */
   public static function delete() {
+    if (!module_exists('redtest_helper_mail_logger')) {
+      throw new \Exception('Please enable Red Test Help Mail Logger module.');
+    }
     $test_token = getenv('TEST_TOKEN');
     $test_token_exists = isset($test_token);
 
@@ -42,8 +45,14 @@ class Mail {
    *
    * @return array
    *   An array of emails.
+   *
+   * @throws \Exception
    */
   public static function get($fields = array(), $mailkey = NULL, $subject = NULL) {
+    if (!module_exists('redtest_helper_mail_logger')) {
+      throw new \Exception('Please enable Red Test Help Mail Logger module.');
+    }
+
     $test_token = getenv('TEST_TOKEN');
     $test_token_exists = isset($test_token);
 
