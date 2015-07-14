@@ -98,7 +98,12 @@ class User extends Entity {
     /**
      * @todo Find a better way to make the user active and add roles than using user_save().
      */
-    $roles = self::formatRoles($roles);
+    try {
+      $roles = self::formatRoles($roles);
+    }
+    catch (\Exception $e) {
+      return new Response(FALSE, NULL, $e->getMessage());
+    }
     $userObject = $response->getVar();
 
     if (!$userObject->getStatusValues() || sizeof($roles)) {

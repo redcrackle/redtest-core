@@ -83,6 +83,7 @@ class Mail {
       $query->condition('m.subject', $subject);
     }
 
+    watchdog('query', $query);
     $result = $query->execute();
 
     if (is_string($original_fields)) {

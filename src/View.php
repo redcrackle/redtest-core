@@ -42,9 +42,15 @@ class View {
   }
 
   public function __construct($view_name, $display_id = NULL) {
+    if (!module_exists('views')) {
+      $this->setErrors('Please enable the Views module.');
+      $this->setInitialized(FALSE);
+      return;
+    }
+
     $this->view = views_get_view($view_name);
     if (!$this->view) {
-      $this->setErrors('View does not exist.');
+      $this->setErrors("View $view_name does not exist.");
       $this->setInitialized(FALSE);
       return;
     }

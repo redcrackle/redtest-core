@@ -9,6 +9,7 @@
 namespace RedTest\core\entities;
 
 use RedTest\core\forms\entities\Node\NodeDeleteConfirm;
+use RedTest\core\Response;
 use RedTest\core\Utils;
 
 class Node extends Entity {
@@ -70,11 +71,8 @@ class Node extends Entity {
   /**
    * Delete a node using the form.
    *
-   * @return array
-   *   An array with two values:
-   *   (1) bool $success: If form submission succeeded.
-   *   (2) string $msg: An error message if submission failed and empty
-   *   otherwise.
+   * @return Response
+   *   Response object.
    */
   public function delete() {
     $nodeDeleteConfirm = new NodeDeleteConfirm($this->getId());

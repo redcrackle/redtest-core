@@ -56,10 +56,15 @@ class RedTest_Framework_TestCase extends \PHPUnit_Framework_TestCase {
    */
   protected static $deleteCreatedEntities = TRUE;
 
+  protected static $deleteMailLog = TRUE;
+
   public static function tearDownAfterClass() {
     User::logout();
     if (static::$deleteCreatedEntities) {
       Utils::deleteCreatedEntities();
+    }
+    if (static::$deleteMailLog && module_exists('redtest_helper_mail_logger')) {
+      Mail::delete();
     }
   }
 }
