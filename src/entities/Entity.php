@@ -1507,6 +1507,14 @@ abstract class Entity {
    *   Response object.
    */
   public static function createRandom($num = 1, $options = array()) {
+    if (!is_numeric($num)) {
+      return new Response(
+        FALSE,
+        NULL,
+        'Number of entities to be created has to be an integer.'
+      );
+    }
+
     // First get the references that need to be created.
     static::processBeforeCreateRandom($options);
 

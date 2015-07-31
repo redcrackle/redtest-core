@@ -69,10 +69,14 @@ class User extends Entity {
    *   Email address.
    * @param string $password
    *   Password.
-   * @param array $roles
-   *   An array of roles that are to be added to the user in addition to the
-   *   default role(s) that the user gets on registering. You can either pass
-   *   in role id or role string.
+   * @param array $options
+   *   Options array. Usually this will have the following 3 keys:
+   *   (a) roles: An array of roles that the newsly created user has to be
+   *   assigned.
+   *   (b) skip: An array of fields that need to be skipped during
+   *   registration.
+   *   (c) required_fields_only: Whether only required fields in the
+   *   registration field are to be filled.
    *
    * @return mixed $user
    *   User object if the user logged in successfully and an array of errors,
@@ -82,13 +86,45 @@ class User extends Entity {
     $username,
     $email,
     $password,
-    $roles = array()
+    $options = array()
   ) {
+    $options += array(
+      'roles' => array(),
+      'skip' => array(),
+      'required_fields_only' => TRUE,
+    );
+
     $userRegisterForm = new UserForms\UserRegisterForm();
     $userRegisterForm->fillFieldValues(array('account', 'name'), $username);
     $userRegisterForm->fillFieldValues(array('account', 'mail'), $email);
     $userRegisterForm->fillFieldValues(array('pass', 'pass1'), $password);
     $userRegisterForm->fillFieldValues(array('pass', 'pass2'), $password);
+
+    $userObject = new User();
+    $field_instances = $userObject->getFieldInstances();
+    $fields = array();
+    foreach ($field_instances as $field_name => $field_info) {
+      if (!$field_info['settings']['user_register_form']) {
+        continue;
+      }
+
+      if (!in_array(
+          $field_name,
+          $options['skip']
+        ) && ($userRegisterForm->isRequired(
+            $field_name
+          ) || $field_info['required'] || !$options['required_fields_only'])
+      ) {
+        $function = 'fill' . Utils::makeTitleCase($field_name) . 'RandomValues';
+        $response = $userRegisterForm->$function();
+        if (!$response->getSuccess()) {
+          $response->setVar($fields);
+          return $response;
+        }
+
+        $fields[$field_name] = $response->getVar();
+      }
+    }
 
     $response = $userRegisterForm->submit();
     if (!$response->getSuccess()) {
@@ -99,9 +135,8 @@ class User extends Entity {
      * @todo Find a better way to make the user active and add roles than using user_save().
      */
     try {
-      $roles = self::formatRoles($roles);
-    }
-    catch (\Exception $e) {
+      $roles = self::formatRoles($options['roles']);
+    } catch (\Exception $e) {
       return new Response(FALSE, NULL, $e->getMessage());
     }
     $userObject = $response->getVar();
@@ -299,10 +334,17 @@ class User extends Entity {
    *   Response object.
    */
   public static function createRandom($num = 1, $options = array()) {
+    if (!is_numeric($num)) {
+      return new Response(FALSE, NULL, 'Number of users to be created has to be an integer.');
+    }
+
     $options += array(
       'roles' => array(),
       'required_fields_only' => TRUE,
     );
+
+    // First get the references that need to be created.
+    //static::processBeforeCreateRandom($options);
 
     $output = array();
     for ($i = 0; $i < $num; $i++) {
@@ -327,7 +369,7 @@ class User extends Entity {
         $username,
         $email,
         $password,
-        $options['roles']
+        $options
       );
       if (!$response->getSuccess()) {
         $response->setVar($output);

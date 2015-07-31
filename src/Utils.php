@@ -233,12 +233,12 @@ class Utils {
     $start_date = 0,
     $end_date = NULL
   ) {
-    $start_int = strtotime($start_date);
+    $start_int = is_numeric($start_date) ? $start_date : strtotime($start_date);
     if (is_null($end_date)) {
       $end_int = time();
     }
     else {
-      $end_int = strtotime($end_date);
+      $end_int = is_numeric($end_date) ? $end_date : strtotime($end_date);
     }
 
     $val = self::getRandomInt($start_int, $end_int);

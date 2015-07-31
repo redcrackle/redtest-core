@@ -125,16 +125,18 @@ class Comment extends Entity {
    *   (b) required_fields_only: TRUE if only required fields are to be filled
    *   and FALSE if all fields are to be filled.
    *
-   * @return array
-   *   An array with the following values:
-   *   (1) $success: TRUE if entities were created successfully and FALSE
-   *   otherwise.
-   *   (2) $objects: A single entity object or an associative array of entity
-   *   objects that are created.
-   *   (3) $msg: Error message if $success is FALSE, and an empty string
-   *   otherwise.
+   * @return Response
+   *   Response object.
    */
   public static function createRandom($num = 1, $options = array()) {
+    if (!is_numeric($num)) {
+      return new Response(
+        FALSE,
+        NULL,
+        'Number of comments to be created has to be an integer.'
+      );
+    }
+
     if (!isset($options['nid']) && !isset($options['pid'])) {
       return new Response(
         FALSE,
