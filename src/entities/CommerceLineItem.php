@@ -11,16 +11,16 @@ namespace RedTest\core\entities;
 use RedTest\core\Response;
 use RedTest\core\Utils;
 
-class CommerceOrder extends Entity {
+class CommerceLineItem extends Entity {
 
   /**
-   * Delete the order programmatically.
+   * Delete the line item programmatically.
    *
    * @return bool
    *   Returns TRUE.
    */
   public function deleteProgrammatically() {
-    commerce_order_delete($this->getId());
+    commerce_line_item_delete($this->getId());
     return TRUE;
   }
 
