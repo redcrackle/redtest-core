@@ -808,5 +808,20 @@ class Form {
    * Process the form before button is pressed.
    */
   public function processBeforePressButton() {}
+
+  /**
+   * Returns the path to which the user will be redirects once the form is
+   * submitted.
+   *
+   * @return bool|mixed
+   *   Redirect path if it's present and FALSE otherwise.
+   */
+  public function getRedirectPath() {
+    if (!empty($this->form_state) && !empty($this->form_state['redirect'])) {
+      return $this->form_state['redirect'];
+    }
+
+    return FALSE;
+  }
 }
 
