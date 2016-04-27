@@ -48,7 +48,8 @@ class RedTest_Framework_TestCase extends \PHPUnit_Framework_TestCase {
     'entities',
     'language',
     'language_url',
-    'language_content'
+    'language_content',
+    '_SESSION'
   );
 
   /**

@@ -12,6 +12,11 @@ use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 
+/**
+ * Class CommerceOrder
+ *
+ * @package RedTest\core\entities\Commerce
+ */
 class CommerceOrder extends Entity {
 
   /**
@@ -57,11 +62,30 @@ class CommerceOrder extends Entity {
     return $quantity;
   }
 
+  /**
+   * Returns the number of items of a provided SKU present in the order.
+   *
+   * @param string $sku
+   *   Product SKU.
+   *
+   * @return int
+   *   Number of items present in the order.
+   */
   public function getProductSKUQuantity($sku) {
     $commerce_product = commerce_product_load_by_sku($sku);
     return $this->getProductQuantity($commerce_product->product_id);
   }
 
+  /**
+   * Returns whether a product other than the excluded product ids is present
+   * in the order.
+   *
+   * @param array $excluded_product_ids
+   *   Excluded product ids.
+   *
+   * @return bool
+   *   TRUE if a product is present and FALSE otherwise.
+   */
   public function isProductPresent($excluded_product_ids = array()) {
     $line_items = $this->getFieldItems('commerce_line_items');
     foreach ($line_items as $line_item) {
@@ -74,6 +98,16 @@ class CommerceOrder extends Entity {
     return FALSE;
   }
 
+  /**
+   * Returns whether a product other than the excluded product SKUs is present
+   * in the order.
+   *
+   * @param array $excluded_product_skus
+   *   Excluded product SKUs.
+   *
+   * @return bool
+   *   TRUE if a product is present and FALSE otherwise.
+   */
   public function isProductSKUPresent($excluded_product_skus = array()) {
     $excluded_product_ids = array();
     foreach ($excluded_product_skus as $sku) {
@@ -84,6 +118,194 @@ class CommerceOrder extends Entity {
     }
 
     return $this->isProductPresent($excluded_product_ids);
+  }
+
+  /**
+   * Returns an associative array of number of items present in the order keyed
+   * by the product id.
+   *
+   * @return array
+   *   Associative array of number of items present in the order keyed by the
+   *   product id.
+   */
+  public function getProductQuantityMap() {
+    $output = array();
+    $line_items = $this->getFieldItems('commerce_line_items');
+    foreach ($line_items as $line_item) {
+      $lineItemEntity = new CommerceLineItem($line_item['line_item_id']);
+      $map = $lineItemEntity->getProductQuantityMap();
+      foreach ($map as $product_id => $quantity) {
+        if (array_key_exists($product_id, $output)) {
+          $output[$product_id] += $quantity;
+        }
+        else {
+          $output[$product_id] = $quantity;
+        }
+      }
+    }
+
+    return $output;
+  }
+
+  /**
+   * Returns an associative array of number of items present in the order keyed
+   * by the product SKU.
+   *
+   * @return array
+   *   Associative array of number of items present in the order keyed by the
+   *   product SKU.
+   */
+  public function getProductSKUQuantityMap() {
+    $output = array();
+    $line_items = $this->getFieldItems('commerce_line_items');
+    foreach ($line_items as $line_item) {
+      $lineItemEntity = new CommerceLineItem($line_item['line_item_id']);
+      $map = $lineItemEntity->getProductSKUQuantityMap();
+      foreach ($map as $sku => $quantity) {
+        if (array_key_exists($sku, $output)) {
+          $output[$sku] += $quantity;
+        }
+        else {
+          $output[$sku] = $quantity;
+        }
+      }
+    }
+
+    return $output;
+  }
+
+  /**
+   * Verifies whether the number of products in the order matches with the
+   * input.
+   *
+   * @param $product_quantity_map
+   *   An associative array of product quantity keyed by product id.
+   * @param bool $exact
+   *   TRUE if order should not have any product not provided in the
+   *   $product_quantity_map array. If this argument is set to FALSE, then
+   *   order may have more products than provided in the $product_quantity_map
+   *   array and those products are ignored.
+   *
+   * @return bool
+   *   TRUE if products and quantities in the order match with those provided
+   *   as input and FALSE otherwise.
+   */
+  public function hasProducts($product_quantity_map, $exact = TRUE) {
+    // Get the actual map of product id to quantity present in the order.
+    $map = $this->getProductQuantityMap();
+
+    // If size of $product_quantity_map is more than than of the actual map,
+    // then return FALSE since there is at least one product in
+    // $product_quantity_map that is not present in the actual map.
+    if (sizeof($product_quantity_map) > sizeof($map)) {
+      return FALSE;
+    }
+
+    // If $exact is set to TRUE then make sure that the number of products in
+    // the $product_quantity_map is the same as that in the actual map.
+    if ($exact && sizeof($map) != sizeof($product_quantity_map)) {
+      return FALSE;
+    }
+
+    // Go through each product and quantity in the $product_quantity_map and
+    // make sure that it matches with the actual map.
+    foreach ($product_quantity_map as $product_id => $quantity) {
+      if ($map[$product_id] != $quantity) {
+        return FALSE;
+      }
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * Verifies whether the number of products in the order matches with the
+   * input.
+   *
+   * @param $product_quantity_map
+   *   An associative array of product quantity keyed by product SKU.
+   * @param bool $exact
+   *   TRUE if order should not have any product not provided in the
+   *   $product_quantity_map array. If this argument is set to FALSE, then
+   *   order may have more products than provided in the $product_quantity_map
+   *   array and those products are ignored.
+   *
+   * @return bool
+   *   TRUE if products and quantities in the order match with those provided
+   *   as input and FALSE otherwise.
+   */
+  public function hasProductSKUs($product_quantity_map, $exact = TRUE) {
+    // Get the actual map of product id to quantity present in the order.
+    $map = $this->getProductSKUQuantityMap();
+
+    // If size of $product_quantity_map is more than than of the actual map,
+    // then return FALSE since there is at least one product in
+    // $product_quantity_map that is not present in the actual map.
+    if (sizeof($product_quantity_map) > sizeof($map)) {
+      return FALSE;
+    }
+
+    // If $exact is set to TRUE then make sure that the number of products in
+    // the $product_quantity_map is the same as that in the actual map.
+    if ($exact && sizeof($map) != sizeof($product_quantity_map)) {
+      return FALSE;
+    }
+
+    // Go through each product and quantity in the $product_quantity_map and
+    // make sure that it matches with the actual map.
+    foreach ($product_quantity_map as $sku => $quantity) {
+      if ($map[$sku] != $quantity) {
+        return FALSE;
+      }
+    }
+
+    return TRUE;
+  }
+
+  public function getTotalAmount() {
+    $total = $this->getFieldItems('commerce_order_total');
+    return $total[0]['amount'];
+  }
+
+  public function getTotalCurrency() {
+    $total = $this->getFieldItems('commerce_order_total');
+    return $total[0]['currency_code'];
+  }
+
+  /**
+   * Reload the order from the database. This is necessary so that
+   * commerce_cart_commerce_order_load() function can get called, which in turn
+   * invokes the rule "Override price for recurring" provided by the recurring
+   * framework.
+   */
+  public function reload() {
+    // Unsetting $refreshed in commerce_cart_commerce_order_load() is needed so
+    // that commerce_cart_order_refresh() can be called.
+    drupal_static_reset('commerce_cart_commerce_order_load');
+
+    // Temporarily set the value of commerce_cart_refresh_frequency to 0 so that
+    // the function commerce_cart_order_can_refresh() which is called in
+    // commerce_cart_commerce_order_load() returns TRUE and
+    // commerce_cart_order_refresh() can actually get called.
+    $commerce_cart_refresh_frequency = variable_get('commerce_cart_refresh_frequency', 0);
+    global $conf;
+    $conf['commerce_cart_refresh_frequency'] = 0;
+    // Load the order from the database which should call the "Override price
+    // for recurring" rule provided by recurring framework.
+    parent::reload();
+    // Set value of commerce_cart_refresh_frequency variable back to what it was
+    // earlier.
+    $conf['commerce_cart_refresh_frequency'] = $commerce_cart_refresh_frequency;
+  }
+
+  /**
+   * Returns whether the logged in user can checkout the order.
+   *
+   * @return bool
+   *   TRUE if checkout is allowed and FALSE otherwise.
+   */
+  public function canCheckout() {
+    return commerce_checkout_access($this->getEntity());
   }
 
   /**

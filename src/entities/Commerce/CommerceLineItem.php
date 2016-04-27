@@ -12,6 +12,11 @@ use RedTest\core\entities\Entity;
 use RedTest\core\Response;
 use RedTest\core\Utils;
 
+/**
+ * Class CommerceLineItem
+ *
+ * @package RedTest\core\entities\Commerce
+ */
 class CommerceLineItem extends Entity {
 
   /**
@@ -51,6 +56,16 @@ class CommerceLineItem extends Entity {
     parent::__construct($line_item);
   }
 
+  /**
+   * Returns the number of items of a provided product id present in the line
+   * item.
+   *
+   * @param int $product_id
+   *   Product id.
+   *
+   * @return int
+   *   Number of items present.
+   */
   public function getProductQuantity($product_id) {
     $products = $this->getFieldItems('commerce_product');
     $quantity = 0;
@@ -63,11 +78,31 @@ class CommerceLineItem extends Entity {
     return $quantity;
   }
 
+  /**
+   * Returns the number of items of a provided product SKU present in the line
+   * item.
+   *
+   * @param string $sku
+   *   Product SKU.
+   *
+   * @return int
+   *   Number of items present.
+   */
   public function getProductSKUQuantity($sku) {
     $commerce_product = commerce_product_load_by_sku($sku);
     return $this->getProductQuantity($commerce_product->product_id);
   }
 
+  /**
+   * Returns whether the line item contains any product other than the excluded
+   * product ids.
+   *
+   * @param array $excluded_product_ids
+   *   An array of product ids that should not be considered.
+   *
+   * @return bool
+   *   TRUE if at least one product is present and FALSE otherwise.
+   */
   public function isProductPresent($excluded_product_ids = array()) {
     $products = $this->getFieldItems('commerce_product');
     foreach ($products as $product) {
@@ -79,6 +114,16 @@ class CommerceLineItem extends Entity {
     return FALSE;
   }
 
+  /**
+   * Returns whether the line item contains any product other than the excluded
+   * product SKUs.
+   *
+   * @param array $excluded_product_skus
+   *   An array of product SKUs that should not be considered.
+   *
+   * @return bool
+   *   TRUE if at least one product is present and FALSE otherwise.
+   */
   public function isProductSKUPresent($excluded_product_skus = array()) {
     $excluded_product_ids = array();
     foreach ($excluded_product_skus as $sku) {
@@ -89,6 +134,64 @@ class CommerceLineItem extends Entity {
     }
 
     return $this->isProductPresent($excluded_product_ids);
+  }
+
+  /**
+   * Returns an associative array of number of items present in the line item
+   * keyed by the product id.
+   *
+   * @return array
+   *   Associative array of number of items present in the line item keyed by
+   *   the product id.
+   */
+  public function getProductQuantityMap() {
+    $output = array();
+    $products = $this->getFieldItems('commerce_product');
+    $quantity = $this->getEntity()->quantity;
+    foreach ($products as $product) {
+      $product_id = $product['product_id'];
+      if (array_key_exists($product_id, $output)) {
+        $output[$product_id] += $quantity;
+      }
+      else {
+        $output[$product_id] = $quantity;
+      }
+    }
+
+    return $output;
+  }
+
+  /**
+   * Returns an associative array of number of items present in the line item
+   * keyed by the SKU.
+   *
+   * @return array
+   *   Associative array of number of items present in the line item keyed by
+   *   the SKU
+   */
+  public function getProductSKUQuantityMap() {
+    $output = array();
+    $products = $this->getFieldItems('commerce_product');
+    $quantity = $this->getEntity()->quantity;
+
+    $product_ids = array();
+    foreach ($products as $product) {
+      $product_ids[] = $product['product_id'];
+    }
+
+    $commerce_products = commerce_product_load_multiple($product_ids);
+
+    foreach ($commerce_products as $product_id => $product) {
+      $sku = $product->sku;
+      if (array_key_exists($sku, $output)) {
+        $output[$sku] += $quantity;
+      }
+      else {
+        $output[$sku] = $quantity;
+      }
+    }
+
+    return $output;
   }
 
   /**

@@ -6,11 +6,33 @@ use RedTest\core\forms\Form;
 use RedTest\core\entities\Commerce\CommerceOrder;
 use RedTest\core\Response;
 
+/**
+ * Class CommerceAddToCartForm
+ *
+ * @package RedTest\core\forms\Commerce
+ */
 class CommerceAddToCartForm extends Form {
 
+  /**
+   * @var array
+   */
   private $cart_context;
+
+  /**
+   * @var array
+   */
   private $arguments;
 
+  /**
+   * Constructor for the Add to cart form. Provide $nid as the id of the
+   * product display node. Other optional arguments are product reference field
+   * name, view mode of the product display node and language of the product
+   * display node. If optional arguments are not provided, their default values
+   * are assumed, which are "field_product", "default" and "en" respectively.
+   *
+   * @param int $nid
+   *   Product display node id.
+   */
   public function __construct($nid) {
     $args = func_get_args();
     array_shift($args);
@@ -85,6 +107,12 @@ class CommerceAddToCartForm extends Form {
     $this->arguments = $arguments;
   }
 
+  /**
+   * Press the Add to cart button.
+   *
+   * @return Response
+   *   Response object.
+   */
   public function submit() {
     $response = $this->pressButton(t('Buy Now'), array(), $this->arguments['line_item'], $this->arguments['show_quantity'], $this->cart_context);
     if (!$response->getSuccess()) {
@@ -94,6 +122,14 @@ class CommerceAddToCartForm extends Form {
     $form_state = $this->getFormState();
     $order_id = $form_state['line_item']->order_id;
     $order = new CommerceOrder($order_id);
+    $order->reload();
+    // To trigger the rule "Override price for recurring", we need to load the
+    // order entity from the database after clearing the cache.
+    /*$commerce_order = $order->getEntity();
+    unset($commerce_order->data['last_cart_refresh']);
+    $order->setEntity($commerce_order);
+    drupal_static_reset('commerce_cart_commerce_order_load');
+    $order->reload();*/
 
     global $entities;
     $entities['commerce_order'][$order->order_id] = $order;

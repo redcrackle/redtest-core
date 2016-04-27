@@ -284,7 +284,7 @@ class Text extends Field {
 
     $input = array();
 
-    if (is_string($values)) {
+    if (is_string($values) || is_numeric($values)) {
       // Values is a string, which means that it's single-valued.
       // $values is in acceptable format (a).
       $input[] = array('value' => $values) + $defaults;

@@ -434,7 +434,10 @@ class Form {
     $triggering_element_name = NULL,
     $options = array()
   ) {
-    $options += array('ajax' => FALSE);
+    $options += array(
+      'ajax' => FALSE,
+      'triggering_element_key' => 'op',
+    );
     $ajax = $options['ajax'];
 
     // Make sure that a button with provided name exists.
@@ -452,7 +455,8 @@ class Form {
     if (!$ajax) {
       // If this is not an AJAX request, then the supplied name is the value of
       // Op parameter.
-      $response = $this->fillOpValues($triggering_element_name);
+      $response = $this->fillValues($options['triggering_element_key'], $triggering_element_name);
+      //$response = $this->fillOpValues($triggering_element_name);
       if (!$response->getSuccess()) {
         return $response;
       }
@@ -497,6 +501,8 @@ class Form {
     if ($ajax && !is_null($triggering_element_name)) {
       unset($this->form_state['values'][$triggering_element_name]);
     }
+
+    unset($this->form_state['values'][$options['triggering_element_key']]);
 
     // Reset the static cache for validated forms otherwise form won't go
     // through validation function again.
