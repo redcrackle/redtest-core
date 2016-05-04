@@ -10,7 +10,7 @@ namespace RedTest\core;
 
 
 use RedTest\core\entities\User;
-
+use Patchwork;
 
 if (!defined('DRUPAL_ROOT')) {
   /**
@@ -32,6 +32,30 @@ require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
 drupal_override_server_variables();
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
+Patchwork\redefine('drupal_goto', function($path = '', array $options = array(), $http_response_code = 302) {
+  // A destination in $_GET always overrides the function arguments.
+  // We do not allow absolute URLs to be passed via $_GET, as this can be an attack vector.
+  if (isset($_GET['destination']) && !url_is_external($_GET['destination'])) {
+    $destination = drupal_parse_url($_GET['destination']);
+    $path = $destination['path'];
+    $options['query'] = $destination['query'];
+    $options['fragment'] = $destination['fragment'];
+  }
+
+  // In some cases modules call drupal_goto(current_path()). We need to ensure
+  // that such a redirect is not to an external URL.
+  if ($path === current_path() && empty($options['external']) && url_is_external($path)) {
+    // Force url() to generate a non-external URL.
+    $options['external'] = FALSE;
+  }
+
+  drupal_alter('drupal_goto', $path, $options, $http_response_code);
+
+  global $drupal_goto;
+  $drupal_goto['path'] = $path;
+  $drupal_goto['options'] = $options;
+  $drupal_goto['http_response_code'] = $http_response_code;
+});
 
 /**
  * Class RedTest_Framework_TestCase

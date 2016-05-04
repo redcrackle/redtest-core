@@ -287,7 +287,9 @@ class Utils {
    */
   public static function getId($input) {
     if (is_array($input)) {
-      return array_map(function ($obj) { return $obj->getId(); }, $input);
+      return array_map(function ($obj) {
+        return $obj->getId();
+      }, $input);
     }
 
     return $input->getId();
@@ -306,7 +308,9 @@ class Utils {
    */
   public static function getLabel($input) {
     if (is_array($input)) {
-      return array_map(function ($obj) { return $obj->getLabel(); }, $input);
+      return array_map(function ($obj) {
+        return $obj->getLabel();
+      }, $input);
     }
 
     return $input->getLabel();
@@ -715,5 +719,59 @@ class Utils {
     }
 
     return array_pop($input);
+  }
+
+  /**
+   * Returns the path that drupal_goto() will redirect the user to.
+   *
+   * @return string
+   *   Path where the user will be redirected to.
+   */
+  public static function getDrupalGotoPath() {
+    global $drupal_goto;
+    return !empty($drupal_goto['path']) ? $drupal_goto['path'] : '';
+  }
+
+  /**
+   * Returns the options for the redirect that drupal_goto() has set.
+   *
+   * @return array
+   *   Options array.
+   */
+  public static function getDrupalGotoOptions() {
+    global $drupal_goto;
+    return !empty($drupal_goto['options']) ? $drupal_goto['options'] : array();
+  }
+
+  /**
+   * Returns the HTTP response code that drupal_goto() has set.
+   *
+   * @return string|int
+   *   HTTP response code if available, otherwise an empty string.
+   */
+  public static function getDrupalGotoCode() {
+    global $drupal_goto;
+    return !empty($drupal_goto['http_response_code']) ?
+      $drupal_goto['http_response_code'] : '';
+  }
+
+  /**
+   * Reset the drupal_goto global variable.
+   */
+  public static function resetDrupalGoto() {
+    // Inside a function, global variable can only be unset by unsetting it from
+    // $GLOBALS array.
+    unset($GLOBALS['drupal_goto']);
+  }
+
+  /**
+   * Clears all the messages from the session.
+   *
+   * @param null|string $type
+   *   Type of messages to clear. If this parameter is not specified, then all
+   *   messages will be cleared.
+   */
+  public static function clearMessages($type = NULL) {
+    drupal_get_messages($type);
   }
 }

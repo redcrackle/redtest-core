@@ -10,6 +10,7 @@ namespace RedTest\core\entities\Commerce;
 
 use RedTest\core\Response;
 use RedTest\core\Utils;
+use RedTest\core\entities\Entity;
 
 class CommerceProduct extends Entity {
 
@@ -18,32 +19,42 @@ class CommerceProduct extends Entity {
    * class directly. Create a separate class for each product type and use its
    * constructor.
    *
-   * @param int $line_item_id
+   * @param int $product_id
    *   Product id if an existing product is to be loaded.
    */
-  public function __construct($line_item_id = NULL) {
+  public function __construct($product_id = NULL) {
     $class = new \ReflectionClass(get_called_class());
 
     $type = Utils::makeSnakeCase($class->getShortName());
-    if (!is_null($line_item_id) && is_numeric($line_item_id)) {
-      $product = commerce_product_load($line_item_id);
-      if (!$product) {
-        $this->setErrors("Product with id $line_item_id does not exist.");
-        $this->setInitialized(FALSE);
+    if (!is_null($product_id)) {
+      $product = NULL;
+      if (is_numeric($product_id)) {
+        $product = commerce_product_load($product_id);
+      }
+
+      if ($product && $product->type == $type) {
+        parent::__construct($product);
         return;
       }
 
-      if ($product->type != $type) {
-        $this->setErrors("Product's type does not match the class.");
+      // SKU might have been passed instead.
+      $product = commerce_product_load_by_sku($product_id);
+
+      if ($product && $product->type == $type) {
+        parent::__construct($product);
+        return;
+      }
+
+      if (!$product) {
+        $this->setErrors("Product with id or sku $product_id and type $type does not exist.");
         $this->setInitialized(FALSE);
         return;
       }
     }
     else {
       $product = commerce_product_new($type);
+      parent::__construct($product);
     }
-
-    parent::__construct($product);
   }
 
   /**

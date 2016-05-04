@@ -462,6 +462,7 @@ class Form {
       }
     }
 
+    Utils::clearMessages();
     $this->clearErrors();
     $this->makeUncheckedCheckboxesNull();
     $this->removeFileFieldWeights();
@@ -507,6 +508,7 @@ class Form {
     // Reset the static cache for validated forms otherwise form won't go
     // through validation function again.
     drupal_static_reset('drupal_validate_form');
+    drupal_static_reset('drupal_retrieve_form');
 
     if ($errors = form_get_errors()) {
       $this->errors = $errors;

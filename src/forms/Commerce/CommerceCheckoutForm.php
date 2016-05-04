@@ -8,7 +8,9 @@
 
 namespace RedTest\core\forms\Commerce;
 
+use RedTest\core\entities\Commerce\CommerceOrder;
 use RedTest\core\forms\Form;
+use RedTest\core\Response;
 
 
 class CommerceCheckoutForm extends Form {
@@ -43,14 +45,39 @@ class CommerceCheckoutForm extends Form {
       $this->setInitialized(FALSE);
     }
 
-    $this->includeFile('inc', 'commerce_checkout', 'includes/commerce_checkout.pages');
-    parent::__construct('commerce_checkout_form_' . $checkout_page['page_id'], $order, $checkout_page);
+    $this->includeFile('inc', 'commerce_checkout',
+      'includes/commerce_checkout.pages');
+    parent::__construct('commerce_checkout_form_' . $checkout_page['page_id'],
+      $order, $checkout_page);
 
     $this->page_id = $page_id;
     $this->order_id = $order_id;
   }
 
-  public function submit() {
+  private function getResponse($response) {
+    if (!$response->getSuccess()) {
+      return $response;
+    }
+
+    $form_state = $this->getFormState();
+    $order = new CommerceOrder($form_state['order']->order_id);
+
+    return new Response(TRUE, $order, "");
+  }
+
+  public function pressButton($name) {
+    $checkout_pages = commerce_checkout_pages();
+    $checkout_page = $checkout_pages[$this->page_id];
+    $order = commerce_order_load($this->order_id);
+
+    $response = parent::pressButton($name, array(),
+      'commerce_checkout_form_' . $checkout_page['page_id'], $order,
+      $checkout_page);
+
+    return $this->getResponse($response);
+  }
+
+  /*public function submit() {
     $checkout_pages = commerce_checkout_pages();
     $checkout_page = $checkout_pages[$this->page_id];
     $order = commerce_order_load($this->order_id);
@@ -59,4 +86,24 @@ class CommerceCheckoutForm extends Form {
 
     return $response;
   }
+
+  public function continueCheckout() {
+    $checkout_pages = commerce_checkout_pages();
+    $checkout_page = $checkout_pages[$this->page_id];
+    $order = commerce_order_load($this->order_id);
+
+    $response = $this->pressButton(t('Continue'), array(), 'commerce_checkout_form_' . $checkout_page['page_id'], $order, $checkout_page);
+
+    return $response;
+  }
+
+  public function recalculateShipping() {
+    $checkout_pages = commerce_checkout_pages();
+    $checkout_page = $checkout_pages[$this->page_id];
+    $order = commerce_order_load($this->order_id);
+
+    $response = $this->pressButton(t('Recalculate Shipping'), array(), 'commerce_checkout_form_' . $checkout_page['page_id'], $order, $checkout_page);
+
+    return $response;
+  }*/
 }
