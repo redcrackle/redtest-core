@@ -1363,7 +1363,7 @@ abstract class Entity {
     if (!is_null($field) && !is_null($instance)) {
       // Field instance exists.
       $short_field_class = Utils::makeTitleCase($field['type']);
-      $field_class = "RedTest\\core\\Fields\\" . $short_field_class;
+      $field_class = "RedTest\\core\\fields\\" . $short_field_class;
 
       return $field_class::getValues($this, $field_name, $post_process);
     }
