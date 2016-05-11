@@ -70,9 +70,7 @@ class CommerceCheckoutForm extends Form {
     $checkout_page = $checkout_pages[$this->page_id];
     $order = commerce_order_load($this->order_id);
 
-    $response = parent::pressButton($name, array(),
-      'commerce_checkout_form_' . $checkout_page['page_id'], $order,
-      $checkout_page);
+    $response = parent::pressButton($name, array(), $order, $checkout_page);
 
     return $this->getResponse($response);
   }
