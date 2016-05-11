@@ -50,7 +50,7 @@ class CommerceCheckoutForm extends Form {
     parent::__construct('commerce_checkout_form_' . $checkout_page['page_id'],
       $order, $checkout_page);
 
-    $this->page_id = $page_id;
+    $this->page_id = $checkout_page['page_id'];
     $this->order_id = $order_id;
   }
 
