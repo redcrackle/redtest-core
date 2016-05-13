@@ -22,8 +22,8 @@ class CommerceStripeCaptureForm extends Form {
     array_shift($args);
 
 
-    $transaction = commerce_payment_transaction_load(59399);
-    $order = commerce_order_load(443607);
+    $transaction = commerce_payment_transaction_load(34954);
+    $order = commerce_order_load(418699);
     $this->includeFile('inc', 'commerce_stripe', 'includes/commerce_stripe.admin');
     parent::__construct('commerce_stripe_capture_form',
       $order, $transaction);
@@ -44,9 +44,9 @@ class CommerceStripeCaptureForm extends Form {
 
 
   public function submit() {
-/*    $transaction = commerce_payment_transaction_load(59399);
-    $order = commerce_order_load(443607);*/
-    $response = $this->pressButton(t('Capture'));
+    $transaction = commerce_payment_transaction_load(34954);
+    $order = commerce_order_load(418699);
+    $response = $this->pressButton(t('Capture'), array(), $order, $transaction);
     if (!$response->getSuccess()) {
       return $response;
     }
