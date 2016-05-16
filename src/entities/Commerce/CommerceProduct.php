@@ -91,4 +91,20 @@ class CommerceProduct extends Entity {
   /*public function view($view_mode = 'full') {
     return node_view($this->getEntity(), $view_mode);
   }*/
+
+  /**
+   * This function is for get recurring period value from product
+   * @return bool|string
+   */
+  public function getCommerceRecurringRecPeriodValues() {
+    $product = $this->getEntity();
+    $rec_period = field_get_items('commerce_product', $product, 'commerce_recurring_rec_period');
+    if (!empty($rec_period) && isset($rec_period[0])) {
+      $rec_period_value = $rec_period[0]['interval'] . ' ' . $rec_period[0]['period'];
+      return $rec_period_value;
+    }
+    else {
+      return FALSE;
+    }
+  }
 }

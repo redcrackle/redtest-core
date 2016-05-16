@@ -11,6 +11,8 @@ namespace RedTest\core\entities\Commerce;
 use RedTest\core\Response;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
+use RedTest\tests\MPUtils;
+use RedTest\core\entities\User;
 
 /**
  * Class CommerceOrder
@@ -342,4 +344,40 @@ class CommerceOrder extends Entity {
   /*public function view($view_mode = 'full') {
     return node_view($this->getEntity(), $view_mode);
   }*/
+
+  /**
+   * This function will create recurring order and entity programmatically.
+   * @return \entity
+   */
+  public function createProgrammatically() {
+    $userObject = User::createRandom()->verify(get_class());
+    $name = $userObject->getNameValues();
+    $user = user_load_by_name($name);
+    $product_id = MPUtils::getCameraNid();
+    $quantity = 1;
+    $uid = $user->uid;
+
+    if ($product = commerce_product_load($product_id)) {
+      $line_item = commerce_product_line_item_new($product, $quantity);
+      $line_item = commerce_cart_product_add($uid, $line_item);
+    }
+
+    if ($product = commerce_product_load_by_sku('cloudsubprofessionalmonthly')) {
+      $line_item = commerce_product_line_item_new($product, $quantity);
+      $line_item = commerce_cart_product_add($uid, $line_item);
+    }
+
+    $order = commerce_cart_order_load($uid);
+    $order = commerce_order_status_update($order, "pending", TRUE);
+    commerce_order_save($order);
+    $fix_price = 149;
+    $recurring_entity = commerce_recurring_new_from_product($order, $product, array('amount' => $fix_price, 'currency_code' => 'USD'), $quantity);
+
+    MPUtils::update_recurring_status($recurring_entity->id);
+    global $entities;
+    $recurring = new CommerceRecurring($recurring_entity->id);
+    $entities['commerce_recurring'][$recurring->getId()] = $recurring;
+
+    return $recurring_entity;
+  }
 }
