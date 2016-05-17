@@ -11,8 +11,7 @@ namespace RedTest\core\entities\Commerce;
 use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
 use RedTest\entities\CommerceProduct\Recurring;
-
-use RedTest\core\forms\Form;
+use RedTest\core\Response;
 
 class CommerceRecurring extends Entity {
 
@@ -52,7 +51,11 @@ class CommerceRecurring extends Entity {
     $ref_product = field_get_items('commerce_recurring', $recurring_entity, 'commerce_recurring_ref_product');
     if(!empty($ref_product) && isset($ref_product[0]['target_id'])) {
       $product_id = $ref_product[0]['target_id'];
-      $product_obj = new Recurring($product_id);
+
+      $product = commerce_product_load($product_id);
+      $product_class = Utils::makeTitleCase($product->type);
+      $field_class = "RedTest\\entities\\CommerceProduct\\" . $product_class;
+      $product_obj = new $field_class($product_id);
       return $product_obj;
     } else {
       return false;
@@ -80,17 +83,17 @@ class CommerceRecurring extends Entity {
     module_load_include('inc', 'mp_order', 'mp_order.rules');
     $recurring_entity = $this->getEntity();
     // Passing recurring entity and create order
-    $return = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
+    $commerce_product = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
 
-    if (!empty($return) && isset($return['commerce_order'])) {
+    if (!empty($commerce_product) && isset($commerce_product['commerce_order'])) {
       global $entities;
-      $order = new CommerceOrder($return['commerce_order']->order_id);
+      $order = new CommerceOrder($commerce_product['commerce_order']->order_id);
       $order->reload();
       $entities['commerce_order'][$order->order_id] = $order;
-      mp_order_update_order_with_store_credit($return['commerce_order']);
+      mp_order_update_order_with_store_credit($commerce_product['commerce_order']);
       // Attaching order with recurring entity
-      commerce_recurring_rules_iterate_recurring_from_order($return['commerce_order']);
-      return $return;
+      commerce_recurring_rules_iterate_recurring_from_order($commerce_product['commerce_order']);
+      return new Response(TRUE, $commerce_product, "");
     }
     else {
       return FALSE;
