@@ -347,35 +347,43 @@ class CommerceOrder extends Entity {
 
   /**
    * This function will create recurring order and entity programmatically.
+   * @param $product_ids
    * @return \entity
    */
-  public function createProgrammatically() {
-    $userObject = User::createRandom()->verify(get_class());
-    $name = $userObject->getNameValues();
-    $user = user_load_by_name($name);
-    $product_id = MPUtils::getCameraNid();
+  public function createProgrammatically($product_ids) {
+    global $user;
+    global $entities;
+    $product = array();
     $quantity = 1;
     $uid = $user->uid;
+    $fix_price = 0;
+    $currency = 'USD';
 
-    if ($product = commerce_product_load($product_id)) {
-      $line_item = commerce_product_line_item_new($product, $quantity);
-      $line_item = commerce_cart_product_add($uid, $line_item);
+    foreach($product_ids as $product_id) {
+      if ($product = commerce_product_load($product_id)) {
+        $line_item = commerce_product_line_item_new($product, $quantity);
+        commerce_cart_product_add($uid, $line_item);
+        if($product->type == 'recurring') {
+          $fix_price_val = field_get_items('commerce_product', $product, 'commerce_recurring_rec_price');
+          $fix_price = number_format($fix_price_val[0]['amount'] / 100, 2);
+          $currency = $fix_price_val[0]['currency_code'];
+        }
+      }
     }
 
-    if ($product = commerce_product_load_by_sku('cloudsubprofessionalmonthly')) {
-      $line_item = commerce_product_line_item_new($product, $quantity);
-      $line_item = commerce_cart_product_add($uid, $line_item);
+    // if no product loaded then need to return null
+    if(empty($product)) {
+      return NULL;
     }
 
     $order = commerce_cart_order_load($uid);
     $order = commerce_order_status_update($order, "pending", TRUE);
     commerce_order_save($order);
-    $fix_price = 149;
-    $recurring_entity = commerce_recurring_new_from_product($order, $product, array('amount' => $fix_price, 'currency_code' => 'USD'), $quantity);
+    $recurring_entity = commerce_recurring_new_from_product($order, $product, array('amount' => $fix_price, 'currency_code' => $currency), $quantity);
 
-    MPUtils::update_recurring_status($recurring_entity->id);
-    global $entities;
     $recurring = new CommerceRecurring($recurring_entity->id);
+    $recurring->updateStatus($recurring_entity->id);
+    $recurring->reload();
     $entities['commerce_recurring'][$recurring->getId()] = $recurring;
 
     return $recurring_entity;

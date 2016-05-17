@@ -96,4 +96,18 @@ class CommerceRecurring extends Entity {
       return FALSE;
     }
   }
+
+  /**
+   * This function will update recurring entity status
+   * @param $recurring_id
+   *  This is recurring entity id status
+   * @param $status
+   *  This is recurring entity status option by default it will update status 1
+   */
+  public function updateStatus($recurring_id, $status = 1) {
+    db_update('commerce_recurring')
+      ->fields(array('status' => $status))
+      ->condition('id', $recurring_id, '=')
+      ->execute();
+  }
 }
