@@ -9,10 +9,7 @@
 namespace RedTest\core\entities\Commerce;
 
 use RedTest\core\Response;
-use RedTest\core\Utils;
 use RedTest\core\entities\Entity;
-use RedTest\tests\MPUtils;
-use RedTest\core\entities\User;
 
 /**
  * Class CommerceOrder
