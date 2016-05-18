@@ -350,7 +350,7 @@ class CommerceOrder extends Entity {
    * @param $product_ids
    * @return \entity
    */
-  public function createProgrammatically($product_ids) {
+  public static function createProgrammatically($product_ids) {
     global $user;
     global $entities;
     $product = array();
@@ -365,7 +365,7 @@ class CommerceOrder extends Entity {
         commerce_cart_product_add($uid, $line_item);
         if($product->type == 'recurring') {
           $fix_price_val = field_get_items('commerce_product', $product, 'commerce_recurring_rec_price');
-          $fix_price = number_format($fix_price_val[0]['amount'] / 100, 2);
+          $fix_price = $fix_price + number_format($fix_price_val[0]['amount'] / 100, 2);
           $currency = $fix_price_val[0]['currency_code'];
         }
       }
@@ -386,6 +386,8 @@ class CommerceOrder extends Entity {
     $recurring->reload();
     $entities['commerce_recurring'][$recurring->getId()] = $recurring;
 
-    return $recurring_entity;
+    $order_object = new CommerceOrder($order->order_id);
+    $order_object->reload();
+    return $order_object;
   }
 }
