@@ -384,6 +384,7 @@ class CommerceOrder extends Entity {
     $entities['commerce_recurring'][$recurring->getId()] = $recurring;
 
     $order_object = new CommerceOrder($order->order_id);
+    $entities['commerce_order'][$order_object->getId()] = $order_object;
     $order_object->reload();
     return $order_object;
   }
