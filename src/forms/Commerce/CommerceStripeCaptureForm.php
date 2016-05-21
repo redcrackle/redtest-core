@@ -19,13 +19,13 @@ class CommerceStripeCaptureForm extends Form {
 
   public function __construct($order_id) {
     $this->order = commerce_order_load($order_id);
-    $transaction_array = commerce_payment_transaction_load_multiple(array(), array('order_id' =>  $order_id));
+    $transaction_array = commerce_payment_transaction_load_multiple(array(), array('order_id' => $order_id));
     $transaction_id = key($transaction_array);
     $this->transaction = $transaction_array[$transaction_id];
 
     $this->includeFile('inc', 'commerce_stripe', 'includes/commerce_stripe.admin');
     parent::__construct('commerce_stripe_capture_form',
-    $this->order, $this->transaction);
+      $this->order, $this->transaction);
   }
 
   private function getResponse($response) {
@@ -38,7 +38,7 @@ class CommerceStripeCaptureForm extends Form {
 
     return new Response(TRUE, $order, "");
   }
-  
+
   public function submit() {
     $response = $this->pressButton(t('Capture'), array(), $this->order, $this->transaction);
     if (!$response->getSuccess()) {

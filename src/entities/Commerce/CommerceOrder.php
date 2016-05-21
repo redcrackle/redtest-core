@@ -356,11 +356,11 @@ class CommerceOrder extends Entity {
     $fix_price = 0;
     $currency = 'USD';
 
-    foreach($product_ids as $product_id) {
+    foreach ($product_ids as $product_id) {
       if ($product = commerce_product_load($product_id)) {
         $line_item = commerce_product_line_item_new($product, $quantity);
         commerce_cart_product_add($uid, $line_item);
-        if($product->type == 'recurring') {
+        if ($product->type == 'recurring') {
           $fix_price_val = field_get_items('commerce_product', $product, 'commerce_recurring_rec_price');
           $fix_price = $fix_price + number_format($fix_price_val[0]['amount'] / 100, 2);
           $currency = $fix_price_val[0]['currency_code'];
@@ -369,20 +369,42 @@ class CommerceOrder extends Entity {
     }
 
     // if no product loaded then need to return null
-    if(empty($product)) {
+    if (empty($product)) {
       return NULL;
     }
 
     $order = commerce_cart_order_load($uid);
     $order = commerce_order_status_update($order, "pending", TRUE);
     commerce_order_save($order);
-    $recurring_entity = commerce_recurring_new_from_product($order, $product, array('amount' => $fix_price, 'currency_code' => $currency), $quantity);
 
+    commerce_checkout_complete($order);
+    $payment_method = commerce_payment_method_instance_load('commerce_stripe');
+    $charge = $order->commerce_order_total['und'][0];
+    $transaction = commerce_payment_transaction_new('commerce_stripe', $order->order_id);
+    $transaction->instance_id = $payment_method['instance_id'];
+    $transaction->amount = $charge['amount'];
+    $transaction->currency_code = $charge['currency_code'];
+    $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+    $transaction->message = '@name';
+    $transaction->message_variables = array('@name' => 'Payment authorized only successfully');
+    commerce_payment_transaction_save($transaction);
+    commerce_payment_commerce_payment_transaction_insert($transaction);
+
+    $licenses = commerce_license_get_order_licenses($order);
+    foreach ($licenses as $license) {
+      $license = entity_load_single('commerce_license', $license->license_id);
+      $license->cle_name[LANGUAGE_NONE][0]['value'] = isset($user->field_organization_name[LANGUAGE_NONE][0]['value']) ? $user->field_organization_name[LANGUAGE_NONE][0]['value'] : Utils::getRandomString(8);
+      $license->synchronize();
+    }
+    commerce_order_status_update($order, 'completed'
+    $recurring_entity = commerce_recurring_new_from_product($order, $product, array(
+        'amount' => $fix_price,
+        'currency_code' => $currency
+      ), $quantity);
     $recurring = new CommerceRecurring($recurring_entity->id);
     $recurring->updateStatus($recurring_entity->id);
     $recurring->reload();
     $entities['commerce_recurring'][$recurring->getId()] = $recurring;
-
     $order_object = new CommerceOrder($order->order_id);
     $entities['commerce_order'][$order_object->getId()] = $order_object;
     $order_object->reload();
