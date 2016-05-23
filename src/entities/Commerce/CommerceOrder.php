@@ -396,11 +396,9 @@ class CommerceOrder extends Entity {
       $license->cle_name[LANGUAGE_NONE][0]['value'] = isset($user->field_organization_name[LANGUAGE_NONE][0]['value']) ? $user->field_organization_name[LANGUAGE_NONE][0]['value'] : Utils::getRandomString(8);
       $license->synchronize();
     }
-    commerce_order_status_update($order, 'completed'
-    $recurring_entity = commerce_recurring_new_from_product($order, $product, array(
-        'amount' => $fix_price,
-        'currency_code' => $currency
-      ), $quantity);
+    commerce_order_status_update($order, 'completed');
+    $recurring_entity = commerce_recurring_load_by_order($order);
+
     $recurring = new CommerceRecurring($recurring_entity->id);
     $recurring->updateStatus($recurring_entity->id);
     $recurring->reload();
