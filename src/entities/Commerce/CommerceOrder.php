@@ -10,6 +10,7 @@ namespace RedTest\core\entities\Commerce;
 
 use RedTest\core\Response;
 use RedTest\core\entities\Entity;
+use RedTest\core\Utils;
 
 /**
  * Class CommerceOrder
