@@ -100,11 +100,11 @@ class CommerceProduct extends Entity {
     $product = $this->getEntity();
     $rec_period = field_get_items('commerce_product', $product, 'commerce_recurring_rec_period');
     if (!empty($rec_period) && isset($rec_period[0])) {
-      $rec_period_value[$rec_period[0]['interval']] = $rec_period[0]['period'];
-      return $rec_period_value;
+      $rec_period_value[$rec_period[0]['period']] = $rec_period[0]['interval'];
+      return new Response(TRUE, $rec_period_value, "");
     }
     else {
-      return FALSE;
+      return new Response(FALSE, NULL, 'Recurring Entity not available');
     }
   }
 }

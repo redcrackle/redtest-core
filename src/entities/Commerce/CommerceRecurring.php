@@ -37,7 +37,7 @@ class CommerceRecurring extends Entity {
       }
     }
     else {
-      $rec_entity = commerce_recurring_new($type);
+      $rec_entity = commerce_recurring_new(array('type' => $type));
       parent::__construct($rec_entity);
     }
   }
@@ -56,9 +56,9 @@ class CommerceRecurring extends Entity {
       $product_class = Utils::makeTitleCase($product->type);
       $field_class = "RedTest\\entities\\CommerceProduct\\" . $product_class;
       $product_obj = new $field_class($product_id);
-      return $product_obj;
+      return new Response(TRUE, $product_obj, "");
     } else {
-      return false;
+      return new Response(FALSE, NULL, 'Reference product not available.');
     }
   }
 
@@ -96,7 +96,7 @@ class CommerceRecurring extends Entity {
       return new Response(TRUE, $recurring_order, "");
     }
     else {
-      return FALSE;
+      return new Response(FALSE, NULL, 'Order not created');
     }
   }
 
