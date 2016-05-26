@@ -83,6 +83,10 @@ abstract class EntityForm extends Form {
         continue;
       }
 
+      if (!$this->isFieldAccessible($field_name)) {
+        continue;
+      }
+
       $function = "fill" . Utils::makeTitleCase(
           $field_name
         ) . "RandomValues";
