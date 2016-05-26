@@ -56,6 +56,9 @@ class ListBoolean extends ListField {
     foreach ($allowed_values as $allowed_value) {
       if (Utils::getRandomInt(0, 1)) {
         $values[] = $allowed_value;
+        if (sizeof($values) == $num) {
+          break;
+        }
       }
     }
 
