@@ -774,4 +774,32 @@ class Utils {
   public static function clearMessages($type = NULL) {
     drupal_get_messages($type);
   }
+
+  /**
+   * Set the URL to the one specified by Purl so that we can avoid a
+   * redirection.
+   *
+   * @param int|NULL $nid
+   *   Node id if present, NULL otherwise.
+   */
+  public static function setSpacesOGPurlURL($nid = NULL) {
+    // If URL is not correct, purl forwards the user to the correct page. In
+    // order to avoid this, we set the correct URL here.
+    if (!empty($nid) && module_exists('spaces_og') && $space = spaces_load('og',
+        $nid)
+    ) {
+      // Most of the following code is copied from activate() function in space_type_purl.inc
+      $space->purge_request_destination();
+      // @TODO: This will drop other PURL providers. Probably not the desired behavior!
+      $purl_params = array(
+        'query' => drupal_get_query_parameters($_GET, array('q')),
+        'purl' => array(
+          'provider' => "spaces_{$space->type}",
+          'id' => $space->id,
+        ),
+        'absolute' => TRUE,
+      );
+      $_GET['q'] = url($_GET['q'], $purl_params);
+    }
+  }
 }
