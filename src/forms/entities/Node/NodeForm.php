@@ -51,6 +51,27 @@ class NodeForm extends EntityForm {
   }
 
   /**
+   * Set the URL before pressing any button so that Purl doesn't redirect. We
+   * may need to move this to EntityForm.php if even user is a valid Spaces_OG
+   * space.
+   *
+   * @param string $triggering_element_name
+   *   Name of the Add More button or value of Op key.
+   * @param array $options
+   *   Options array. If key "ajax" is set to TRUE, then
+   *   $triggering_element_name is assumed to be name of the Add More button
+   *   otherwise it is taken to be the value of Op key.
+   *
+   * @return Response
+   *   Response object.
+   */
+  public function pressButton($triggering_element_name = NULL, $options = array()) {
+    Utils::setSpacesOGPurlURL($this->getEntityObject()->getId());
+    $args = func_get_args();
+    return call_user_func_array(array('parent', 'pressButton'), $args);
+  }
+
+  /**
    * This function is used for node form submit.
    */
   public function submit() {
