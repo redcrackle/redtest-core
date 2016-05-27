@@ -418,7 +418,8 @@ class CommerceOrder extends Entity {
    *  This is order object
    */
   private function paymentTransaction($order) {
-    $payment_method = commerce_payment_method_instance_load('commerce_stripe');
+    $user = user_load($order->uid);
+    $payment_method = commerce_payment_method_instance_load('commerce_stripe|commerce_payment_commerce_stripe');
     $charge = $order->commerce_order_total['und'][0];
     $transaction = commerce_payment_transaction_new('commerce_stripe', $order->order_id);
     $transaction->instance_id = $payment_method['instance_id'];
@@ -429,5 +430,20 @@ class CommerceOrder extends Entity {
     $transaction->message_variables = array('@name' => 'Payment authorized only successfully');
     commerce_payment_transaction_save($transaction);
     commerce_payment_commerce_payment_transaction_insert($transaction);
+
+    $card_data = commerce_cardonfile_new();
+    $card_data->uid = $order->uid;
+    $card_data->order_id = $order->order_id;
+    $card_data->payment_method = $payment_method['method_id'];
+    $card_data->instance_id = $payment_method['instance_id'];
+    //$card_data->remote_id = $remote_id;
+    $card_data->card_type = 'Visa';
+    $card_data->card_name = $user->name;
+    $card_data->card_number = '1111';
+    $card_data->card_exp_month = 5;
+    $card_data->card_exp_year = 2018;
+    $card_data->status = 1;
+    $card_data->instance_default = 1;
+    commerce_cardonfile_save($card_data);
   }
 }

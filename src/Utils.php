@@ -772,7 +772,7 @@ class Utils {
    *   messages will be cleared.
    */
   public static function clearMessages($type = NULL) {
-    drupal_get_messages($type);
+    return drupal_get_messages($type);
   }
 
   /**
