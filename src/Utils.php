@@ -802,4 +802,42 @@ class Utils {
       $_GET['q'] = url($_GET['q'], $purl_params);
     }
   }
+
+  public static function upgrade_check_upgraded_item($recurring_entity) {
+    $month_ago = strtotime('1 month ago');
+    $result = db_select('field_data_field_recurring_upgrade_date', 'ud')
+      ->fields('ud', array('entity_id'))
+      ->condition('field_recurring_upgrade_date_value', $month_ago, '>=')
+      ->condition('entity_type', 'commerce_recurring', '=')
+      ->condition('entity_id', $recurring_entity->getId(), '=')
+      ->execute()
+      ->fetchAssoc();
+
+
+    if (!empty($result['entity_id'])) {
+      return new Response(TRUE, TRUE, NULL);
+    } else {
+      return new Response(FALSE, FALSE, NULL);
+    }
+  }
+
+  public static function commerce_recurring_due_items($recurring_entity, $due_date = NULL) {
+    if (empty($due_date)) {
+      $due_date = strtotime('now');
+    }
+
+    $result = db_select('commerce_recurring', 'ud')
+      ->fields('ud', array('id'))
+      ->condition('status', TRUE, '=')
+      ->condition('due_date', $due_date, '<')
+      ->condition('id', $recurring_entity->getId(), '=')
+      ->execute()
+      ->fetchAssoc();
+
+    if (!empty($result['id'])) {
+      return new Response(TRUE, TRUE, NULL);
+    } else {
+      return new Response(FALSE, FALSE, NULL);
+    }
+  }
 }

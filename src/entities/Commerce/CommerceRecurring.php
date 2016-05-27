@@ -78,27 +78,43 @@ class CommerceRecurring extends Entity {
    * This function will create new recurring order and attached with recurring entity
    * @return array|bool
    */
-  public function runCron() {
+  public function runCron($cron = 'All') {
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
     module_load_include('inc', 'mp_order', 'mp_order.rules');
     $recurring_entity = $this->getEntity();
-    // Passing recurring entity and create order
-    $recurring_order = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
 
-    if (!empty($recurring_order) && isset($recurring_order['commerce_order'])) {
-      global $entities;
-      $order = new CommerceOrder($recurring_order['commerce_order']->order_id);
-      $order->reload();
-      $entities['commerce_order'][$order->getId()] = $order;
-      mp_order_update_order_with_store_credit($recurring_order['commerce_order']);
-      mp_subscription_rules_action_update_recurring_billing_due_date($recurring_order['commerce_order']);
-      // Attaching order with recurring entity
-      // commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
-      return new Response(TRUE, $recurring_order, "");
+    if (in_array($cron, array('All', 'upgrade'))) {
+      if (Utils::upgrade_check_upgraded_item($this)->verify($this)) {
+        $product = $this->getCommerceRecurringRefProductValues()->verify($this);
+        $product_id = $product->getId();
+
+        $license = mp_subscription_get_user_license(user_load($this->getUidValues()));
+        $license->product_id = $product_id;
+        $license->synchronize();
+        return new Response(TRUE, TRUE, "");
+      }
+
     }
-    else {
-      return new Response(FALSE, NULL, 'Order not created');
+    if (in_array($cron, array('All', 'create_order'))) {
+      if (Utils::commerce_recurring_due_items($this)->verify($this)) {
+        // Passing recurring entity and create order
+        $recurring_order = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
+        if (!empty($recurring_order) && isset($recurring_order['commerce_order'])) {
+          global $entities;
+          $order = new CommerceOrder($recurring_order['commerce_order']->order_id);
+          $order->reload();
+          $entities['commerce_order'][$order->getId()] = $order;
+          mp_order_update_order_with_store_credit($recurring_order['commerce_order']);
+          // Attaching order with recurring entity
+          commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
+          return new Response(TRUE, $recurring_order, "");
+        }
+        else {
+          return new Response(FALSE, NULL, 'Order not created');
+        }
+      }
     }
+
   }
 
   /**
