@@ -11,6 +11,7 @@ namespace RedTest\core\entities\Commerce;
 use RedTest\core\Response;
 use RedTest\core\entities\Entity;
 use RedTest\core\Utils;
+use RedTest\tests\MPUtils;
 
 /**
  * Class CommerceOrder
@@ -430,6 +431,10 @@ class CommerceOrder extends Entity {
     $transaction->message_variables = array('@name' => 'Payment authorized only successfully');
     commerce_payment_transaction_save($transaction);
     commerce_payment_commerce_payment_transaction_insert($transaction);
+
+    $strip_token = MPUtils::getStripeToken();
+    $card = _commerce_stripe_create_card($strip_token->getVar(), $order->uid, $payment_method);
+    $remote_id = (string) $card->customer . '|' . (string) $card->id;
 
     $card_data = commerce_cardonfile_new();
     $card_data->uid = $order->uid;
