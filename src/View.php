@@ -144,4 +144,8 @@ class View {
 
     return TRUE;
   }
+
+  public function getfields() {
+    return $this->view->query;
+  }  
 }

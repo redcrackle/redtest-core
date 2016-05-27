@@ -372,6 +372,8 @@ class CommerceOrder extends Entity {
     commerce_order_save($order);
     commerce_checkout_complete($order);
 
+    drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
+
     self::paymentTransaction($order);
     self::updateOrganisationInLicense($order, $user);
     commerce_order_status_update($order, 'completed');
