@@ -451,4 +451,21 @@ class CommerceOrder extends Entity {
     $card_data->instance_default = 1;
     commerce_cardonfile_save($card_data);
   }
+  
+  /**
+   * This function will process payment for pending orders
+   * @return array|bool
+   */
+  public static function runCron($order) {
+    module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
+    module_load_include('inc', 'mp_order', 'mp_order.rules');
+
+    $card_response = commerce_cardonfile_rules_action_order_select_default_card($order);
+
+    $order_total = field_get_items('commerce_order', $order, 'commerce_order_total');
+
+    $response = commerce_cardonfile_rules_action_order_charge_card($order, $order_total[0], $card_response['select_card_response']);
+    return new Response(TRUE, $response, "");
+  }
+
 }

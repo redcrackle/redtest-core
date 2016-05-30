@@ -94,8 +94,10 @@ class CommerceRecurring extends Entity {
           $order->reload();
           $entities['commerce_order'][$order->getId()] = $order;
           mp_order_update_order_with_store_credit($recurring_order['commerce_order']);
+
+          mp_subscription_rules_action_update_recurring_billing_due_date($recurring_order['commerce_order']);
           // Attaching order with recurring entity
-          commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
+          // commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
           return new Response(TRUE, $recurring_order, "");
         }
         else {
