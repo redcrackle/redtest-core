@@ -30,7 +30,7 @@ class CommerceStripeCaptureForm extends Form {
 
   private function getResponse($response) {
     if (!$response->getSuccess()) {
-      return $response;
+      return new Response(FALSE, '', $response->getMsg());
     }
 
     $form_state = $this->getFormState();
@@ -42,7 +42,7 @@ class CommerceStripeCaptureForm extends Form {
   public function submit() {
     $response = $this->pressButton(t('Capture'), array(), $this->order, $this->transaction);
     if (!$response->getSuccess()) {
-      return new Response(TRUE, $response, "");
+      return new Response(FALSE, '', $response->getMsg());
     }
 
     // Get the user from form_state.

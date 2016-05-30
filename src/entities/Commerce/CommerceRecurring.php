@@ -79,22 +79,11 @@ class CommerceRecurring extends Entity {
    * @return array|bool
    */
   public function runCron($cron = 'All') {
+
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
     module_load_include('inc', 'mp_order', 'mp_order.rules');
     $recurring_entity = $this->getEntity();
 
-    if (in_array($cron, array('All', 'upgrade'))) {
-      if (Utils::upgrade_check_upgraded_item($this)->verify($this)) {
-        $product = $this->getCommerceRecurringRefProductValues()->verify($this);
-        $product_id = $product->getId();
-
-        $license = mp_subscription_get_user_license(user_load($this->getUidValues()));
-        $license->product_id = $product_id;
-        $license->synchronize();
-        return new Response(TRUE, TRUE, "");
-      }
-
-    }
     if (in_array($cron, array('All', 'create_order'))) {
       if (Utils::commerce_recurring_due_items($this)->verify($this)) {
         // Passing recurring entity and create order
@@ -115,6 +104,24 @@ class CommerceRecurring extends Entity {
       }
     }
 
+    //Payment and Order Status
+    if(FALSE){
+
+    }
+
+    if (in_array($cron, array('All', 'upgrade'))) {
+      if (Utils::upgrade_check_upgraded_item($this)->verify($this)) {
+
+        $product = $this->getCommerceRecurringRefProductValues()->verify($this);
+        $product_id = $product->getId();
+
+        $license = mp_subscription_get_user_license(user_load($this->getUidValues()));
+        $license->product_id = $product_id;
+        $license->synchronize();
+        return new Response(TRUE, TRUE, "");
+      }
+
+    }
   }
 
   /**
