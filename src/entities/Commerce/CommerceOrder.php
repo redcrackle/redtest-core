@@ -441,7 +441,7 @@ class CommerceOrder extends Entity {
     $card_data->order_id = $order->order_id;
     $card_data->payment_method = $payment_method['method_id'];
     $card_data->instance_id = $payment_method['instance_id'];
-    //$card_data->remote_id = $remote_id;
+    $card_data->remote_id = $remote_id;
     $card_data->card_type = 'Visa';
     $card_data->card_name = $user->name;
     $card_data->card_number = '1111';
