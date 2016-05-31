@@ -106,7 +106,7 @@ class CommerceRecurring extends Entity {
 
           mp_subscription_rules_action_update_recurring_billing_due_date($recurring_order['commerce_order']);
           // Attaching order with recurring entity
-          commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
+          // commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
         }
       }
     }
