@@ -462,6 +462,15 @@ class CommerceOrder extends Entity {
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
     module_load_include('inc', 'mp_order', 'mp_order.rules');
 
+    $payment_method = commerce_payment_method_instance_load('commerce_stripe|commerce_payment_commerce_stripe');
+    $card_details = commerce_cardonfile_load_multiple_by_uid($order->uid, $payment_method['instance_id'], TRUE);
+
+    foreach($card_details as $key) {
+      $card_data = commerce_cardonfile_load($key->card_id);
+      $card_data->remote_id = '';
+      commerce_cardonfile_save($card_data);
+    }
+
     $card_response = commerce_cardonfile_rules_action_order_select_default_card($order);
 
     $order_total = field_get_items('commerce_order', $order, 'commerce_order_total');
