@@ -79,13 +79,22 @@ class CommerceRecurring extends Entity {
    * @return array|bool
    */
   public function runCron($cron = 'All') {
-
+    $recurring_order = array();
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
     module_load_include('inc', 'mp_order', 'mp_order.rules');
-    $recurring_entity = $this->getEntity();
+    module_load_include('inc', 'mp_upgrade', 'mp_upgrade.rules');
 
+    // Create Order Based on recurring entity due date
+    $recurring_entity = $this->getEntity();
     if (in_array($cron, array('All', 'create_order'))) {
-      if (Utils::commerce_recurring_due_items($this)->verify($this)) {
+      $due_entities = commerce_recurring_rules_get_due_items();
+      $entity_array = array();
+
+      foreach($due_entities['commerce_recurring_entities'] as $entity_key => $entity) {
+        $entity_array[$entity->id] = $entity;
+      }
+
+      if(array_key_exists($this->getId(), $entity_array)) {
         // Passing recurring entity and create order
         $recurring_order = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
         if (!empty($recurring_order) && isset($recurring_order['commerce_order'])) {
@@ -96,32 +105,32 @@ class CommerceRecurring extends Entity {
           mp_order_update_order_with_store_credit($recurring_order['commerce_order']);
           // Attaching order with recurring entity
           commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
-          return new Response(TRUE, $recurring_order, "");
-        }
-        else {
-          return new Response(FALSE, NULL, 'Order not created');
         }
       }
     }
 
-    //Payment and Order Status
-    if(FALSE){
-
+    //Payment and Order Status of Above Created Order
+    if (in_array($cron, array('All', 'pending_payment'))) {
+      $orders = $this->getCommerceRecurringOrderValues();
+      foreach($orders as $associated_oder) {
+        $order = new CommerceOrder($associated_oder['target_id']);
+        if($order->getStatusValue() == 'recurring_pending') {
+          $card_response = commerce_cardonfile_rules_action_order_select_default_card($order->getEntity());
+          $total = $order->getFieldItems('commerce_order_total');
+          commerce_cardonfile_rules_action_order_charge_card($order->getEntity(), $total[0], $card_response['select_card_response']);
+        }
+      }
     }
 
+    //Upgrade Yearly Plan
     if (in_array($cron, array('All', 'upgrade'))) {
-      if (Utils::upgrade_check_upgraded_item($this)->verify($this)) {
-
-        $product = $this->getCommerceRecurringRefProductValues()->verify($this);
-        $product_id = $product->getId();
-
-        $license = mp_subscription_get_user_license(user_load($this->getUidValues()));
-        $license->product_id = $product_id;
-        $license->synchronize();
-        return new Response(TRUE, TRUE, "");
+      $recurring_entities = mp_upgrade_rules_action_get_upgraded_items();
+      if(array_key_exists($this->getId(), $recurring_entities['commerce_recurring_entities'])) {
+        mp_upgrade_rules_action_upgrade_recurring_license($this->getEntity());
       }
-
     }
+
+    return new Response(TRUE, $recurring_order, NULL);
   }
 
   /**

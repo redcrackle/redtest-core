@@ -432,23 +432,25 @@ class CommerceOrder extends Entity {
     commerce_payment_transaction_save($transaction);
     commerce_payment_commerce_payment_transaction_insert($transaction);
 
-    $strip_token = MPUtils::getStripeToken();
-    $card = _commerce_stripe_create_card($strip_token->getVar(), $order->uid, $payment_method);
-    $remote_id = (string) $card->customer . '|' . (string) $card->id;
+    if(module_exists('commerce_cardonfile')) {
+      $strip_token = Utils::getStripeToken();
+      $card = _commerce_stripe_create_card($strip_token->getVar(), $order->uid, $payment_method);
+      $remote_id = (string) $card->customer . '|' . (string) $card->id;
 
-    $card_data = commerce_cardonfile_new();
-    $card_data->uid = $order->uid;
-    $card_data->order_id = $order->order_id;
-    $card_data->payment_method = $payment_method['method_id'];
-    $card_data->instance_id = $payment_method['instance_id'];
-    $card_data->remote_id = $remote_id;
-    $card_data->card_type = 'Visa';
-    $card_data->card_name = $user->name;
-    $card_data->card_number = '1111';
-    $card_data->card_exp_month = 5;
-    $card_data->card_exp_year = 2018;
-    $card_data->status = 1;
-    $card_data->instance_default = 1;
-    commerce_cardonfile_save($card_data);
+      $card_data = commerce_cardonfile_new();
+      $card_data->uid = $order->uid;
+      $card_data->order_id = $order->order_id;
+      $card_data->payment_method = $payment_method['method_id'];
+      $card_data->instance_id = $payment_method['instance_id'];
+      $card_data->remote_id = $remote_id;
+      $card_data->card_type = 'Visa';
+      $card_data->card_name = $user->name;
+      $card_data->card_number = '1111';
+      $card_data->card_exp_month = 5;
+      $card_data->card_exp_year = 2018;
+      $card_data->status = 1;
+      $card_data->instance_default = 1;
+      commerce_cardonfile_save($card_data);
+    }
   }
 }

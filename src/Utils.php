@@ -803,41 +803,55 @@ class Utils {
     }
   }
 
-  public static function upgrade_check_upgraded_item($recurring_entity) {
-    $month_ago = strtotime('1 month ago');
-    $result = db_select('field_data_field_recurring_upgrade_date', 'ud')
-      ->fields('ud', array('entity_id'))
-      ->condition('field_recurring_upgrade_date_value', $month_ago, '>=')
-      ->condition('entity_type', 'commerce_recurring', '=')
-      ->condition('entity_id', $recurring_entity->getId(), '=')
-      ->execute()
-      ->fetchAssoc();
+  /**
+   * This function will retrieve a new
+   * single use token from stripe. Helpful
+   * for if you are doing a lot of repetitive testing.
+   *
+   * Note, you will need Guzzle for this. Hopefully you
+   * are already using composer. If not, what are you doing?
+   */
+  public static function getStripeToken() {
+    //$client = new \GuzzleHttp\Client();
+    $pubKey = variable_get('mp_stripe_public', 'pk_test_jLHDb7FuCHiWnVVr03QnyVBV');
+    $cardNumber = "4242424242424242";
+    $cvc = "123";
+    $expMonth = "11";
+    $expYear = "2018";
+    $headers = [
+      'Pragma' => 'no-cache',
+      'Origin' => 'https://js.stripe.com',
+      'Accept-Encoding' => 'gzip, deflate',
+      'Accept-Language' => 'en-US,en;q=0.8',
+      'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.104 Safari/537.36',
+      'Content-Type' => 'application/x-www-form-urlencoded',
+      'Accept' => 'application/json',
+      'Cache-Control' => 'no-cache',
+      'Referer' => 'https://js.stripe.com/v2/channel.html?stripe_xdm_e=http%3A%2F%2Fwww.beanstalk.dev&stripe_xdm_c=default176056&stripe_xdm_p=1',
+      'Connection' => 'keep-alive'
+    ];
+    $postBody = [
+      'key' => $pubKey,
+      'payment_user_agent' => 'stripe.js/Fbebcbe6',
+      'card[number]' => $cardNumber,
+      'card[cvc]' => $cvc,
+      'card[exp_month]' => $expMonth,
+      'card[exp_year]' => $expYear,
+    ];
 
+    // if drupal_http_request not response data then we need to make this call again and again three time.
+    for ($i = 0; $i < 3; $i++) {
+      $response = drupal_http_request('https://api.stripe.com/v1/tokens', array(
+        'headers' => $headers,
+        'method' => 'POST',
+        'data' => drupal_http_build_query($postBody),
+        'timeout' => 120
+      ));
+      if ($response->code == 200) {
+        $response = drupal_json_decode($response->data);
+        return new Response(TRUE, $response['id'], "");
+      }
 
-    if (!empty($result['entity_id'])) {
-      return new Response(TRUE, TRUE, NULL);
-    } else {
-      return new Response(FALSE, FALSE, NULL);
-    }
-  }
-
-  public static function commerce_recurring_due_items($recurring_entity, $due_date = NULL) {
-    if (empty($due_date)) {
-      $due_date = strtotime('now');
-    }
-
-    $result = db_select('commerce_recurring', 'ud')
-      ->fields('ud', array('id'))
-      ->condition('status', TRUE, '=')
-      ->condition('due_date', $due_date, '<')
-      ->condition('id', $recurring_entity->getId(), '=')
-      ->execute()
-      ->fetchAssoc();
-
-    if (!empty($result['id'])) {
-      return new Response(TRUE, TRUE, NULL);
-    } else {
-      return new Response(FALSE, FALSE, NULL);
     }
   }
 }
