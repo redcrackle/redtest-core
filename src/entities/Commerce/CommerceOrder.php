@@ -380,20 +380,17 @@ class CommerceOrder extends Entity {
     return new Response(TRUE, $order_object, "");
   }
 
-
   /**
    * This function will make payment or order and update status completed and update recurring entity status.
-   * @param $order_object
-   * @return \entity
    */
-  public static function createProgrammaticallyDoPayment($order) {
+  public function capturePayment() {
     global $user;
     global $entities;
 
-    self::paymentTransaction($order);
-    self::updateOrganisationInLicense($order, $user);
-    commerce_order_status_update($order, 'completed');
-    $recurring_entity = commerce_recurring_load_by_order($order);
+    self::paymentTransaction($this->getEntity());
+    self::updateOrganisationInLicense($this->getEntity(), $user);
+    commerce_order_status_update($this->getEntity(), 'completed');
+    $recurring_entity = commerce_recurring_load_by_order($this->getEntity());
 
     if (!empty($recurring_entity)) {
       $recurring_entity = array_shift($recurring_entity);
@@ -406,9 +403,7 @@ class CommerceOrder extends Entity {
       return new Response(FALSE, NULL, 'Recurring entity not created');
     }
 
-    $order_object = new CommerceOrder($order->order_id);
-    $order_object->reload();
-    return new Response(TRUE, $order_object, "");
+    return new Response(TRUE, $this, "");
   }
 
   /**
