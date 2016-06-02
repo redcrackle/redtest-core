@@ -374,6 +374,21 @@ class CommerceOrder extends Entity {
     commerce_checkout_complete($order);
 
     drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
+    $order_object = new CommerceOrder($order->order_id);
+    $entities['commerce_order'][$order_object->getId()] = $order_object;
+    $order_object->reload();
+    return new Response(TRUE, $order_object, "");
+  }
+
+
+  /**
+   * This function will make payment or order and update status completed and update recurring entity status.
+   * @param $order_object
+   * @return \entity
+   */
+  public static function createProgrammaticallyDoPayment($order) {
+    global $user;
+    global $entities;
 
     self::paymentTransaction($order);
     self::updateOrganisationInLicense($order, $user);
@@ -392,7 +407,6 @@ class CommerceOrder extends Entity {
     }
 
     $order_object = new CommerceOrder($order->order_id);
-    $entities['commerce_order'][$order_object->getId()] = $order_object;
     $order_object->reload();
     return new Response(TRUE, $order_object, "");
   }
