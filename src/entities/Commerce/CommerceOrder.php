@@ -389,7 +389,7 @@ class CommerceOrder extends Entity {
 
     self::paymentTransaction($this->getEntity());
     self::updateOrganisationInLicense($this->getEntity(), $user);
-    commerce_order_status_update($this->getEntity(), 'completed');
+  //  commerce_order_status_update($this->getEntity(), 'completed');
     $recurring_entity = commerce_recurring_load_by_order($this->getEntity());
 
     if (!empty($recurring_entity)) {
