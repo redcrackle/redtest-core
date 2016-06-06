@@ -811,13 +811,13 @@ class Utils {
    * Note, you will need Guzzle for this. Hopefully you
    * are already using composer. If not, what are you doing?
    */
-  public static function getStripeToken() {
+  public static function getStripeToken($param = array()) {
     //$client = new \GuzzleHttp\Client();
     $pubKey = variable_get('mp_stripe_public', 'pk_test_jLHDb7FuCHiWnVVr03QnyVBV');
-    $cardNumber = "4242424242424242";
-    $cvc = "123";
-    $expMonth = "11";
-    $expYear = "2018";
+    $cardNumber = isset($param['credit_card']['number']) ? $param['credit_card']['number'] : "4242424242424242";
+    $cvc = isset($param['credit_card']['number']) ? $param['credit_card']['code'] : "123";
+    $expMonth = isset($param['credit_card']['number']) ? $param['credit_card']['exp_month'] : "11";
+    $expYear = isset($param['credit_card']['number']) ? $param['credit_card']['exp_year'] : "2018";
     $headers = [
       'Pragma' => 'no-cache',
       'Origin' => 'https://js.stripe.com',
@@ -855,58 +855,5 @@ class Utils {
 
     $response_date = json_decode($response->data);
     return new Response(FALSE, $response_date->error->message, $response_date->error->message);
-  }
-
-  /**
-   * This function will retrieve a new
-   * single use token from stripe. Helpful
-   * for if you are doing a lot of repetitive testing.
-   *
-   * Note, you will need Guzzle for this. Hopefully you
-   * are already using composer. If not, what are you doing?
-   */
-  public static function getFormStripeToken($param) {
-    //$client = new \GuzzleHttp\Client();
-    $pubKey = variable_get('mp_stripe_public', 'pk_test_jLHDb7FuCHiWnVVr03QnyVBV');
-
-    $headers = [
-      'Pragma' => 'no-cache',
-      'Origin' => 'https://js.stripe.com',
-      'Accept-Encoding' => 'gzip, deflate',
-      'Accept-Language' => 'en-US,en;q=0.8',
-      'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.104 Safari/537.36',
-      'Content-Type' => 'application/x-www-form-urlencoded',
-      'Accept' => 'application/json',
-      'Cache-Control' => 'no-cache',
-      'Referer' => 'https://js.stripe.com/v2/channel.html?stripe_xdm_e=http%3A%2F%2Fwww.beanstalk.dev&stripe_xdm_c=default176056&stripe_xdm_p=1',
-      'Connection' => 'keep-alive'
-    ];
-    $postBody = [
-      'key' => $pubKey,
-      'payment_user_agent' => 'stripe.js/Fbebcbe6',
-      'card[number]' => $param['credit_card']['number'],
-      'card[name]' => $param['credit_card']['owner'],
-      'card[cvc]' => $param['credit_card']['code'],
-      'card[exp_month]' => $param['credit_card']['exp_month'],
-      'card[exp_year]' => $param['credit_card']['exp_year'],
-    ];
-
-
-    // if drupal_http_request not response data then we need to make this call again and again three time.
-    for ($i = 0; $i < 3; $i++) {
-      $response = drupal_http_request('https://api.stripe.com/v1/tokens', array(
-        'headers' => $headers,
-        'method' => 'POST',
-        'data' => drupal_http_build_query($postBody),
-        'timeout' => 120
-      ));
-      if ($response->code == 200) {
-        $response = drupal_json_decode($response->data);
-        return new Response(TRUE, $response['id'], "");
-      }
-    }
-
-    $response_date = json_decode($response->data);
-    return new Response(TRUE, $response_date->error->message, $response_date->error->message);
   }
 }

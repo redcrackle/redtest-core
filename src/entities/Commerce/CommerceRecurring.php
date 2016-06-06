@@ -80,6 +80,7 @@ class CommerceRecurring extends Entity {
    */
   public function runCron($cron = 'All') {
     $recurring_order = array();
+    $return_value = array();
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
     module_load_include('inc', 'mp_order', 'mp_order.rules');
     module_load_include('inc', 'mp_upgrade', 'mp_upgrade.rules');
@@ -98,6 +99,7 @@ class CommerceRecurring extends Entity {
         // Passing recurring entity and create order
         $recurring_order = commerce_recurring_rules_generate_order_from_recurring($recurring_entity);
         if (!empty($recurring_order) && isset($recurring_order['commerce_order'])) {
+          $return_value['commerce_order'] = $recurring_order['commerce_order'];
           global $entities;
           $order = new CommerceOrder($recurring_order['commerce_order']->order_id);
           $order->reload();
@@ -106,7 +108,6 @@ class CommerceRecurring extends Entity {
 
           mp_subscription_rules_action_update_recurring_billing_due_date($recurring_order['commerce_order']);
           // Attaching order with recurring entity
-          // commerce_recurring_rules_iterate_recurring_from_order($recurring_order['commerce_order']);
         }
       }
     }
@@ -116,10 +117,11 @@ class CommerceRecurring extends Entity {
       $orders = $this->getCommerceRecurringOrderValues();
       foreach ($orders as $associated_oder) {
         $order = new CommerceOrder($associated_oder['target_id']);
-        if ($order->getStatusValue() == 'recurring_pending') {
+        if ($order->getStatusValues() == 'recurring_pending') {
           $card_response = commerce_cardonfile_rules_action_order_select_default_card($order->getEntity());
           $total = $order->getFieldItems('commerce_order_total');
-          commerce_cardonfile_rules_action_order_charge_card($order->getEntity(), $total[0], $card_response['select_card_response']);
+          $charge_response = commerce_cardonfile_rules_action_order_charge_card($order->getEntity(), $total[0], $card_response['select_card_response']);
+          $return_value['charge_response'] = $charge_response;
         }
       }
     }
@@ -132,7 +134,7 @@ class CommerceRecurring extends Entity {
       }
     }
 
-    return new Response(TRUE, $recurring_order, NULL);
+    return new Response(TRUE, $return_value, NULL);
   }
 
   /**

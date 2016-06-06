@@ -31,7 +31,7 @@ class CommerceAddCardForm extends Form {
 
   public function getStripToken() {
     $form_state = $this->getFormState();
-    $strip_token = Utils::getFormStripeToken($form_state['values'])->verify($this);
+    $strip_token = Utils::getStripeToken($form_state['values'])->verify($this);
     return $strip_token;
   }
 }
