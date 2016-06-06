@@ -145,7 +145,31 @@ class View {
     return TRUE;
   }
 
+  /**
+   * Get query value from object $view,
+   *
+   */
   public function getfields() {
     return $this->view->query;
-  }  
+  }
+
+  /**
+   * Set pager for Views. Disable cache by setting live_preview value,
+   * get total records by setting get_total_rows.
+   *
+   * @param int $items
+   *   Number of items per page.
+   *
+   * @param int $offset
+   *   offset value to specify start on record.
+   */
+  public function setPager($items = 20, $offset = 0) {
+    $this->view->set_items_per_page($items);
+    $this->view->display_handler->options['pager']['type'] = "some";
+    $this->view->get_total_rows = TRUE;
+    $this->view->live_preview = TRUE;
+    $this->view->set_offset($offset);
+
+  }
+
 }
