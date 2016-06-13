@@ -8,6 +8,7 @@
 
 namespace RedTest\core\entities\Commerce;
 
+use RedTest\core\entities\Commerce\LineItems\Shipping;
 use RedTest\core\Response;
 use RedTest\core\entities\Entity;
 use RedTest\core\Utils;
@@ -370,7 +371,10 @@ class CommerceOrder extends Entity {
 
     $order = commerce_cart_order_load($uid);
     $order = commerce_order_status_update($order, "pending", TRUE);
-    commerce_order_save($order);
+    // Save and add the line item to the order.
+    $line_item = new Shipping(NULL, $order->order_id);
+    $line_item = $line_item->createShippingLineItemProgrammatically($order);
+    $new_line_item = commerce_shipping_add_shipping_line_item($line_item, $order, TRUE);    commerce_order_save($order);
     commerce_checkout_complete($order);
 
     drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
@@ -383,25 +387,27 @@ class CommerceOrder extends Entity {
   /**
    * This function will make payment or order and update status completed and update recurring entity status.
    */
-  public function capturePayment() {
+  public function capturePayment($recurring = TRUE) {
     global $user;
     global $entities;
 
     self::paymentTransaction($this->getEntity());
     self::updateOrganisationInLicense($this->getEntity(), $user);
   //  commerce_order_status_update($this->getEntity(), 'completed');
-    $recurring_entity = commerce_recurring_load_by_order($this->getEntity());
+    if($recurring) {
+      $recurring_entity = commerce_recurring_load_by_order($this->getEntity());
 
-    if (!empty($recurring_entity)) {
-      $recurring_entity = array_shift($recurring_entity);
-      $recurring = new CommerceRecurring($recurring_entity->id);
-      $recurring->updateStatus($recurring_entity->id);
-      $recurring->reload();
-      $entities['commerce_recurring'][$recurring->getId()] = $recurring;
-    }
-    else {
-      return new Response(FALSE, NULL, 'Recurring entity not created');
-    }
+      if (!empty($recurring_entity)) {
+        $recurring_entity = array_shift($recurring_entity);
+        $recurring = new CommerceRecurring($recurring_entity->id);
+        $recurring->updateStatus($recurring_entity->id);
+        $recurring->reload();
+        $entities['commerce_recurring'][$recurring->getId()] = $recurring;
+      }
+      else {
+        return new Response(FALSE, NULL, 'Recurring entity not created');
+      }
+    } 
 
     return new Response(TRUE, $this, "");
   }

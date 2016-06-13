@@ -73,6 +73,7 @@ class View {
     $this->view->set_current_page($page);
     $this->view->set_arguments($contextual_filters);
     $this->view->set_exposed_input($exposed_filters);
+    $this->view->exposed_raw_input = $exposed_filters;
     $this->view->pre_execute();
     $this->view->execute();
 
