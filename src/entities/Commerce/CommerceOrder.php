@@ -357,9 +357,19 @@ class CommerceOrder extends Entity {
     $quantity = 1;
     $uid = $user->uid;
 
+    //
+    $subscription_products = Utils::getSubscriptionProductsList()
+      ->verify(get_class());
     foreach ($product_ids as $product_id) {
       if ($product = commerce_product_load($product_id)) {
-        $line_item = commerce_product_line_item_new($product, $quantity);
+
+        if (in_array($product->sku, $subscription_products)) {
+          $product->commerce_price[LANGUAGE_NONE][0]['amount'] = 0;
+          $line_item = commerce_product_line_item_new($product, $quantity);
+        }
+        else {
+          $line_item = commerce_product_line_item_new($product, $quantity);
+        }
         commerce_cart_product_add($uid, $line_item);
       }
     }
@@ -448,8 +458,8 @@ class CommerceOrder extends Entity {
     commerce_payment_commerce_payment_transaction_insert($transaction);
 
     if(module_exists('commerce_cardonfile')) {
-      $strip_token = Utils::getStripeToken();
-      $card = _commerce_stripe_create_card($strip_token->getVar(), $order->uid, $payment_method);
+      $strip_token = Utils::getStripeToken()->verify(get_class());
+      $card = _commerce_stripe_create_card($strip_token, $order->uid, $payment_method);
       $remote_id = (string) $card->customer . '|' . (string) $card->id;
 
       $card_data = commerce_cardonfile_new();

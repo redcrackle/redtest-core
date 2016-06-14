@@ -856,4 +856,21 @@ class Utils {
     $response_date = json_decode($response->data);
     return new Response(FALSE, $response_date->error->message, $response_date->error->message);
   }
+
+  /**
+   * This function will return sku list of all subscription products
+   * @return Response
+   */
+  public static function getSubscriptionProductsList() {
+    $sku = array();
+    $query = db_select('commerce_product', 'cp');
+    $query->fields('cp', array('sku'));
+    $query->leftJoin('field_data_field_product', 'pr', 'cp.product_id = pr.entity_id');
+    $query->condition('pr.bundle', 'subscription', '=');
+    $result = $query->execute();
+    while ($product = $result->fetchAssoc()) {
+      $sku[] = $product['sku'];
+    }
+    return new Response(TRUE, $sku, NULL);
+  }
 }
