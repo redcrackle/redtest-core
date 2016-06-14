@@ -150,4 +150,16 @@ class CommerceRecurring extends Entity {
       ->condition('id', $recurring_id, '=')
       ->execute();
   }
+
+  /**
+   * This function will update due date of recurring entity
+   * @param bool $time_stamp
+   *  This is option parameter which is due date value which we need to set if this is empty it set current time value
+   */
+  public function updateStartDate($time_stamp = FALSE) {
+    if ($time_stamp == FALSE) {
+      $time_stamp = time();
+    }
+    $this->setValues(array('start_date' => $time_stamp));
+  }
 }
