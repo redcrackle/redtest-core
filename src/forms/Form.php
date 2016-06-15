@@ -547,7 +547,9 @@ class Form {
       $element = $this->form;
     }
 
-    if (!empty($element['#type']) && ($element['#type'] == 'submit' || $element['#type'] == 'button') && !empty($element['#name']) && $element['#name'] == $name) {
+    if (!empty($element['#type']) &&
+      ($element['#type'] == 'submit' || $element['#type'] == 'button' || $element['#type'] == 'select') &&
+      ((!empty($element['#name']) && $element['#name'] == $name) || (!empty($element['#value']) && $element['#value'] == $name))) {
       return TRUE;
     }
 
