@@ -384,7 +384,9 @@ class CommerceOrder extends Entity {
     // Save and add the line item to the order.
     $line_item = new Shipping(NULL, $order->order_id);
     $line_item = $line_item->createShippingLineItemProgrammatically($order);
-    $new_line_item = commerce_shipping_add_shipping_line_item($line_item, $order, TRUE);    commerce_order_save($order);
+    $new_line_item = commerce_shipping_add_shipping_line_item($line_item, $order, TRUE);
+    commerce_avatax_calculate_sales_tax($order);
+    commerce_order_save($order);
     commerce_checkout_complete($order);
 
     drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
