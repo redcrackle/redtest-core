@@ -55,7 +55,7 @@ class Shipping extends CommerceLineItem {
    * @return object $line_item
    *   Shipping line item object
    */
-  public function createShippingLineItemProgrammatically($order, $service_name = 'fedex_ground') {
+  public function createShippingLineItemProgrammatically($order, $service_name = 'shippo_fedex_ground') {
     $billing = new Billing();
     $billing_id = $billing->createBillingProfileProgrammatically($order)->verify($this);
 

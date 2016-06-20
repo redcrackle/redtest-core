@@ -359,4 +359,30 @@ class Entityreference extends Field {
 
     return $formObject->fillValues($field_name, array(LANGUAGE_NONE => $tids));
   }
+
+
+  public static function fillEntityreferenceAutocompleteValues(
+    Form $formObject,
+    $field_name,
+    $values
+  ) {
+    if (!Field::hasFieldAccess($formObject, $field_name)) {
+      return new Response(
+        FALSE,
+        "",
+        "Field " . Utils::getLeaf($field_name) . " is not accessible."
+      );
+    }
+
+    $vocabulary = '';
+    if (method_exists($formObject, 'getEntityObject')) {
+      // This is an entity form.
+      list($field, $instance, $num) = $formObject->getFieldDetails($field_name);
+    }
+
+
+    return $formObject->fillValues($field_name, array(LANGUAGE_NONE => array(
+      '0' => array('target_id'=> $values)))
+    );
+  }  
 }
