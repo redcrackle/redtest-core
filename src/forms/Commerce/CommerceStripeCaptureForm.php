@@ -19,8 +19,7 @@ class CommerceStripeCaptureForm extends Form {
   public function __construct($order_id) {
     $this->order = commerce_order_load($order_id);
     $transaction_array = commerce_payment_transaction_load_multiple(array(), array('order_id' => $order_id));
-    $transaction_id = key($transaction_array);
-    $this->transaction = $transaction_array[$transaction_id];
+    $this->transaction = end($transaction_array);
 
     $this->includeFile('inc', 'commerce_stripe', 'includes/commerce_stripe.admin');
     parent::__construct('commerce_stripe_capture_form',
