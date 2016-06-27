@@ -356,13 +356,16 @@ class CommerceOrder extends Entity {
     $product = array();
     $quantity = 1;
     $uid = $user->uid;
-
+    $add_shipping = FALSE;
     //
     $subscription_products = Utils::getSubscriptionProductsList()
       ->verify(get_class());
     foreach ($product_ids as $product_id) {
       if ($product = commerce_product_load($product_id)) {
 
+        if($product->type == 'product') {
+          $add_shipping = TRUE;
+        }
         if (in_array($product->sku, $subscription_products)) {
           $product->commerce_price[LANGUAGE_NONE][0]['amount'] = 0;
           $line_item = commerce_product_line_item_new($product, $quantity);
@@ -381,10 +384,12 @@ class CommerceOrder extends Entity {
 
     $order = commerce_cart_order_load($uid);
     $order = commerce_order_status_update($order, "pending", TRUE);
-    // Save and add the line item to the order.
-    $line_item = new Shipping(NULL, $order->order_id);
-    $line_item = $line_item->createShippingLineItemProgrammatically($order);
-    $new_line_item = commerce_shipping_add_shipping_line_item($line_item, $order, TRUE);
+    if($add_shipping) {
+      // Save and add the line item to the order.
+      $line_item = new Shipping(NULL, $order->order_id);
+      $line_item = $line_item->createShippingLineItemProgrammatically($order);
+      $new_line_item = commerce_shipping_add_shipping_line_item($line_item, $order, TRUE);
+    }  
     commerce_avatax_calculate_sales_tax($order);
     commerce_order_save($order);
     commerce_checkout_complete($order);
