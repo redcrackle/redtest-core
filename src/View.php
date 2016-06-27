@@ -173,4 +173,19 @@ class View {
 
   }
 
+  /**
+   * Get Views render specific field rendered value.
+   *
+   * @param string $field
+   *   field name from the view
+   * @param integer $row
+   *  row number from view
+   *
+   * @@return string $render
+   *   string value.
+   */
+  public function getRenderedView($field, $row) {
+    return $this->view->render_field($field, $row);
+  }
+
 }
