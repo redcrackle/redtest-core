@@ -408,8 +408,8 @@ class CommerceOrder extends Entity {
     global $user;
     global $entities;
 
-    self::paymentTransaction($this->getEntity());
     self::updateOrganisationInLicense($this->getEntity(), $user);
+    self::paymentTransaction($this->getEntity());
   //  commerce_order_status_update($this->getEntity(), 'completed');
     if($recurring) {
       $recurring_entity = commerce_recurring_load_by_order($this->getEntity());
@@ -440,7 +440,8 @@ class CommerceOrder extends Entity {
     $licenses = commerce_license_get_order_licenses($order);
     foreach ($licenses as $license) {
       $license = entity_load_single('commerce_license', $license->license_id);
-      $license->cle_name[LANGUAGE_NONE][0]['value'] = isset($user->field_organization_name[LANGUAGE_NONE][0]['value']) ? $user->field_organization_name[LANGUAGE_NONE][0]['value'] : Utils::getRandomString(8);
+      $random_company_name = MPUtils::getCompanyName();
+      $license->cle_name[LANGUAGE_NONE][0]['value'] = isset($user->field_organization_name[LANGUAGE_NONE][0]['value']) ? $user->field_organization_name[LANGUAGE_NONE][0]['value'] : $random_company_name;
       $license->synchronize();
     }
   }
