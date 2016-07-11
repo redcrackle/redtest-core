@@ -32,6 +32,7 @@ class CommerceCheckoutForm extends Form {
     }
 
     $checkout_page = NULL;
+    drupal_static_reset();
     $checkout_pages = commerce_checkout_pages();
     if (is_null($page_id)) {
       $checkout_page = reset($checkout_pages);
