@@ -85,6 +85,16 @@ class CommerceCheckoutForm extends Form {
 
     return $this->getResponse($response);
   }
+
+  public function pressCopyButton($name) {
+    $checkout_pages = commerce_checkout_pages();
+    $checkout_page = $checkout_pages[$this->page_id];
+    $order = commerce_order_load($this->order_id);
+
+    $response = parent::pressButton($name, array('ajax'=>true), $order, $checkout_page);
+
+    return $this->getResponse($response);
+  }  
   /*public function submit() {
     $checkout_pages = commerce_checkout_pages();
     $checkout_page = $checkout_pages[$this->page_id];

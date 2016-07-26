@@ -548,7 +548,7 @@ class Form {
     }
 
     if (!empty($element['#type']) &&
-      ($element['#type'] == 'submit' || $element['#type'] == 'button' || $element['#type'] == 'select') &&
+      ($element['#type'] == 'submit' || $element['#type'] == 'button' || $element['#type'] == 'select' || $element['#type'] == 'checkbox') &&
       ((!empty($element['#name']) && $element['#name'] == $name) || (!empty($element['#value']) && $element['#value'] == $name))) {
       return TRUE;
     }
@@ -557,6 +557,15 @@ class Form {
       $button_exists = $this->buttonExists($name, $element[$key]);
       if ($button_exists) {
         return TRUE;
+      }
+      if(is_array($element[$key])) {
+        foreach (element_children($element[$key]) as $k) {
+          $button_exists = $this->buttonExists($name, $k);
+          if ($button_exists) {
+            return TRUE;
+          }
+        }
+
       }
     }
 

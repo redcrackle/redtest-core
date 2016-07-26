@@ -39,10 +39,10 @@ class CommerceCustomerProfile extends Entity {
       global $user;
       $class = new \ReflectionClass(get_called_class());
       $type = Utils::makeSnakeCase($class->getShortName());
-      $new_profile = commerce_customer_profile_new($type, $user->uid);
+      $profile = commerce_customer_profile_new($type, $user->uid);
     }
 
-    parent::__construct($new_profile);
+    parent::__construct($profile);
   }
 
 }
