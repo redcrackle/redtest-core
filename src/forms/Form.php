@@ -437,6 +437,7 @@ class Form {
     $options += array(
       'ajax' => FALSE,
       'triggering_element_key' => 'op',
+      'root_level_params' => array()
     );
     $ajax = $options['ajax'];
 
@@ -471,7 +472,7 @@ class Form {
 
     $old_form_state_values = !empty($this->form_state['values']) ? $this->form_state['values'] : array();
     $this->form_state = form_state_defaults();
-
+    $this->form_state = $options['root_level_params'];
     $args = func_get_args();
     // Remove $triggering_element_name from the arguments.
     array_shift($args);

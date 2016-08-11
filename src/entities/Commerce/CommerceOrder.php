@@ -452,18 +452,49 @@ class CommerceOrder extends Entity {
    *  This is order object
    */
   private function paymentTransaction($order) {
-    $user = user_load($order->uid);
-    $payment_method = commerce_payment_method_instance_load('commerce_stripe|commerce_payment_commerce_stripe');
-    $charge = $order->commerce_order_total['und'][0];
+
     $transaction = commerce_payment_transaction_new('commerce_stripe', $order->order_id);
-    $transaction->instance_id = $payment_method['instance_id'];
-    $transaction->amount = $charge['amount'];
-    $transaction->currency_code = $charge['currency_code'];
-    $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message = '@name';
-    $transaction->message_variables = array('@name' => 'Payment authorized only successfully');
-    commerce_payment_transaction_save($transaction);
-    commerce_payment_commerce_payment_transaction_insert($transaction);
+    $payment_method = commerce_payment_method_instance_load('commerce_stripe|commerce_payment_commerce_stripe');
+    $strip_token = Utils::getStripeToken()->verify(get_class());
+
+    $charge = $order->commerce_order_total['und'][0];
+    if (!commerce_stripe_load_library()) {
+      drupal_set_message(t('Error capturing payment. Please contact shop admin to proceed.'), 'error');
+    }
+
+    $c = array(
+      'amount' => $charge['amount'],
+      'currency' => $charge['currency_code'],
+      'card' => $strip_token,
+      'capture' => TRUE,
+      'description' => t('Order Number: @order_number', array('@order_number' => $order->order_number)),
+    );
+
+    \Stripe::setApiKey($payment_method['settings']['secret_key']);
+
+    try {
+      if ($charge['amount'] > 0) {
+        $response = \Stripe_Charge::create($c);
+        $transaction->remote_id = $response->id;
+        $transaction->payload[REQUEST_TIME] = $response->__toJSON();
+        $transaction->remote_status = 'PRIOR_AUTH_CAPTURE';
+        $transaction->message .= '<br />' . t('Captured: @date', array('@date' => format_date(REQUEST_TIME, 'short')));
+        $transaction->message .= '<br />' . t('Captured Amount: @amount', array('@amount' => $charge['amount']/100));
+        $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+        $transaction->amount = $charge['amount'];
+        commerce_payment_transaction_save($transaction);
+        commerce_payment_commerce_payment_transaction_insert($transaction);
+      }
+    }
+    catch(Exception $e) {
+      drupal_set_message(t('We received the following error when trying to capture the transaction.'), 'error');
+      drupal_set_message(check_plain($e->getMessage()), 'error');
+      $transaction->payload[REQUEST_TIME] = $e->json_body;
+      $transaction->message = t('Capture processing error: @stripe_error', array('@stripe_error' => $e->getMessage()));
+      $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
+      $transaction->remote_status='FAILED';
+      commerce_payment_transaction_save($transaction);
+    }
 
     if(module_exists('commerce_cardonfile')) {
       $strip_token = Utils::getStripeToken()->verify(get_class());
