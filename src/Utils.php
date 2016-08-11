@@ -873,4 +873,38 @@ class Utils {
     }
     return new Response(TRUE, $sku, NULL);
   }
+
+  /**
+   * Loads a block object from the database.
+   *
+   * This function returns the first block matching the module and delta and theme
+   * parameters, so it can be used for theme-specific functionality.
+   *
+   * @param $module
+   *   Name of the module that implements the block to load.
+   * @param $delta
+   *   Unique ID of the block within the context of $module. Pass NULL to return
+   *   an empty block object for $module.
+   * @param
+   *  Name of theme optional, if not provided it will take from global theme
+   *
+   * @return
+   *   A block object.
+   */
+  public static function block_load_by_theme($module, $delta, $theme = NULL) {
+    if($theme == NULL) {
+      global $theme;
+    }
+    $block = db_query('SELECT * FROM {block} WHERE module = :module AND delta = :delta AND theme = :theme', array(':module' => $module, ':delta' => $delta, ':theme' => $theme))->fetchObject();
+
+    // If the block does not exist in the database yet return a stub block
+    // object.
+    if (empty($block)) {
+      $block = new stdClass();
+      $block->module = $module;
+      $block->delta = $delta;
+    }
+
+    return $block;
+  }
 }
