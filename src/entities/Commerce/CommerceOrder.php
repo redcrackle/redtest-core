@@ -477,11 +477,13 @@ class CommerceOrder extends Entity {
         $response = \Stripe_Charge::create($c);
         $transaction->remote_id = $response->id;
         $transaction->payload[REQUEST_TIME] = $response->__toJSON();
-        $transaction->remote_status = 'PRIOR_AUTH_CAPTURE';
+        $transaction->remote_status = 'AUTH_CAPTURE';
+        $transaction->message = t('Payment authorized only successfully.');
         $transaction->message .= '<br />' . t('Captured: @date', array('@date' => format_date(REQUEST_TIME, 'short')));
         $transaction->message .= '<br />' . t('Captured Amount: @amount', array('@amount' => $charge['amount']/100));
         $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->amount = $charge['amount'];
+        $transaction->currency_code = $charge['currency_code'];
         commerce_payment_transaction_save($transaction);
         commerce_payment_commerce_payment_transaction_insert($transaction);
       }
