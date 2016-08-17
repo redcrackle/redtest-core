@@ -69,6 +69,7 @@ class CommerceCartForm extends Form {
     $output = '';
 
     $this->fillFieldValues(array('edit_quantity', $line_item_row_number), $quantity);
+    sleep(2000);
     $response = $this->pressButton(t('Update cart'), array(), $view, $output);
 
     return $this->getResponse($response);
