@@ -66,12 +66,12 @@ class CommerceCheckoutForm extends Form {
     return new Response(TRUE, $order, "");
   }
 
-  public function pressButton($name) {
+  public function pressButton($name, $options = array()) {
     $checkout_pages = commerce_checkout_pages();
     $checkout_page = $checkout_pages[$this->page_id];
     $order = commerce_order_load($this->order_id);
 
-    $response = parent::pressButton($name, array(), $order, $checkout_page);
+    $response = parent::pressButton($name, $options, $order, $checkout_page);
 
     return $this->getResponse($response);
   }
