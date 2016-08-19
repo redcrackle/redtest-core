@@ -113,12 +113,12 @@ class CommerceAddToCartForm extends Form {
    * @return Response
    *   Response object.
    */
-  public function submit() {
-    $response = $this->pressButton(t('Buy Now'), array(), $this->arguments['line_item'], $this->arguments['show_quantity'], $this->cart_context);
+  public function submit($show_quantity = FALSE) {
+    $show_quantity = ($show_quantity)?$show_quantity:$this->arguments['show_quantity'];
+    $response = $this->pressButton(t('Add to cart'), array(), $this->arguments['line_item'], $show_quantity, $this->cart_context);
     if (!$response->getSuccess()) {
       return $response;
     }
-
     $form_state = $this->getFormState();
     $order_id = $form_state['line_item']->order_id;
     $order = new CommerceOrder($order_id);
