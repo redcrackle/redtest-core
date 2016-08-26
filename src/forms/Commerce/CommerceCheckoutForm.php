@@ -71,7 +71,6 @@ class CommerceCheckoutForm extends Form {
     $checkout_page = $checkout_pages[$this->page_id];
     $order = commerce_order_load($this->order_id);
 
-    sleep(2);
     $response = parent::pressButton($name, $options, $order, $checkout_page);
 
     return $this->getResponse($response);
