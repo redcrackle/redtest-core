@@ -484,6 +484,7 @@ class CommerceOrder extends Entity {
         $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
         $transaction->amount = $charge['amount'];
         $transaction->currency_code = $charge['currency_code'];
+        sleep(5);
         commerce_payment_transaction_save($transaction);
         commerce_payment_commerce_payment_transaction_insert($transaction);
       }
