@@ -420,6 +420,11 @@ class CommerceOrder extends Entity {
         $recurring->updateStatus($recurring_entity->id);
         $recurring->reload();
         $entities['commerce_recurring'][$recurring->getId()] = $recurring;
+        $recurring_entity_updated = $recurring->getFieldValues('due_date');
+        $expiration_timestamp = mp_subscription_get_first_billing_cycle();
+        if($expiration_timestamp != $recurring_entity_updated) {
+          return new Response(FALSE, NULL, 'Recurring entity Due date is not correct');
+        }
       }
       else {
         return new Response(FALSE, NULL, 'Recurring entity not created');
