@@ -900,7 +900,7 @@ class Utils {
     // If the block does not exist in the database yet return a stub block
     // object.
     if (empty($block)) {
-      $block = new stdClass();
+      $block = new \stdClass();
       $block->module = $module;
       $block->delta = $delta;
     }
