@@ -392,9 +392,9 @@ class CommerceOrder extends Entity {
     }  
     commerce_avatax_calculate_sales_tax($order);
     commerce_order_save($order);
+    drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
     commerce_checkout_complete($order);
 
-    drupal_static_reset('commerce_recurring_order_load_recurring_line_items');
     $order_object = new CommerceOrder($order->order_id);
     $entities['commerce_order'][$order_object->getId()] = $order_object;
     $order_object->reload();
