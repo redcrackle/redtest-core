@@ -815,9 +815,9 @@ class Utils {
     //$client = new \GuzzleHttp\Client();
     $pubKey = variable_get('mp_stripe_public', 'pk_test_jLHDb7FuCHiWnVVr03QnyVBV');
     $cardNumber = isset($param['credit_card']['number']) ? $param['credit_card']['number'] : "4242424242424242";
-    $cvc = isset($param['credit_card']['number']) ? $param['credit_card']['code'] : "123";
-    $expMonth = isset($param['credit_card']['number']) ? $param['credit_card']['exp_month'] : "11";
-    $expYear = isset($param['credit_card']['number']) ? $param['credit_card']['exp_year'] : "2018";
+    $cvc = isset($param['credit_card']['code']) ? $param['credit_card']['code'] : "123";
+    $expMonth = isset($param['credit_card']['exp_month']) ? $param['credit_card']['exp_month'] : "11";
+    $expYear = isset($param['credit_card']['exp_year']) ? $param['credit_card']['exp_year'] : "2018";
     $headers = [
       'Pragma' => 'no-cache',
       'Origin' => 'https://js.stripe.com',
