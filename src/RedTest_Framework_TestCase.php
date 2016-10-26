@@ -32,6 +32,9 @@ require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
 drupal_override_server_variables();
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
+global $test_setting_variable;
+$test_setting_variable = parse_ini_file(DRUPAL_ROOT."/tests/configuration.ini", TRUE);
+
 Patchwork\redefine('drupal_goto', function($path = '', array $options = array(), $http_response_code = 302) {
   // A destination in $_GET always overrides the function arguments.
   // We do not allow absolute URLs to be passed via $_GET, as this can be an attack vector.
