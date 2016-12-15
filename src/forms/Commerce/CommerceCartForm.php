@@ -64,10 +64,19 @@ class CommerceCartForm extends Form {
     parent::__construct(views_form_id($view), $view, $output);
   }
 
-  public function updateQuantity($line_item_row_number, $quantity) {
+  public function updateQuantity($sku, $quantity) {
     $view = $this->getCartView();
     $output = '';
     $ajax = $view->use_ajax;
+    $form_state = $this->getFormState();
+    $line_item_row_number = 0;
+    foreach($form_state['line_items'] as $key => $val) {
+      $product = commerce_product_load($val->commerce_product[LANGUAGE_NONE][0]['product_id']);
+      if($product->sku == $sku) {
+        break;
+      }
+      $line_item_row_number++;
+    }
 
     $this->fillFieldValues(array('edit_quantity', $line_item_row_number), $quantity);
     if($ajax) {
@@ -89,10 +98,20 @@ class CommerceCartForm extends Form {
     $result = $callback($this->getForm(), $form_state);
   }
 
-  public function removeLineItem($line_item_row_number) {
+  public function removeLineItem($sku) {
     $view = $this->getCartView();
     $output = '';
     $ajax = $view->use_ajax;
+
+    $form_state = $this->getFormState();
+    $line_item_row_number = 0;
+    foreach($form_state['line_items'] as $key => $val) {
+      $product = commerce_product_load($val->commerce_product[LANGUAGE_NONE][0]['product_id']);
+      if($product->sku == $sku) {
+        break;
+      }
+      $line_item_row_number++;
+    }
 
     if($ajax) {
       $response = $this->pressButton('delete-line-item-'.$line_item_row_number, array('ajax' => TRUE, 'triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
