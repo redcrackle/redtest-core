@@ -19,7 +19,7 @@ class CommerceCartForm extends Form {
 
   private function getCartView() {
     // Load the specified View.
-    $view = views_get_view('commerce_cart_form_mp');
+    $view = views_get_view('commerce_cart_form');
     $view->set_display('default');
 
     // Set the specific arguments passed in.
@@ -64,76 +64,31 @@ class CommerceCartForm extends Form {
     parent::__construct(views_form_id($view), $view, $output);
   }
 
-  public function updateQuantity($sku, $quantity) {
+  public function updateQuantity($line_item_row_number, $quantity) {
     $view = $this->getCartView();
     $output = '';
-    $ajax = $view->use_ajax;
-    $form_state = $this->getFormState();
-    $line_item_row_number = 0;
-    foreach($form_state['line_items'] as $key => $val) {
-      $product = commerce_product_load($val->commerce_product[LANGUAGE_NONE][0]['product_id']);
-      if($product->sku == $sku) {
-        break;
-      }
-      $line_item_row_number++;
-    }
 
     $this->fillFieldValues(array('edit_quantity', $line_item_row_number), $quantity);
-    if($ajax) {
-      $response = $this->pressButton(t('op'), array('ajax' => TRUE, 'triggering_element_key' => 'edit-submit'), $view, $output);
-    }
-    else {
-      $response = $this->pressButton(t('Update cart'), array(), $view, $output);
-    }
+//    sleep(.5);
+    $response = $this->pressButton(t('Update cart'), array(), $view, $output);
 
     return $this->getResponse($response);
   }
 
-  public function switchPlan() {
+  public function removeLineItem($line_item_row_number) {
     $view = $this->getCartView();
     $output = '';
-    $response = $this->pressButton(t('switch_plan_detail'), array('ajax' => TRUE, 'triggering_element_key' => 'edit-change-plan'), $view, $output);
-    $form_state = $this->getFormState();
-    $callback = $form_state['triggering_element']['#ajax']['callback'];
-    $result = $callback($this->getForm(), $form_state);
-  }
 
-  public function removeLineItem($sku) {
-    $view = $this->getCartView();
-    $output = '';
-    $ajax = $view->use_ajax;
-
-    $form_state = $this->getFormState();
-    $line_item_row_number = 0;
-    foreach($form_state['line_items'] as $key => $val) {
-      $product = commerce_product_load($val->commerce_product[LANGUAGE_NONE][0]['product_id']);
-      if($product->sku == $sku) {
-        break;
-      }
-      $line_item_row_number++;
-    }
-
-    if($ajax) {
-      $response = $this->pressButton('delete-line-item-'.$line_item_row_number, array('ajax' => TRUE, 'triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
-    }
-    else {
-      $response = $this->pressButton(t('Remove'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
-    }
+    $response = $this->pressButton(t('Remove'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
 
     return $this->getResponse($response);
   }
 
   public function checkout() {
     $view = $this->getCartView();
-    $ajax = $view->use_ajax;
     $output = '';
 
-    if($ajax) {
-      $response = $this->pressButton(t('Check Out'), array('triggering_element_key' => 'op'), $view, $output);
-    }
-    else {
-      $response = $this->pressButton(t('Checkout'), array(), $view, $output);
-    }
+    $response = $this->pressButton(t('Checkout'), array(), $view, $output);
 
     return $this->getResponse($response);
   }
