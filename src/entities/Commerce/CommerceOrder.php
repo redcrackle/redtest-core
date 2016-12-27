@@ -421,24 +421,7 @@ class CommerceOrder extends Entity {
         $recurring->reload();
         $entities['commerce_recurring'][$recurring->getId()] = $recurring;
         $recurring_entity_updated = $recurring->getFieldValues('due_date');
-        $commerce_line_items = field_get_items('commerce_order', $this->getEntity(), 'commerce_line_items');
-        $gamma_prime = FALSE;
-        foreach($commerce_line_items as $key=>$line_item) {
-          $item = commerce_line_item_load($line_item['line_item_id']);
-          $product_id = field_get_items('commerce_line_item', $item, 'commerce_product');
-          $product_detail = commerce_product_load($product_id[0]['product_id']);
-          if(isset($product_detail->type) && $product_detail->type == 'product' && $product_detail->sku == MPUtils::getGammaPrimeSku()) {
-            $gamma_prime = TRUE;
-          }
-        }
-
-        if($gamma_prime) {
-          $expiration_timestamp = MPUtils::getGammaRecurringDueDate();
-        }
-        else {
-          $expiration_timestamp = mp_subscription_get_first_billing_cycle();
-        }
-
+        $expiration_timestamp = mp_subscription_get_first_billing_cycle();
         if($expiration_timestamp != $recurring_entity_updated) {
           return new Response(FALSE, NULL, 'Recurring entity Due date is not correct');
         }
