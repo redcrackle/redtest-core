@@ -13,7 +13,6 @@ use RedTest\core\Response;
 use RedTest\core\entities\Entity;
 use RedTest\core\Utils;
 use RedTest\tests\MPUtils;
-use Stripe;
 
 /**
  * Class CommerceOrder
