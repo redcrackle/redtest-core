@@ -476,11 +476,11 @@ class CommerceOrder extends Entity {
       'description' => t('Order Number: @order_number', array('@order_number' => $order->order_number)),
     );
 
-    Stripe\Stripe::setApiKey($payment_method['settings']['secret_key']);
+    \Stripe::setApiKey($payment_method['settings']['secret_key']);
 
     try {
       if ($charge['amount'] > 0) {
-        $response = Stripe\Charge::create($c);
+        $response = \Stripe_Charge::create($c);
         $transaction->remote_id = $response->id;
         $transaction->payload[REQUEST_TIME] = $response->__toJSON();
         $transaction->remote_status = 'AUTH_CAPTURE';
