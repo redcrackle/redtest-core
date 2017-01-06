@@ -78,7 +78,7 @@ class CommerceRecurring extends Entity {
    * This function will run all applicable cron on recurring entity
    * @return array|bool
    */
-  public function runCron($cron = 'All') {
+  public function client_charge($cron = 'All') {
     $recurring_order = array();
     $return_value = array();
     module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
@@ -118,10 +118,8 @@ class CommerceRecurring extends Entity {
       foreach ($orders as $associated_oder) {
         $order = new CommerceOrder($associated_oder['target_id']);
         if ($order->getStatusValues() == 'recurring_pending') {
-          $card_response = commerce_cardonfile_rules_action_order_select_default_card($order->getEntity());
-          $total = $order->getFieldItems('commerce_order_total');
-          $charge_response = commerce_cardonfile_rules_action_order_charge_card($order->getEntity(), $total[0], $card_response['select_card_response']);
-          $return_value['charge_response'] = $charge_response;
+          $order->setValues(array('status' => 'cardonfile_charged'));
+          $order->saveProgrammatically();
         }
       }
     }
