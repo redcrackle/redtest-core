@@ -542,28 +542,11 @@ class CommerceOrder extends Entity {
    * This function will process payment for pending orders
    * @return array|bool
    */
-  public static function runCron($order, $check_pass = FALSE) {
-    module_load_include('inc', 'commerce_recurring', 'commerce_recurring.rules');
-    module_load_include('inc', 'mp_order', 'mp_order.rules');
-
-
-    if($check_pass == FALSE) {
-      $payment_method = commerce_payment_method_instance_load('commerce_stripe|commerce_payment_commerce_stripe');
-      $card_details = commerce_cardonfile_load_multiple_by_uid($order->uid, $payment_method['instance_id'], TRUE);
-
-      foreach($card_details as $key) {
-        $card_data = commerce_cardonfile_load($key->card_id);
-        $card_data->remote_id = '';
-        commerce_cardonfile_save($card_data);
-      }
-
-    }
-
-    $card_response = commerce_cardonfile_rules_action_order_select_default_card($order);
-
-    $order_total = field_get_items('commerce_order', $order, 'commerce_order_total');
-
-    $response = commerce_cardonfile_rules_action_order_charge_card($order, $order_total[0], $card_response['select_card_response']);
+  public static function client_charge($order) {
+    $order = new CommerceOrder($order->order_id);
+    $order->setValues(array('status' => 'completed'));
+    $order->saveProgrammatically();
+    $response['charge_card_response']['status'] = true;
     return new Response(TRUE, $response, "");
   }
 
