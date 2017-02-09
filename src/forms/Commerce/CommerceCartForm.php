@@ -19,7 +19,7 @@ class CommerceCartForm extends Form {
 
   private function getCartView() {
     // Load the specified View.
-    $view = views_get_view('commerce_cart_form');
+    $view = views_get_view('commerce_cart_form_mp');
     $view->set_display('default');
 
     // Set the specific arguments passed in.
@@ -75,11 +75,22 @@ class CommerceCartForm extends Form {
     return $this->getResponse($response);
   }
 
-  public function removeLineItem($line_item_row_number) {
+  public function removeLineItem($sku) {
     $view = $this->getCartView();
     $output = '';
+    $ajax = $view->use_ajax;
 
-    $response = $this->pressButton(t('Remove'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
+    $form_state = $this->getFormState();
+    $line_item_row_number = 0;
+    foreach($form_state['line_items'] as $key => $val) {
+      $product = commerce_product_load($val->commerce_product[LANGUAGE_NONE][0]['product_id']);
+      if($product->sku == $sku) {
+        break;
+      }
+      $line_item_row_number++;
+    }
+
+    $response = $this->pressButton(t('X'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
 
     return $this->getResponse($response);
   }
@@ -88,7 +99,7 @@ class CommerceCartForm extends Form {
     $view = $this->getCartView();
     $output = '';
 
-    $response = $this->pressButton(t('Checkout'), array(), $view, $output);
+    $response = $this->pressButton(t('Check Out'), array(), $view, $output);
 
     return $this->getResponse($response);
   }
