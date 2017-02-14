@@ -19,7 +19,7 @@ class CommerceCartForm extends Form {
 
   private function getCartView() {
     // Load the specified View.
-    $view = views_get_view('commerce_cart_form_mp');
+    $view = views_get_view('commerce_cart_form');
     $view->set_display('default');
 
     // Set the specific arguments passed in.
@@ -80,6 +80,11 @@ class CommerceCartForm extends Form {
     $output = '';
     $ajax = $view->use_ajax;
 
+    if(is_numeric($sku)) {
+      $response = $this->pressButton(t('Remove'), array('triggering_element_key' => 'delete-line-item-' . $sku), $view, $output);
+      return $this->getResponse($response);
+    }
+
     $form_state = $this->getFormState();
     $line_item_row_number = 0;
     foreach($form_state['line_items'] as $key => $val) {
@@ -89,6 +94,11 @@ class CommerceCartForm extends Form {
       }
       $line_item_row_number++;
     }
+
+    $response = $this->pressButton(t('X'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
+
+    return $this->getResponse($response);
+  }
 
     $response = $this->pressButton(t('X'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
 

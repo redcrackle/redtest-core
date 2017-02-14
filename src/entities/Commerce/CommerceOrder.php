@@ -427,7 +427,9 @@ class CommerceOrder extends Entity {
           $item = commerce_line_item_load($line_item['line_item_id']);
           $product_id = field_get_items('commerce_line_item', $item, 'commerce_product');
           $product_detail = commerce_product_load($product_id[0]['product_id']);
-          if(isset($product_detail->type) && $product_detail->type == 'product' && $product_detail->sku == MPUtils::getGammaPrimeSku()) {
+          if(isset($product_detail->type) && $product_detail->type == 'product'
+            && method_exists(new MPUtils(), 'getGammaPrimeSku')
+            && $product_detail->sku == MPUtils::getGammaPrimeSku()) {
             $gamma_prime = TRUE;
           }
         }
