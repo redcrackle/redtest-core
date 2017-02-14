@@ -100,11 +100,6 @@ class CommerceCartForm extends Form {
     return $this->getResponse($response);
   }
 
-    $response = $this->pressButton(t('X'), array('triggering_element_key' => 'delete-line-item-' . $line_item_row_number), $view, $output);
-
-    return $this->getResponse($response);
-  }
-
   public function checkout() {
     $view = $this->getCartView();
     $output = '';
