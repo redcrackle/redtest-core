@@ -19,7 +19,7 @@ class CommerceCartForm extends Form {
 
   private function getCartView() {
     // Load the specified View.
-    $view = views_get_view('commerce_cart_form');
+    $view = views_get_view('commerce_cart_form_mp');
     $view->set_display('default');
 
     // Set the specific arguments passed in.
