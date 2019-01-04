@@ -18,7 +18,7 @@
     },
     "require": {
         "php": ">=7.1.0",
-        "guzzle/guzzle": "dev-master",
+        "guzzlehttp/guzzle": "dev-master",
         "phpunit/phpunit": "7.*",
         "brianium/paratest": "dev-master",
         "antecedent/patchwork": "*"
